@@ -5,6 +5,12 @@ import comfy.sd  # pyright: ignore[reportMissingImports]
 import comfy.utils  # pyright: ignore[reportMissingImports]
 
 from ..utils.utils import get_lora_info_absolute
+from .anima_lora_remap import (
+    STATUS_CONVERTED,
+    STATUS_ERROR,
+    is_anima_40_model,
+    remap_lora_state_dict_safe,
+)
 from .utils import (
     FlexibleOptionalInputType,
     any_type,
@@ -81,9 +87,30 @@ def _format_loaded_loras(loaded_loras):
     return " ".join(formatted_loras)
 
 
-def _apply_entries(model, clip, lora_entries, nunchaku_model_kind):
+def _is_anima_mode_enabled(value):
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+    return bool(value)
+
+
+def _apply_entries(model, clip, lora_entries, nunchaku_model_kind, anima_mode=False):
     loaded_loras = []
     all_trigger_words = []
+
+    remap_anima_loras = (
+        _is_anima_mode_enabled(anima_mode)
+        and nunchaku_model_kind is None
+        and is_anima_40_model(model)
+    )
+    if _is_anima_mode_enabled(anima_mode):
+        if remap_anima_loras:
+            logger.info(
+                "Anima 2.9B mode enabled; legacy 28-layer LoRAs will be remapped in memory"
+            )
+        else:
+            logger.info(
+                "Anima 2.9B mode enabled, but the model is not a supported 40-layer Anima model; loading unchanged"
+            )
 
     if nunchaku_model_kind == "qwen_image":
         nunchaku_load_qwen_loras = _get_nunchaku_load_qwen_loras()
@@ -106,6 +133,16 @@ def _apply_entries(model, clip, lora_entries, nunchaku_model_kind):
             model = nunchaku_load_lora(model, entry["input_path"], entry["model_strength"])
         else:
             lora = comfy.utils.load_torch_file(entry["absolute_path"], safe_load=True)
+            if remap_anima_loras:
+                lora, remap_status, remap_message = remap_lora_state_dict_safe(
+                    lora, source_name=entry["name"]
+                )
+                if remap_status == STATUS_CONVERTED:
+                    logger.info("Anima 2.9B mode: %s", remap_message)
+                elif remap_status == STATUS_ERROR:
+                    logger.warning("Anima 2.9B mode: %s", remap_message)
+                else:
+                    logger.debug("Anima 2.9B mode: %s", remap_message)
             model, clip = comfy.sd.load_lora_for_models(
                 model,
                 clip,
@@ -142,6 +179,12 @@ class LoraLoaderLM:
                 "loras": ("LORAS", {}),
             },
             "optional": FlexibleOptionalInputType(any_type),
+            "hidden": {
+                # The frontend provides a serialized, canvas-hidden widget for
+                # this execution value.  Missing values in existing workflows
+                # keep the method's default and therefore remain disabled.
+                "anima_mode": ("BOOLEAN", {"default": False}),
+            },
         }
 
     @classmethod
@@ -153,7 +196,7 @@ class LoraLoaderLM:
     RETURN_NAMES = ("MODEL", "CLIP", "trigger_words", "loaded_loras")
     FUNCTION = "load_loras"
 
-    def load_loras(self, model, text, loras, **kwargs):
+    def load_loras(self, model, text, loras, anima_mode=False, **kwargs):
         """Loads multiple LoRAs based on the widget input and lora_stack."""
         del text
         clip = kwargs.get("clip", None)
@@ -166,7 +209,13 @@ class LoraLoaderLM:
         elif nunchaku_model_kind == "qwen_image":
             logger.info("Detected Nunchaku Qwen-Image model")
 
-        model, clip, loaded_loras, all_trigger_words = _apply_entries(model, clip, lora_entries, nunchaku_model_kind)
+        model, clip, loaded_loras, all_trigger_words = _apply_entries(
+            model,
+            clip,
+            lora_entries,
+            nunchaku_model_kind,
+            anima_mode=anima_mode,
+        )
         trigger_words_text = ",, ".join(all_trigger_words) if all_trigger_words else ""
         formatted_loras_text = _format_loaded_loras(loaded_loras)
         return (model, clip, trigger_words_text, formatted_loras_text)

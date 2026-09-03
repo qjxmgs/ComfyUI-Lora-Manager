@@ -141,4 +141,74 @@ describe("Lora Loader trigger word updates", () => {
     expect(triggerWordSet).toBe(activeSet);
     expect([...triggerWordSet]).toEqual(["Alpha"]);
   });
+
+  it("creates a hidden, workflow-serialized Anima mode backing widget", async () => {
+    await import(LORA_LOADER_MODULE);
+    const extension = extensionState.current;
+    const nodeType = { comfyClass: "Lora Loader (LoraManager)", prototype: {} };
+    await extension.beforeRegisterNodeDef(nodeType, {}, {});
+
+    const node = {
+      comfyClass: "Lora Loader (LoraManager)",
+      widgets: [
+        { name: "text", value: "", options: {}, callback: null },
+        { name: "loras", value: [], options: {}, callback: null },
+      ],
+      addInput: vi.fn(),
+      addWidget(type, name, value, callback) {
+        const widget = { type, name, value, callback, options: {} };
+        this.widgets.push(widget);
+        return widget;
+      },
+      graph: { setDirtyCanvas: vi.fn() },
+    };
+
+    nodeType.prototype.onNodeCreated.call(node);
+
+    const animaModeWidget = node.widgets.find((widget) => widget.name === "anima_mode");
+    expect(animaModeWidget).toBeDefined();
+    expect(animaModeWidget.value).toBe(false);
+    expect(animaModeWidget.hidden).toBe(true);
+    expect(animaModeWidget.computeSize()).toEqual([0, 0]);
+
+    animaModeWidget.callback(true);
+    expect(node.animaMode).toBe(true);
+    expect(node.properties.anima_mode).toBe(true);
+    expect(node.graph.setDirtyCanvas).toHaveBeenCalledWith(true, true);
+  });
+
+  it("restores a saved Anima mode and defaults old workflows to disabled", async () => {
+    await import(LORA_LOADER_MODULE);
+    const extension = extensionState.current;
+    const nodeType = { comfyClass: "Lora Loader (LoraManager)", prototype: {} };
+    await extension.beforeRegisterNodeDef(nodeType, {}, {});
+
+    const createNode = (widgetsValues) => {
+      const node = {
+        comfyClass: "Lora Loader (LoraManager)",
+        widgets: [
+          { name: "text", value: "", options: {}, callback: null },
+          { name: "loras", value: [], options: {}, callback: null },
+        ],
+        widgets_values: widgetsValues,
+        addInput: vi.fn(),
+        addWidget(type, name, value, callback) {
+          const widget = { type, name, value, callback, options: {} };
+          this.widgets.push(widget);
+          return widget;
+        },
+        graph: { setDirtyCanvas: vi.fn() },
+      };
+      nodeType.prototype.onNodeCreated.call(node);
+      return node;
+    };
+
+    const restoredNode = createNode(["", [], true]);
+    await extension.loadedGraphNode(restoredNode);
+    expect(restoredNode.animaMode).toBe(true);
+
+    const legacyNode = createNode(["", []]);
+    await extension.loadedGraphNode(legacyNode);
+    expect(legacyNode.animaMode).toBe(false);
+  });
 });

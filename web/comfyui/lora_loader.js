@@ -12,6 +12,43 @@ import {
 } from "./utils.js";
 import { applyLoraValuesToText, debounce } from "./lora_syntax_utils.js";
 
+function normalizeAnimaMode(value) {
+  if (typeof value === "string") {
+    return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
+  }
+  return value === true;
+}
+
+function applyAnimaModeState(node, value, { rerender = true } = {}) {
+  const enabled = normalizeAnimaMode(value);
+  node.animaMode = enabled;
+  node.properties = node.properties || {};
+  node.properties.anima_mode = enabled;
+
+  if (rerender && node.lorasWidget && !node.lorasWidget.__dragActive) {
+    node.lorasWidget.value = node.lorasWidget.value;
+  }
+  node.graph?.setDirtyCanvas?.(true, true);
+  return enabled;
+}
+
+function ensureAnimaModeWidget(node) {
+  let animaModeWidget = getWidgetByName(node, "anima_mode");
+  if (!animaModeWidget && typeof node.addWidget === "function") {
+    animaModeWidget = node.addWidget("toggle", "anima_mode", false, () => {});
+  }
+  if (!animaModeWidget) {
+    return null;
+  }
+
+  animaModeWidget.hidden = true;
+  animaModeWidget.computeSize = () => [0, 0];
+  animaModeWidget.callback = (value) => applyAnimaModeState(node, value);
+  node._animaModeWidget = animaModeWidget;
+  applyAnimaModeState(node, animaModeWidget.value, { rerender: false });
+  return animaModeWidget;
+}
+
 app.registerExtension({
   name: "LoraManager.LoraLoader",
 
@@ -112,6 +149,11 @@ app.registerExtension({
       chainCallback(nodeType.prototype, "onNodeCreated", function () {
         // Enable widget serialization
         this.serialize_widgets = true;
+
+        // The backend input is intentionally canvas-hidden.  This backing
+        // widget keeps the mode in widgets_values while the LORAS DOM widget
+        // renders the visible control in its header.
+        ensureAnimaModeWidget(this);
 
         this.addInput("clip", "CLIP", {
           shape: 7,
@@ -235,6 +277,15 @@ app.registerExtension({
 
   async loadedGraphNode(node) {
     if (node.comfyClass == "Lora Loader (LoraManager)") {
+      const animaModeWidget = ensureAnimaModeWidget(node);
+      const savedAnimaMode = getWidgetSerializedValue(node, "anima_mode");
+      if (animaModeWidget && savedAnimaMode !== undefined) {
+        animaModeWidget.value = normalizeAnimaMode(savedAnimaMode);
+      }
+      if (animaModeWidget) {
+        applyAnimaModeState(node, animaModeWidget.value, { rerender: false });
+      }
+
       // Restore saved value if exists
       let existingLoras = [];
       if (node.widgets_values && node.widgets_values.length > 0) {

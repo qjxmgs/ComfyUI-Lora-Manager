@@ -62,6 +62,7 @@ export function addLorasWidget(node, name, opts, callback) {
 
   // Check if this is a randomizer node (lock button instead of drag handle)
   const isRandomizerNode = opts?.isRandomizerNode === true;
+  const isAnimaModeNode = opts?.isAnimaModeNode === true;
 
   // Initialize default value
   const defaultValue = opts?.defaultVal || [];
@@ -298,6 +299,40 @@ export function addLorasWidget(node, name, opts, callback) {
     toggleContainer.appendChild(toggleAll);
     toggleContainer.appendChild(toggleLabel);
 
+    let animaModeContainer = null;
+    if (isAnimaModeNode) {
+      const animaModeWidget = node._animaModeWidget ||
+        node.widgets?.find((candidate) => candidate?.name === "anima_mode");
+      const animaModeActive = animaModeWidget?.value === true ||
+        animaModeWidget?.value === "true";
+      const animaModeToggle = createToggle(animaModeActive, (active) => {
+        const backingWidget = node._animaModeWidget ||
+          node.widgets?.find((candidate) => candidate?.name === "anima_mode");
+        if (!backingWidget) {
+          return;
+        }
+        backingWidget.value = active;
+        if (typeof backingWidget.callback === "function") {
+          backingWidget.callback(active);
+        } else {
+          node.properties = node.properties || {};
+          node.properties.anima_mode = active;
+          node.graph?.setDirtyCanvas?.(true, true);
+          renderLoras(widget.value, widget);
+        }
+      });
+
+      const animaModeLabel = document.createElement("div");
+      animaModeLabel.textContent = "Anima 2.9B 模式";
+      animaModeLabel.className = "lm-toggle-label";
+
+      animaModeContainer = document.createElement("div");
+      animaModeContainer.className = "lm-toggle-container lm-anima-mode-container";
+      animaModeContainer.title = "在 40 层 Anima 2.9B 模型上以内存方式加载旧版 28 层 Anima LoRA";
+      animaModeContainer.appendChild(animaModeToggle);
+      animaModeContainer.appendChild(animaModeLabel);
+    }
+
     // Strength label with drag hint
     const strengthLabel = document.createElement("div");
     strengthLabel.textContent = "Strength";
@@ -310,6 +345,9 @@ export function addLorasWidget(node, name, opts, callback) {
     strengthLabel.appendChild(dragHint);
 
     header.appendChild(toggleContainer);
+    if (animaModeContainer) {
+      header.appendChild(animaModeContainer);
+    }
     header.appendChild(strengthLabel);
     container.appendChild(header);
     
@@ -910,7 +948,10 @@ app.registerExtension({
         const comfyClass = node?.comfyClass;
         const isRandomizerNode = comfyClass === "Lora Randomizer (LoraManager)";
 
-        const opts = { isRandomizerNode };
+        const opts = {
+          isRandomizerNode,
+          isAnimaModeNode: comfyClass === "Lora Loader (LoraManager)",
+        };
 
         if (isRandomizerNode || comfyClass === "WanVideo Lora Select (LoraManager)") {
           opts.onSelectionChange = (selection) => {

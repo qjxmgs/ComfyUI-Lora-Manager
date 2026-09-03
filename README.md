@@ -144,6 +144,24 @@ pip install -r requirements.txt
    - Paste into the Lora Loader node's text input
    - The node will automatically apply preset strength and trigger words
 
+### Anima 2.9B Mode
+
+`Lora Loader (LoraManager)` includes an **Anima 2.9B Mode** switch in the
+LoRA-list header. It is disabled by default and saved with the workflow. When
+enabled, it recognizes a 40-layer Anima 2.9B model (a 40-block diffusion model
+with an `llm_adapter`) and remaps compatible legacy 28-layer Anima LoRA keys
+in memory before the standard ComfyUI loader applies them.
+
+- The source `.safetensors` file and the loaded source state dictionary are
+  never modified, and no converted file or metadata sidecar is written.
+- Non-Anima LoRAs, already-40-layer LoRAs, and unrecognized structures load
+  unchanged. A remapping failure also falls back to the original state
+  dictionary instead of interrupting the workflow.
+- The switch applies only to `Lora Loader (LoraManager)`, including entries it
+  receives from `Lora Stacker`. `LoRA Text Loader (LoraManager)` is unchanged.
+- The 28-to-40 insertion layout follows the
+  [MIT-licensed upstream converter](https://github.com/R0smontis/ComfyUI-Anima-28to40-Lora-Converter).
+
 ### Wildcards for TextLM / PromptLM
 
 `Text (LoraManager)` and `Prompt (LoraManager)` support `/wildcard` autocomplete plus runtime wildcard expansion.
