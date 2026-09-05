@@ -1,8 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import {
-  collectActiveLorasFromChain,
-  updateConnectedTriggerWords,
+  refreshConnectedTriggerWords,
   chainCallback,
   mergeLoras,
   getAllGraphNodes,
@@ -192,8 +191,7 @@ app.registerExtension({
           console.log(`Lora Loader node mode changed: from ${oldMode} to ${newMode}`);
 
           // Update connected trigger word toggle nodes when mode changes
-          const allActiveLoraNames = collectActiveLorasFromChain(self);
-          updateConnectedTriggerWords(self, allActiveLoraNames);
+          refreshConnectedTriggerWords(self);
         };
 
         // Get the text input widget (AUTOCOMPLETE_TEXT_LORAS type, created by Vue widgets)
@@ -242,11 +240,7 @@ app.registerExtension({
           isUpdating = true;
 
           try {
-            // Collect all active loras from this node and its input chain
-            const allActiveLoraNames = collectActiveLorasFromChain(this);
-
-            // Update trigger words for connected toggle nodes with the aggregated lora names
-            updateConnectedTriggerWords(this, allActiveLoraNames);
+            refreshConnectedTriggerWords(this);
           } finally {
             isUpdating = false;
           }
@@ -265,12 +259,15 @@ app.registerExtension({
 
             this.lorasWidget.value = mergedLoras;
 
-            const allActiveLoraNames = collectActiveLorasFromChain(this);
-            updateConnectedTriggerWords(this, allActiveLoraNames);
+            refreshConnectedTriggerWords(this);
           } finally {
             isUpdating = false;
           }
         };
+      });
+
+      chainCallback(nodeType.prototype, "onConnectionsChange", function () {
+        refreshConnectedTriggerWords(this);
       });
     }
   },

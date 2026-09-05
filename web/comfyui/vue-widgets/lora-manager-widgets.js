@@ -15924,6 +15924,32 @@ function getActiveLorasFromNode(node) {
   }
   return activeLoraNames;
 }
+function getConfiguredLorasFromNode(node) {
+  var _a2, _b;
+  const configuredLoraNames = /* @__PURE__ */ new Set();
+  if (node.comfyClass === "Lora Cycler (LoraManager)") {
+    const cyclerWidget = (_a2 = node.widgets) == null ? void 0 : _a2.find((w2) => w2.name === "cycler_config");
+    if ((_b = cyclerWidget == null ? void 0 : cyclerWidget.value) == null ? void 0 : _b.current_lora_filename) {
+      configuredLoraNames.add(cyclerWidget.value.current_lora_filename);
+    }
+    return configuredLoraNames;
+  }
+  if (isLoraStackAggregatorNode(node.comfyClass)) {
+    return configuredLoraNames;
+  }
+  let lorasWidget = node.lorasWidget;
+  if (!lorasWidget && node.widgets) {
+    lorasWidget = node.widgets.find((w2) => w2.name === "loras");
+  }
+  if (Array.isArray(lorasWidget == null ? void 0 : lorasWidget.value)) {
+    lorasWidget.value.forEach((lora) => {
+      if (lora == null ? void 0 : lora.name) {
+        configuredLoraNames.add(lora.name);
+      }
+    });
+  }
+  return configuredLoraNames;
+}
 function collectActiveLorasFromChain(node, visited = /* @__PURE__ */ new Set()) {
   const nodeKey = getNodeKey(node);
   if (!nodeKey) {
@@ -15945,22 +15971,70 @@ function collectActiveLorasFromChain(node, visited = /* @__PURE__ */ new Set()) 
   }
   return allActiveLoraNames;
 }
-function updateConnectedTriggerWords(node, loraNames) {
+function collectConfiguredLorasFromChain(node, visited = /* @__PURE__ */ new Set()) {
+  const nodeKey = getNodeKey(node);
+  if (!nodeKey || visited.has(nodeKey)) {
+    return /* @__PURE__ */ new Set();
+  }
+  visited.add(nodeKey);
+  const configuredLoraNames = getConfiguredLorasFromNode(node);
+  const inputChainNodes = getConnectedInputLoraChainNodes(node);
+  for (const chainNode of inputChainNodes) {
+    const upstreamLoras = collectConfiguredLorasFromChain(chainNode, visited);
+    upstreamLoras.forEach((name) => configuredLoraNames.add(name));
+  }
+  return configuredLoraNames;
+}
+function updateConnectedTriggerWords(node, loraNames, configuredLoraNames = null) {
   const connectedNodes = getConnectedTriggerToggleNodes(node);
   if (connectedNodes.length > 0) {
     const nodeIds = connectedNodes.map((connectedNode) => getNodeReference(connectedNode)).filter((reference) => reference !== null);
     if (nodeIds.length === 0) {
       return;
     }
+    const activeNames = Array.from(loraNames || []).filter(Boolean);
+    const configuredNames = Array.from(configuredLoraNames || loraNames || []).filter(Boolean);
+    const signatureActiveNames = [...activeNames].sort((left, right) => String(left).localeCompare(String(right)));
+    const signatureConfiguredNames = [...configuredNames].sort((left, right) => String(left).localeCompare(String(right)));
+    const sortedNodeIds = [...nodeIds].sort(
+      (left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))
+    );
+    const signature = JSON.stringify({
+      active: signatureActiveNames,
+      configured: signatureConfiguredNames,
+      targets: sortedNodeIds
+    });
+    if (node.__lmTriggerWordRequestSignature === signature) {
+      return;
+    }
+    node.__lmTriggerWordRequestSignature = signature;
+    node.__lmTriggerWordRequestRevision = (node.__lmTriggerWordRequestRevision || 0) + 1;
+    const requestRevision = node.__lmTriggerWordRequestRevision;
+    const sourceNode = getNodeReference(node);
     fetch("/api/lm/loras/get_trigger_words", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        lora_names: Array.from(loraNames),
-        node_ids: nodeIds
+        lora_names: activeNames,
+        configured_lora_names: configuredNames,
+        node_ids: nodeIds,
+        source_node: sourceNode,
+        request_revision: requestRevision
       })
-    }).catch((err) => console.error("Error fetching trigger words:", err));
+    }).catch((err) => {
+      if (node.__lmTriggerWordRequestSignature === signature) {
+        node.__lmTriggerWordRequestSignature = null;
+      }
+      console.error("Error fetching trigger words:", err);
+    });
   }
+}
+function refreshConnectedTriggerWords(node) {
+  return updateConnectedTriggerWords(
+    node,
+    collectActiveLorasFromChain(node),
+    collectConfiguredLorasFromChain(node)
+  );
 }
 function getConnectedPoolConfigNode(node) {
   var _a2, _b;
@@ -16008,8 +16082,7 @@ function updateDownstreamLoaders(startNode, visited = /* @__PURE__ */ new Set())
           if (link) {
             const targetNode = (_b = (_a2 = startNode.graph) == null ? void 0 : _a2.getNodeById) == null ? void 0 : _b.call(_a2, link.target_id);
             if (targetNode && targetNode.comfyClass === "Lora Loader (LoraManager)") {
-              const allActiveLoraNames = collectActiveLorasFromChain(targetNode);
-              updateConnectedTriggerWords(targetNode, allActiveLoraNames);
+              refreshConnectedTriggerWords(targetNode);
             } else if (targetNode && isLoraChainNode(targetNode.comfyClass)) {
               updateDownstreamLoaders(targetNode, visited);
             }
@@ -16734,9 +16807,26 @@ app$1.registerExtension({
       const originalOnNodeCreated = nodeType.prototype.onNodeCreated;
       nodeType.prototype.onNodeCreated = function() {
         originalOnNodeCreated == null ? void 0 : originalOnNodeCreated.apply(this, arguments);
-        const nodeSpecificCallback = comfyClass === "Lora Stacker (LoraManager)" ? (activeLoraNames) => updateConnectedTriggerWords(this, activeLoraNames) : void 0;
+        const nodeSpecificCallback = comfyClass === "Lora Stacker (LoraManager)" || comfyClass === "Create Hook LoRA (LoraManager)" ? (activeLoraNames) => updateConnectedTriggerWords(
+          this,
+          activeLoraNames,
+          getConfiguredLorasFromNode(this)
+        ) : void 0;
         const onModeChange = createModeChangeCallback(this, updateDownstreamLoaders, nodeSpecificCallback);
         setupModeChangeHandler(this, onModeChange);
+      };
+    } else if (comfyClass === "WanVideo Lora Select (LoraManager)") {
+      const originalOnNodeCreated = nodeType.prototype.onNodeCreated;
+      nodeType.prototype.onNodeCreated = function() {
+        originalOnNodeCreated == null ? void 0 : originalOnNodeCreated.apply(this, arguments);
+        setupModeChangeHandler(this, (newMode) => {
+          const activeLoraNames = isNodeActive(newMode) ? getActiveLorasFromNode(this) : /* @__PURE__ */ new Set();
+          updateConnectedTriggerWords(
+            this,
+            activeLoraNames,
+            getConfiguredLorasFromNode(this)
+          );
+        });
       };
     }
     if (nodeData.name === "Debug Metadata (LoraManager)") {

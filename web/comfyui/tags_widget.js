@@ -908,10 +908,13 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
     }
 
     const normalizedTags = Array.isArray(tagsData) ? tagsData : [];
+    const visibleTags = normalizedTags
+      .map((tagData, index) => ({ tagData, index }))
+      .filter(({ tagData }) => tagData?.available !== false);
     const showStrengthInfo = widget.allowStrengthAdjustment ?? allowStrengthAdjustment;
     const groupAnchors = new Map();
 
-    if (normalizedTags.length === 0) {
+    if (visibleTags.length === 0) {
       closeGroupEditor(widget);
       const emptyMessage = document.createElement("div");
       emptyMessage.textContent = "No trigger words detected";
@@ -930,7 +933,7 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
       return;
     }
 
-    normalizedTags.forEach((tagData, index) => {
+    visibleTags.forEach(({ tagData, index }) => {
       const tagEl = isGroupTag(tagData)
         ? renderGroupTag(tagData, index, widget, showStrengthInfo)
         : renderSimpleTag(tagData, index, widget, showStrengthInfo);

@@ -267,3 +267,58 @@ def test_trigger_words_override_empty_toggle_data():
     )
 
     assert filtered == "custom trigger words"
+
+
+def test_unavailable_group_is_hidden_from_output_but_state_is_retained():
+    node = TriggerWordToggleLM()
+    trigger_data = [
+        {
+            "text": "hidden, selected",
+            "active": True,
+            "available": False,
+            "items": [
+                {"text": "hidden", "active": False},
+                {"text": "selected", "active": True},
+            ],
+        },
+        {
+            "text": "visible, selected",
+            "active": True,
+            "available": True,
+            "items": [
+                {"text": "visible", "active": False},
+                {"text": "selected", "active": True},
+            ],
+        },
+    ]
+
+    (filtered,) = node.process_trigger_words(
+        id="node",
+        group_mode=True,
+        default_active=True,
+        allow_strength_adjustment=False,
+        orinalMessage="visible, selected",
+        toggle_trigger_words=trigger_data,
+    )
+
+    assert filtered == "selected"
+    assert trigger_data[0]["items"][1]["active"] is True
+
+
+def test_unavailable_flat_tag_is_hidden_from_output():
+    node = TriggerWordToggleLM()
+    trigger_data = [
+        {"text": "hidden", "active": True, "available": False},
+        {"text": "visible", "active": True, "available": True},
+    ]
+
+    (filtered,) = node.process_trigger_words(
+        id="node",
+        group_mode=False,
+        default_active=True,
+        allow_strength_adjustment=False,
+        orinalMessage="visible",
+        toggle_trigger_words=trigger_data,
+    )
+
+    assert filtered == "visible"

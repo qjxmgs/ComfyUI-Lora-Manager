@@ -19,10 +19,16 @@ vi.mock(APP_MODULE, () => ({
 
 describe("LoRA chain traversal", () => {
   let collectActiveLorasFromChain;
+  let collectConfiguredLorasFromChain;
+  let updateConnectedTriggerWords;
 
   beforeEach(async () => {
     vi.resetModules();
-    ({ collectActiveLorasFromChain } = await import(UTILS_MODULE));
+    ({
+      collectActiveLorasFromChain,
+      collectConfiguredLorasFromChain,
+      updateConnectedTriggerWords,
+    } = await import(UTILS_MODULE));
   });
 
   function createGraph(nodes, links) {
@@ -147,5 +153,86 @@ describe("LoRA chain traversal", () => {
     const result = collectActiveLorasFromChain(loader);
 
     expect(result.size).toBe(0);
+  });
+
+  it("retains configured LoRAs through inactive entries and providers", () => {
+    const stacker = {
+      id: 1,
+      comfyClass: "Lora Stacker (LoraManager)",
+      mode: 2,
+      widgets: [
+        {
+          name: "loras",
+          value: [
+            { name: "Alpha", active: false },
+            { name: "Beta", active: true },
+          ],
+        },
+      ],
+      inputs: [],
+      outputs: [],
+    };
+    const loader = {
+      id: 2,
+      comfyClass: "Lora Loader (LoraManager)",
+      mode: 0,
+      widgets: [],
+      inputs: [{ name: "lora_stack", type: "LORA_STACK", link: 31 }],
+      outputs: [],
+    };
+
+    createGraph([stacker, loader], {
+      31: { origin_id: 1, target_id: 2 },
+    });
+
+    expect([...collectConfiguredLorasFromChain(loader)]).toEqual(["Alpha", "Beta"]);
+    expect(collectActiveLorasFromChain(loader).size).toBe(0);
+  });
+
+  it("does not request trigger words again when only order or strength changes", async () => {
+    global.fetch = vi.fn(async () => ({ ok: true }));
+    const source = {
+      id: 1,
+      comfyClass: "Lora Loader (LoraManager)",
+      widgets: [],
+      inputs: [],
+      outputs: [{ links: [41] }],
+    };
+    const target = {
+      id: 2,
+      comfyClass: "TriggerWord Toggle (LoraManager)",
+      inputs: [],
+      outputs: [],
+    };
+    createGraph([source, target], {
+      41: { origin_id: 1, target_id: 2 },
+    });
+
+    updateConnectedTriggerWords(
+      source,
+      new Set(["Alpha"]),
+      new Set(["Beta", "Alpha"])
+    );
+    updateConnectedTriggerWords(
+      source,
+      new Set(["Alpha"]),
+      new Set(["Beta", "Alpha"])
+    );
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    const firstBody = JSON.parse(global.fetch.mock.calls[0][1].body);
+    expect(firstBody.lora_names).toEqual(["Alpha"]);
+    expect(firstBody.configured_lora_names).toEqual(["Beta", "Alpha"]);
+    expect(firstBody.request_revision).toBe(1);
+
+    updateConnectedTriggerWords(
+      source,
+      new Set(["Alpha", "Beta"]),
+      new Set(["Alpha", "Beta"])
+    );
+
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    const secondBody = JSON.parse(global.fetch.mock.calls[1][1].body);
+    expect(secondBody.request_revision).toBe(2);
   });
 });

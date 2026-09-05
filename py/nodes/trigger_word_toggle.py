@@ -125,6 +125,8 @@ class TriggerWordToggleLM:
                                     item, allow_strength_adjustment
                                 )
                                 for item in trigger_data
+                                if not isinstance(item, dict)
+                                or item.get("available", True)
                             ]
                             filtered_groups = [
                                 self._format_word_output(
@@ -140,6 +142,7 @@ class TriggerWordToggleLM:
                                 (item.get("text") or "").strip()
                                 for item in trigger_data
                                 if (item.get("text") or "").strip()
+                                and item.get("available", True)
                                 and item.get("active", False)
                             ]
                         filtered_triggers = (
@@ -149,6 +152,8 @@ class TriggerWordToggleLM:
                         parsed_items = [
                             self._parse_trigger_item(item, allow_strength_adjustment)
                             for item in trigger_data
+                            if not isinstance(item, dict)
+                            or item.get("available", True)
                         ]
                         filtered_words = [
                             self._format_word_output(
@@ -185,6 +190,8 @@ class TriggerWordToggleLM:
         filtered_groups = []
 
         for item in trigger_data:
+            if isinstance(item, dict) and not item.get("available", True):
+                continue
             group = self._parse_trigger_item(item, allow_strength_adjustment)
             if not group["text"] or not group["active"]:
                 continue

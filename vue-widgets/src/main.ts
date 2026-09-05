@@ -11,6 +11,7 @@ import type { LoraPoolConfig, RandomizerConfig, CyclerConfig } from './composabl
 import {
   setupModeChangeHandler,
   createModeChangeCallback,
+  isNodeActive,
   LORA_CHAIN_NODE_TYPES
 } from './mode-change-handler'
 
@@ -44,7 +45,7 @@ import { app } from '../../../scripts/app.js'
 // @ts-ignore - ComfyUI external module
 import { api } from '../../../scripts/api.js'
 // @ts-ignore
-import { getPoolConfigFromConnectedNode, getActiveLorasFromNode, updateConnectedTriggerWords, updateDownstreamLoaders } from '../../web/comfyui/utils.js'
+import { getPoolConfigFromConnectedNode, getActiveLorasFromNode, getConfiguredLorasFromNode, updateConnectedTriggerWords, updateDownstreamLoaders } from '../../web/comfyui/utils.js'
 
 function forwardMiddleMouseToCanvas(container: HTMLElement) {
   if (!container) return
@@ -941,13 +942,37 @@ app.registerExtension({
         originalOnNodeCreated?.apply(this, arguments)
 
         // Create node-specific callback for Lora Stacker (updates direct trigger toggles)
-        const nodeSpecificCallback = comfyClass === "Lora Stacker (LoraManager)"
-          ? (activeLoraNames: Set<string>) => updateConnectedTriggerWords(this, activeLoraNames)
+        const nodeSpecificCallback = (
+          comfyClass === "Lora Stacker (LoraManager)" ||
+          comfyClass === "Create Hook LoRA (LoraManager)"
+        )
+          ? (activeLoraNames: Set<string>) => updateConnectedTriggerWords(
+              this,
+              activeLoraNames,
+              getConfiguredLorasFromNode(this)
+            )
           : undefined
 
         // Create and set up the mode change handler
         const onModeChange = createModeChangeCallback(this, updateDownstreamLoaders, nodeSpecificCallback)
         setupModeChangeHandler(this, onModeChange)
+      }
+    } else if (comfyClass === "WanVideo Lora Select (LoraManager)") {
+      const originalOnNodeCreated = nodeType.prototype.onNodeCreated
+
+      nodeType.prototype.onNodeCreated = function () {
+        originalOnNodeCreated?.apply(this, arguments)
+
+        setupModeChangeHandler(this, (newMode: number) => {
+          const activeLoraNames = isNodeActive(newMode)
+            ? getActiveLorasFromNode(this)
+            : new Set<string>()
+          updateConnectedTriggerWords(
+            this,
+            activeLoraNames,
+            getConfiguredLorasFromNode(this)
+          )
+        })
       }
     }
 

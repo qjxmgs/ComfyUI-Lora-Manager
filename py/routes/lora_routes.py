@@ -251,12 +251,49 @@ class LoraRoutes(BaseModelRoutes):
         try:
             json_data = await request.json()
             lora_names = json_data.get("lora_names", [])
+            configured_lora_names = json_data.get("configured_lora_names")
             node_ids = json_data.get("node_ids", [])
+            source_node = json_data.get("source_node")
+            request_revision = json_data.get("request_revision")
+
+            if not isinstance(lora_names, list):
+                lora_names = []
+            if not isinstance(configured_lora_names, list):
+                configured_lora_names = list(lora_names)
+
+            active_lora_names = set(lora_names)
+            metadata_lora_names = list(
+                dict.fromkeys([*configured_lora_names, *lora_names])
+            )
 
             all_trigger_words = []
-            for lora_name in lora_names:
+            trigger_groups = []
+            for lora_name in metadata_lora_names:
                 _, trigger_words = get_lora_info(lora_name)
-                all_trigger_words.extend(trigger_words)
+                duplicate_counts = {}
+                is_available = lora_name in active_lora_names
+
+                for trigger_word in trigger_words:
+                    if not isinstance(trigger_word, str):
+                        continue
+                    text = trigger_word.strip()
+                    if not text:
+                        continue
+
+                    normalized_text = text.casefold()
+                    occurrence = duplicate_counts.get(normalized_text, 0)
+                    duplicate_counts[normalized_text] = occurrence + 1
+
+                    trigger_groups.append(
+                        {
+                            "source_lora": lora_name,
+                            "text": text,
+                            "occurrence": occurrence,
+                            "available": is_available,
+                        }
+                    )
+                    if is_available:
+                        all_trigger_words.append(text)
 
             # Format the trigger words
             trigger_words_text = (
@@ -277,6 +314,15 @@ class LoraRoutes(BaseModelRoutes):
                     parsed_node_id = node_identifier
 
                 payload = {"id": parsed_node_id, "message": trigger_words_text}
+
+                payload.update(
+                    {
+                        "trigger_groups": trigger_groups,
+                        "configured_lora_names": configured_lora_names,
+                        "source_node": source_node,
+                        "request_revision": request_revision,
+                    }
+                )
 
                 if graph_identifier is not None:
                     payload["graph_id"] = str(graph_identifier)

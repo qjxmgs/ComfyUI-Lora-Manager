@@ -32,6 +32,7 @@ vi.mock(API_MODULE, () => ({
 
 const collectActiveLorasFromChain = vi.fn();
 const updateConnectedTriggerWords = vi.fn();
+const refreshConnectedTriggerWords = vi.fn();
 const mergeLoras = vi.fn();
 const getAllGraphNodes = vi.fn();
 const getNodeFromGraph = vi.fn();
@@ -46,6 +47,7 @@ const getWidgetSerializedValue = vi.fn((node, name) => {
 vi.mock(UTILS_MODULE, () => ({
   collectActiveLorasFromChain,
   updateConnectedTriggerWords,
+  refreshConnectedTriggerWords,
   mergeLoras,
   chainCallback: (proto, property, callback) => {
     proto[property] = callback;
@@ -68,6 +70,7 @@ describe("Lora Loader trigger word updates", () => {
     collectActiveLorasFromChain.mockImplementation(() => new Set(["Alpha"]));
 
     updateConnectedTriggerWords.mockClear();
+    refreshConnectedTriggerWords.mockClear();
 
     mergeLoras.mockClear();
     mergeLoras.mockImplementation(() => [{ name: "Alpha", active: true }]);
@@ -133,13 +136,7 @@ describe("Lora Loader trigger word updates", () => {
 
     expect(mergeLoras).toHaveBeenCalledWith("<lora:Alpha:1.0>", []);
     expect(node.lorasWidget.value).toEqual([{ name: "Alpha", active: true }]);
-    expect(collectActiveLorasFromChain).toHaveBeenCalledWith(node);
-
-    const activeSet = collectActiveLorasFromChain.mock.results.at(-1)?.value;
-    const [[targetNode, triggerWordSet]] = updateConnectedTriggerWords.mock.calls;
-    expect(targetNode).toBe(node);
-    expect(triggerWordSet).toBe(activeSet);
-    expect([...triggerWordSet]).toEqual(["Alpha"]);
+    expect(refreshConnectedTriggerWords).toHaveBeenCalledWith(node);
   });
 
   it("creates a hidden, workflow-serialized Anima mode backing widget", async () => {

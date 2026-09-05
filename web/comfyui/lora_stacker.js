@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import {
   getActiveLorasFromNode,
+  getConfiguredLorasFromNode,
   updateConnectedTriggerWords,
   updateDownstreamLoaders,
   chainCallback,
@@ -84,7 +85,11 @@ app.registerExtension({
                 }
               });
             }
-            updateConnectedTriggerWords(this, activeLoraNames);
+            updateConnectedTriggerWords(
+              this,
+              activeLoraNames,
+              getConfiguredLorasFromNode(this)
+            );
 
             // Find all Lora Loader nodes in the chain that might need updates
             updateDownstreamLoaders(this);
@@ -110,13 +115,27 @@ app.registerExtension({
             // Only if the stacker node itself is active (mode 0 for Always, mode 3 for On Trigger)
             const isNodeActive = this.mode === undefined || this.mode === 0 || this.mode === 3;
             const activeLoraNames = isNodeActive ? getActiveLorasFromNode(this) : new Set();
-            updateConnectedTriggerWords(this, activeLoraNames);
+            updateConnectedTriggerWords(
+              this,
+              activeLoraNames,
+              getConfiguredLorasFromNode(this)
+            );
             // Find all Lora Loader nodes in the chain that might need updates
             updateDownstreamLoaders(this);
           } finally {
             isUpdating = false;
           }
         };
+      });
+
+      chainCallback(nodeType.prototype, "onConnectionsChange", function () {
+        const isNodeActive = this.mode === undefined || this.mode === 0 || this.mode === 3;
+        updateConnectedTriggerWords(
+          this,
+          isNodeActive ? getActiveLorasFromNode(this) : new Set(),
+          getConfiguredLorasFromNode(this)
+        );
+        updateDownstreamLoaders(this);
       });
     }
   },

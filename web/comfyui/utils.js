@@ -362,6 +362,40 @@ export function getActiveLorasFromNode(node) {
     return activeLoraNames;
 }
 
+// Extract every configured LoRA name from a node, regardless of whether the
+// entry or the node itself is currently active.  Trigger-word state uses this
+// set to distinguish a temporarily hidden LoRA from one that was removed.
+export function getConfiguredLorasFromNode(node) {
+    const configuredLoraNames = new Set();
+
+    if (node.comfyClass === "Lora Cycler (LoraManager)") {
+        const cyclerWidget = node.widgets?.find(w => w.name === 'cycler_config');
+        if (cyclerWidget?.value?.current_lora_filename) {
+            configuredLoraNames.add(cyclerWidget.value.current_lora_filename);
+        }
+        return configuredLoraNames;
+    }
+
+    if (isLoraStackAggregatorNode(node.comfyClass)) {
+        return configuredLoraNames;
+    }
+
+    let lorasWidget = node.lorasWidget;
+    if (!lorasWidget && node.widgets) {
+        lorasWidget = node.widgets.find(w => w.name === 'loras');
+    }
+
+    if (Array.isArray(lorasWidget?.value)) {
+        lorasWidget.value.forEach((lora) => {
+            if (lora?.name) {
+                configuredLoraNames.add(lora.name);
+            }
+        });
+    }
+
+    return configuredLoraNames;
+}
+
 // Recursively collect all active loras from a node and its input chain
 // A node is considered active only if its mode is 0 (Always) or 3 (On Trigger)
 export function collectActiveLorasFromChain(node, visited = new Set()) {
@@ -396,8 +430,28 @@ export function collectActiveLorasFromChain(node, visited = new Set()) {
     return allActiveLoraNames;
 }
 
+// Collect configured LoRAs without applying active/mode filtering.  A disabled
+// provider remains part of the connected configuration, allowing its hidden
+// trigger-word choices to be restored if it is enabled again.
+export function collectConfiguredLorasFromChain(node, visited = new Set()) {
+    const nodeKey = getNodeKey(node);
+    if (!nodeKey || visited.has(nodeKey)) {
+        return new Set();
+    }
+    visited.add(nodeKey);
+
+    const configuredLoraNames = getConfiguredLorasFromNode(node);
+    const inputChainNodes = getConnectedInputLoraChainNodes(node);
+    for (const chainNode of inputChainNodes) {
+        const upstreamLoras = collectConfiguredLorasFromChain(chainNode, visited);
+        upstreamLoras.forEach(name => configuredLoraNames.add(name));
+    }
+
+    return configuredLoraNames;
+}
+
 // Update trigger words for connected toggle nodes
-export function updateConnectedTriggerWords(node, loraNames) {
+export function updateConnectedTriggerWords(node, loraNames, configuredLoraNames = null) {
     const connectedNodes = getConnectedTriggerToggleNodes(node);
     if (connectedNodes.length > 0) {
         const nodeIds = connectedNodes
@@ -408,15 +462,60 @@ export function updateConnectedTriggerWords(node, loraNames) {
             return;
         }
 
+        const activeNames = Array.from(loraNames || []).filter(Boolean);
+        const configuredNames = Array.from(configuredLoraNames || loraNames || [])
+            .filter(Boolean);
+        const signatureActiveNames = [...activeNames]
+            .sort((left, right) => String(left).localeCompare(String(right)));
+        const signatureConfiguredNames = [...configuredNames]
+            .sort((left, right) => String(left).localeCompare(String(right)));
+        const sortedNodeIds = [...nodeIds].sort((left, right) =>
+            JSON.stringify(left).localeCompare(JSON.stringify(right))
+        );
+        const signature = JSON.stringify({
+            active: signatureActiveNames,
+            configured: signatureConfiguredNames,
+            targets: sortedNodeIds,
+        });
+
+        // Strength edits and list reordering still invoke the widget callback,
+        // but they do not change this signature and therefore must not rebuild
+        // the downstream trigger-word widget.
+        if (node.__lmTriggerWordRequestSignature === signature) {
+            return;
+        }
+
+        node.__lmTriggerWordRequestSignature = signature;
+        node.__lmTriggerWordRequestRevision =
+            (node.__lmTriggerWordRequestRevision || 0) + 1;
+        const requestRevision = node.__lmTriggerWordRequestRevision;
+        const sourceNode = getNodeReference(node);
+
         fetch("/api/lm/loras/get_trigger_words", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                lora_names: Array.from(loraNames),
-                node_ids: nodeIds
+                lora_names: activeNames,
+                configured_lora_names: configuredNames,
+                node_ids: nodeIds,
+                source_node: sourceNode,
+                request_revision: requestRevision,
             })
-        }).catch(err => console.error("Error fetching trigger words:", err));
+        }).catch(err => {
+            if (node.__lmTriggerWordRequestSignature === signature) {
+                node.__lmTriggerWordRequestSignature = null;
+            }
+            console.error("Error fetching trigger words:", err);
+        });
     }
+}
+
+export function refreshConnectedTriggerWords(node) {
+    return updateConnectedTriggerWords(
+        node,
+        collectActiveLorasFromChain(node),
+        collectConfiguredLorasFromChain(node)
+    );
 }
 
 export function mergeLoras(lorasText, lorasArr) {
@@ -897,9 +996,7 @@ export function updateDownstreamLoaders(startNode, visited = new Set()) {
               targetNode &&
               targetNode.comfyClass === "Lora Loader (LoraManager)"
             ) {
-              const allActiveLoraNames =
-                collectActiveLorasFromChain(targetNode);
-              updateConnectedTriggerWords(targetNode, allActiveLoraNames);
+              refreshConnectedTriggerWords(targetNode);
             }
             // If target is another LORA_STACK chain node, recursively check its outputs
             else if (targetNode && isLoraChainNode(targetNode.comfyClass)) {

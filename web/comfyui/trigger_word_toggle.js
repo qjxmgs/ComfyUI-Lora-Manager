@@ -175,13 +175,168 @@ function consumeQueuedState(stateMap, key) {
   return null;
 }
 
+function buildGroupSourceKey(group) {
+  const sourceLora = typeof group?.source_lora === "string" ? group.source_lora : "";
+  const text = normalizeTagText(group?.text);
+  const occurrence = Number.isInteger(group?.occurrence) ? group.occurrence : 0;
+  return JSON.stringify([sourceLora, text, occurrence]);
+}
+
+function buildItemSourceKey(groupKey, text, occurrence) {
+  return JSON.stringify([groupKey, normalizeTagText(text), occurrence]);
+}
+
+function buildSourceStateMap(tags) {
+  const stateMap = new Map();
+  tags.forEach((tag) => {
+    if (typeof tag?.source_key === "string" && tag.source_key) {
+      stateMap.set(tag.source_key, tag);
+    }
+  });
+  return stateMap;
+}
+
+function preserveExistingOrder(tags, existingTags) {
+  const existingPositions = new Map();
+  existingTags.forEach((tag, index) => {
+    if (typeof tag?.source_key === "string" && tag.source_key) {
+      existingPositions.set(tag.source_key, index);
+    }
+  });
+
+  return tags
+    .map((tag, payloadIndex) => ({ tag, payloadIndex }))
+    .sort((left, right) => {
+      const leftPosition = existingPositions.get(left.tag.source_key);
+      const rightPosition = existingPositions.get(right.tag.source_key);
+      const leftKnown = leftPosition !== undefined;
+      const rightKnown = rightPosition !== undefined;
+
+      if (leftKnown && rightKnown) {
+        return leftPosition - rightPosition;
+      }
+      if (leftKnown) {
+        return -1;
+      }
+      if (rightKnown) {
+        return 1;
+      }
+      return left.payloadIndex - right.payloadIndex;
+    })
+    .map(({ tag }) => tag);
+}
+
+function buildStructuredGroupTags(
+  groups,
+  existingTags,
+  defaultActive,
+  allowStrengthAdjustment
+) {
+  const existingBySource = buildSourceStateMap(existingTags);
+  const legacyState = buildGroupState(existingTags, allowStrengthAdjustment);
+
+  const tags = groups.map((group) => {
+    const groupKey = buildGroupSourceKey(group);
+    const exactExisting = existingBySource.get(groupKey);
+    const fallbackExisting = exactExisting
+      ? null
+      : consumeQueuedState(legacyState, group.text);
+    const savedGroup = exactExisting || fallbackExisting;
+    const savedItems = Array.isArray(exactExisting?.items)
+      ? exactExisting.items
+      : [];
+    const savedItemsBySource = buildSourceStateMap(savedItems);
+    const fallbackItemState = fallbackExisting?.itemState || {};
+    const itemOccurrences = new Map();
+
+    const items = splitTopLevelCommas(group.text).map((itemText) => {
+      const normalizedText = normalizeTagText(itemText);
+      const occurrence = itemOccurrences.get(normalizedText) || 0;
+      itemOccurrences.set(normalizedText, occurrence + 1);
+      const itemKey = buildItemSourceKey(groupKey, itemText, occurrence);
+      const savedItem = savedItemsBySource.get(itemKey) ||
+        consumeQueuedState(fallbackItemState, itemText);
+
+      return {
+        text: itemText,
+        active: savedItem ? savedItem.active : true,
+        highlighted: false,
+        strength: null,
+        source_key: itemKey,
+        available: group.available !== false,
+      };
+    });
+
+    return {
+      text: group.text,
+      active: savedGroup ? savedGroup.active : defaultActive,
+      highlighted: false,
+      strength: savedGroup ? savedGroup.strength : null,
+      items,
+      source_key: groupKey,
+      available: group.available !== false,
+    };
+  });
+
+  return preserveExistingOrder(tags, existingTags);
+}
+
+function buildStructuredFlatTags(
+  groups,
+  existingTags,
+  defaultActive,
+  allowStrengthAdjustment
+) {
+  const existingBySource = buildSourceStateMap(existingTags);
+  const legacyState = buildLegacyTagState(existingTags, allowStrengthAdjustment);
+  const tags = [];
+
+  groups.forEach((group) => {
+    const groupKey = buildGroupSourceKey(group);
+    const wordOccurrences = new Map();
+
+    splitTopLevelCommas(group.text).forEach((word) => {
+      const normalizedWord = normalizeTagText(word);
+      const occurrence = wordOccurrences.get(normalizedWord) || 0;
+      wordOccurrences.set(normalizedWord, occurrence + 1);
+      const sourceKey = buildItemSourceKey(groupKey, word, occurrence);
+      const existing = existingBySource.get(sourceKey) ||
+        consumeQueuedState(legacyState, word);
+
+      tags.push({
+        text: word,
+        active: existing ? existing.active : defaultActive,
+        highlighted: false,
+        strength: existing ? existing.strength : null,
+        source_key: sourceKey,
+        available: group.available !== false,
+      });
+    });
+  });
+
+  return preserveExistingOrder(tags, existingTags);
+}
+
+function getRevisionSourceKey(sourceNode) {
+  if (!sourceNode) {
+    return "__legacy__";
+  }
+  if (typeof sourceNode !== "object") {
+    return String(sourceNode);
+  }
+  return JSON.stringify({
+    graph_id: sourceNode.graph_id ?? null,
+    node_id: sourceNode.node_id ?? null,
+  });
+}
+
 app.registerExtension({
   name: "LoraManager.TriggerWordToggle",
 
   setup() {
     api.addEventListener("trigger_word_update", (event) => {
       const { id, graph_id: graphId, message } = event.detail;
-      this.handleTriggerWordUpdate(id, graphId, message);
+      this.handleTriggerWordUpdate(id, graphId, message, event.detail);
     });
   },
 
@@ -194,6 +349,17 @@ app.registerExtension({
     node.addInput("trigger_words", "string", {
       shape: 7,
     });
+
+    const originalOnConnectionsChange = node.onConnectionsChange;
+    node.onConnectionsChange = (...args) => {
+      const result = originalOnConnectionsChange?.apply(node, args);
+      const [type, index, connected] = args;
+      const input = node.inputs?.[index];
+      if (type === 1 && input?.name === "trigger_words" && !connected) {
+        this.clearTriggerWordState(node);
+      }
+      return result;
+    };
 
     requestAnimationFrame(async () => {
       const wheelSensitivity = getWheelSensitivity();
@@ -293,7 +459,8 @@ app.registerExtension({
             node,
             node.originalMessageWidget.value,
             value,
-            Boolean(strengthAdjustmentWidget?.value)
+            Boolean(strengthAdjustmentWidget?.value),
+            node.__lmTriggerGroups
           );
         }
       };
@@ -346,7 +513,8 @@ app.registerExtension({
             node,
             node.originalMessageWidget?.value || "",
             groupModeWidget?.value ?? false,
-            allowStrengthAdjustment
+            allowStrengthAdjustment,
+            node.__lmTriggerGroups
           );
         };
       }
@@ -378,11 +546,39 @@ app.registerExtension({
     });
   },
 
-  handleTriggerWordUpdate(id, graphId, message) {
+  clearTriggerWordState(node) {
+    node.__lmTriggerGroups = [];
+    node.__lmTriggerWordRevisions = new Map();
+    if (node.originalMessageWidget) {
+      node.originalMessageWidget.value = "";
+    }
+    if (node.tagWidget) {
+      node.tagWidget.value = [];
+    }
+  },
+
+  handleTriggerWordUpdate(id, graphId, message, detail = {}) {
     const node = getNodeFromGraph(graphId, id);
     if (!node || node.comfyClass !== "TriggerWord Toggle (LoraManager)") {
       console.warn("Node not found or not a TriggerWordToggle:", id);
       return;
+    }
+
+    const hasRequestRevision = detail.request_revision !== null &&
+      detail.request_revision !== undefined;
+    const requestRevision = Number(detail.request_revision);
+    if (hasRequestRevision && Number.isFinite(requestRevision)) {
+      const sourceKey = getRevisionSourceKey(detail.source_node);
+      node.__lmTriggerWordRevisions = node.__lmTriggerWordRevisions || new Map();
+      const lastRevision = node.__lmTriggerWordRevisions.get(sourceKey);
+      if (lastRevision !== undefined && requestRevision < lastRevision) {
+        return;
+      }
+      node.__lmTriggerWordRevisions.set(sourceKey, requestRevision);
+    }
+
+    if (Array.isArray(detail.trigger_groups)) {
+      node.__lmTriggerGroups = detail.trigger_groups.map((group) => ({ ...group }));
     }
 
     if (node.originalMessageWidget) {
@@ -393,11 +589,23 @@ app.registerExtension({
       const groupMode = node.widgets[0] ? node.widgets[0].value : false;
       const allowStrengthAdjustment = Boolean(node.widgets[2]?.value);
       node.tagWidget.allowStrengthAdjustment = allowStrengthAdjustment;
-      this.updateTagsBasedOnMode(node, message, groupMode, allowStrengthAdjustment);
+      this.updateTagsBasedOnMode(
+        node,
+        message,
+        groupMode,
+        allowStrengthAdjustment,
+        node.__lmTriggerGroups
+      );
     }
   },
 
-  updateTagsBasedOnMode(node, message, groupMode, allowStrengthAdjustment = false) {
+  updateTagsBasedOnMode(
+    node,
+    message,
+    groupMode,
+    allowStrengthAdjustment = false,
+    triggerGroups = undefined
+  ) {
     if (!node.tagWidget) {
       return;
     }
@@ -407,6 +615,26 @@ app.registerExtension({
     const existingTags = (node.tagWidget.value || []).map(cloneTag);
     const defaultActive = node.widgets[1] ? node.widgets[1].value : true;
     let tagArray = [];
+
+    if (Array.isArray(triggerGroups)) {
+      tagArray = groupMode
+        ? buildStructuredGroupTags(
+            triggerGroups,
+            existingTags,
+            defaultActive,
+            allowStrengthAdjustment
+          )
+        : buildStructuredFlatTags(
+            triggerGroups,
+            existingTags,
+            defaultActive,
+            allowStrengthAdjustment
+          );
+
+      node.tagWidget.value = tagArray;
+      node.applyTriggerHighlightState?.();
+      return;
+    }
 
     if (groupMode) {
       const existingGroupState = buildGroupState(existingTags, allowStrengthAdjustment);

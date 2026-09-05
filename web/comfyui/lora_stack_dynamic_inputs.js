@@ -1,4 +1,5 @@
 import { app } from "../../scripts/app.js";
+import { updateDownstreamLoaders } from "./utils.js";
 
 /**
  * Extension for LoraStackCombinerLM node to support dynamic lora_stack inputs.
@@ -101,7 +102,11 @@ app.registerExtension({
                 }
             }
 
-            return onConnectionsChange?.apply?.(this, arguments);
+            const result = onConnectionsChange?.apply?.(this, arguments);
+            if (type === 1) {
+                updateDownstreamLoaders(this);
+            }
+            return result;
         };
     },
 

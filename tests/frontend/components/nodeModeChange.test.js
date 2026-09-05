@@ -41,6 +41,7 @@ vi.mock(API_MODULE, () => ({
 
 const collectActiveLorasFromChain = vi.fn();
 const updateConnectedTriggerWords = vi.fn();
+const refreshConnectedTriggerWords = vi.fn();
 const updateDownstreamLoaders = vi.fn();
 const getActiveLorasFromNode = vi.fn();
 const mergeLoras = vi.fn();
@@ -65,6 +66,7 @@ vi.mock(UTILS_MODULE, async (importOriginal) => {
     ...actual,
     collectActiveLorasFromChain,
     updateConnectedTriggerWords,
+    refreshConnectedTriggerWords,
     updateDownstreamLoaders,
     getActiveLorasFromNode,
     mergeLoras,
@@ -90,6 +92,7 @@ describe("Node mode change handling", () => {
     collectActiveLorasFromChain.mockImplementation(() => new Set(["Alpha"]));
 
     updateConnectedTriggerWords.mockClear();
+    refreshConnectedTriggerWords.mockClear();
 
     updateDownstreamLoaders.mockClear();
 
@@ -235,11 +238,7 @@ describe("Node mode change handling", () => {
       // Verify that the property was updated
       expect(node.mode).toBe(3);
 
-      // Verify that updateConnectedTriggerWords was called
-      expect(updateConnectedTriggerWords).toHaveBeenCalledWith(
-        node,
-        expect.anything() // This would be the active Lora names set
-      );
+      expect(refreshConnectedTriggerWords).toHaveBeenCalledWith(node);
     });
 
     it("should call onModeChange when mode property is changed", () => {
@@ -270,12 +269,7 @@ describe("Node mode change handling", () => {
       // Change mode
       node.mode = 2;
 
-      // Verify that collectActiveLorasFromChain and updateConnectedTriggerWords were called
-      expect(collectActiveLorasFromChain).toHaveBeenCalledWith(node);
-      expect(updateConnectedTriggerWords).toHaveBeenCalledWith(
-        node,
-        new Set(["LoaderLora1", "LoaderLora2"])
-      );
+      expect(refreshConnectedTriggerWords).toHaveBeenCalledWith(node);
     });
   });
 });

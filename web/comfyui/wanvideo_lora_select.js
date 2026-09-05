@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import {
   getActiveLorasFromNode,
+  getConfiguredLorasFromNode,
   updateConnectedTriggerWords,
   chainCallback,
   mergeLoras,
@@ -78,13 +79,20 @@ app.registerExtension({
 
           try {
             // Update this node's direct trigger toggles with its own active loras
+            const isNodeActive = this.mode === undefined || this.mode === 0 || this.mode === 3;
             const activeLoraNames = new Set();
-            value.forEach((lora) => {
-              if (lora.active) {
-                activeLoraNames.add(lora.name);
-              }
-            });
-            updateConnectedTriggerWords(this, activeLoraNames);
+            if (isNodeActive) {
+              value.forEach((lora) => {
+                if (lora.active) {
+                  activeLoraNames.add(lora.name);
+                }
+              });
+            }
+            updateConnectedTriggerWords(
+              this,
+              activeLoraNames,
+              getConfiguredLorasFromNode(this)
+            );
           } finally {
             isUpdating = false;
           }
@@ -104,12 +112,28 @@ app.registerExtension({
               this.lorasWidget.value = mergedLoras;
             }
             // Update this node's direct trigger toggles with its own active loras
-            const activeLoraNames = getActiveLorasFromNode(this);
-            updateConnectedTriggerWords(this, activeLoraNames);
+            const isNodeActive = this.mode === undefined || this.mode === 0 || this.mode === 3;
+            const activeLoraNames = isNodeActive
+              ? getActiveLorasFromNode(this)
+              : new Set();
+            updateConnectedTriggerWords(
+              this,
+              activeLoraNames,
+              getConfiguredLorasFromNode(this)
+            );
           } finally {
             isUpdating = false;
           }
         };
+      });
+
+      chainCallback(nodeType.prototype, "onConnectionsChange", function () {
+        const isNodeActive = this.mode === undefined || this.mode === 0 || this.mode === 3;
+        updateConnectedTriggerWords(
+          this,
+          isNodeActive ? getActiveLorasFromNode(this) : new Set(),
+          getConfiguredLorasFromNode(this)
+        );
       });
     }
   },

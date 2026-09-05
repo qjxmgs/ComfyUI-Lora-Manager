@@ -98,8 +98,66 @@ async def test_get_trigger_words_broadcasts(monkeypatch, routes):
     assert payload == {"success": True}
     send_mock.assert_called_once_with(
         "trigger_word_update",
-        {"id": "node", "graph_id": "graph-1", "message": "trigger-one"},
+        {
+            "id": "node",
+            "graph_id": "graph-1",
+            "message": "trigger-one",
+            "trigger_groups": [
+                {
+                    "source_lora": "one",
+                    "text": "trigger-one",
+                    "occurrence": 0,
+                    "available": True,
+                }
+            ],
+            "configured_lora_names": ["one"],
+            "source_node": None,
+            "request_revision": None,
+        },
     )
+
+
+async def test_get_trigger_words_marks_configured_inactive_loras(monkeypatch, routes):
+    send_mock = MagicMock()
+    PromptServer.instance = SimpleNamespace(send_sync=send_mock)
+
+    monkeypatch.setattr(
+        "py.routes.lora_routes.get_lora_info",
+        lambda name: (f"path/{name}", ["shared", f"trigger-{name}"]),
+    )
+
+    source_node = {"node_id": 5, "graph_id": "root"}
+    request = DummyRequest(
+        json_data={
+            "lora_names": ["one"],
+            "configured_lora_names": ["one", "two"],
+            "node_ids": [{"node_id": 9, "graph_id": "root"}],
+            "source_node": source_node,
+            "request_revision": 3,
+        }
+    )
+
+    response = await routes.get_trigger_words(request)
+
+    assert response.status == 200
+    event_name, payload = send_mock.call_args.args
+    assert event_name == "trigger_word_update"
+    assert payload["message"] == "shared,, trigger-one"
+    assert payload["source_node"] == source_node
+    assert payload["request_revision"] == 3
+    assert payload["configured_lora_names"] == ["one", "two"]
+    assert [group["available"] for group in payload["trigger_groups"]] == [
+        True,
+        True,
+        False,
+        False,
+    ]
+    assert [group["source_lora"] for group in payload["trigger_groups"]] == [
+        "one",
+        "one",
+        "two",
+        "two",
+    ]
 
 
 async def test_get_trigger_words_error(monkeypatch, routes):
