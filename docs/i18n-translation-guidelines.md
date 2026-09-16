@@ -4,7 +4,7 @@ This document is the canonical set of conventions for translating LoRA Manager U
 It applies to **human translators and AI agents** alike. Read it before editing anything in
 `locales/`.
 
-Source of truth: `locales/en.json` (10 locales, 1810 leaf keys; all locales share the exact
+Source of truth: `locales/en.json` (10 locales, 2025 leaf keys; all locales share the exact
 same key structure).
 
 Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
@@ -13,6 +13,50 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > stale-text, and untranslated-block fixes described in §2–§6 were applied across all locales
 > (commits `3c3ac49f` … `fd1227d3`). The tables below are now the **normative target state**,
 > not a to-do list — future edits should preserve these renderings and only add what is new.
+>
+> **Status (2026-09, Other Models):** the `other` model type (VAE / Upscaler / Text Encoder /
+> CLIP Vision / ControlNet) and the Other Models opt-in toggles added 36 new keys; all of them
+> are now translated in all 9 locales (terminology in §2 "Other Models feature"). There are no
+> remaining `[TODO: Translate]` placeholders in any locale.
+>
+> **Status (2026-09, revision):** `other.disabled.description`, `banners.otherModels.content` and
+> `settings.folderSettings.enableOtherModelsHelp` were refreshed in `en.json` to name all five
+> sub_types (they had listed four, which read as "these are what enabling manages") and
+> re-translated in all 9 locales in the same pass. `clip_vision` and `controlnet` are now both
+> opt-in, so the first two describe **capability** and the third the **master switch**, not the
+> default set — keep all three enumerating the full five (`VAE / upscaler / text encoder /
+> CLIP vision / ControlNet` in `en`; locale slash-list casing follows each file's existing
+> `VAE / Upscaler / Text Encoder / …` style, de compounds as `CLIP-Vision- und ControlNet-Ordner`).
+>
+> **Status (2026-09, "no folders found" state):** the Other Models page gained an *enabled but
+> nothing to scan* empty state with 6 new keys (`other.noPaths.*`); translated in all 9 locales
+> in the same pass. The `folder_paths` JSON snippet shown in that state lives in
+> `templates/other.html`, **not** in the locale files, so it is never translated — only the
+> surrounding prose is. Terminology added in §2.
+>
+> **Status (2026-09, model sources):** models can now be linked to ModelScope and TensorArt
+> alongside Hugging Face, which added 15 keys (`modelCard.actions.viewOnSource`,
+> `loras.contextMenu.linkModelSource`, `modals.linkModelSource.*`,
+> `modals.model.versions.sourceGroupInfo`, `toast.contextMenu.enrichNeedsSource`,
+> `toast.contextMenu.enrichUnsupportedSource`) and refreshed the two `enrichHfAgent` labels,
+> which had hardcoded "HF" for a button that now also enriches ModelScope models. The
+> `modals.linkModelSource.urlPlaceholder` value stays byte-identical to `en.json` (it is a URL,
+> the §6 exception). Terminology in §2, "Model source feature".
+>
+> **Status (2026-09, folder sidebar):** the model-root sidebar gained on-disk folder management
+> (create / rename / delete folders, show empty folders, tree vs list view) plus its `...`
+> view-options menu, adding 35 `sidebar.*` keys. Those were the only `[TODO: Translate]`
+> placeholders left behind by the feature series, and all 35 are now translated in all 9
+> locales, so the "no remaining placeholders" claim above holds again. Terminology in §2,
+> "Folder sidebar feature".
+>
+> **Status (2026-09, chip reordering):** model tags and trigger words now share one drag/`⠿`
+> grip reorder affordance with `Alt + ↑/↓` keyboard support, which added the 3
+> `common.reorder.*` keys. They live under `common` (not a feature namespace) because both
+> editors render them; all 9 locales are translated (renderings in §2, "Chip reordering").
+> `Alt` and the `↑/↓` glyphs stay Latin/verbatim in every locale, the same precedent as
+> `Shift+Enter` in `modals.model.metadata.notesHint`; zh-CN / zh-TW / ja use full-width
+> parentheses and ko keeps this file's ASCII style.
 
 ---
 
@@ -137,7 +181,7 @@ and must be normalized. `en` = keep the English word as-is.
 
 | Term | Use | Fix |
 |---|---|---|
-| recipe | Rezept/Rezepte | 5 leftover English "Recipe" keys → Rezept (e.g. `globalContextMenu.repairRecipes.label`, `toast.recipes.recipeSaved`) |
+| recipe | Rezept/Rezepte | leftover English "Recipe" keys → Rezept (e.g. `toast.recipes.recipeSaved`) |
 | base model | pick Basis-Modell or Basismodell | currently 27× hyphenated vs 15× closed |
 | metadata | Metadaten | 4 keys use "Modelldaten" (`onboarding.steps.fetch.title/content`) → Metadaten |
 | bulk | pick Massen- or Sammelmodus | `loras.controls.bulk.action` = "Massen" reads as "crowds" — use "Massenbearbeitung"/"Mehrfachauswahl" |
@@ -193,7 +237,7 @@ and must be normalized. `en` = keep the English word as-is.
 | Checkpoint | Checkpoint or チェックポイント (pick one) | 3 variants: Checkpoint (~14), checkpoint lowercase (4), チェックポイント (4, e.g. `settings.priorityTags.modelTypes.checkpoint`) |
 | Embedding | Embedding | 4 keys lowercase "embedding" mid-sentence |
 | bulk | 一括 | `modals.checkUpdates.tip` "バルクモード" → 一括モード |
-| recipe counter | 件 or 個 | `repairRecipes.success` uses 件, `.cancelled` uses 個 — unify |
+| recipe counter | 件 or 個 | `globalContextMenu.rematchRecipes.success` uses 件, `.cancelled` uses 個 — unify |
 
 ### ko
 
@@ -221,6 +265,125 @@ and must be normalized. `en` = keep the English word as-is.
 | trigger words | 触发词 ✓ | 觸發詞 ✓ |
 | hash | 哈希 (哈希值 variant OK) | 雜湊 ✓ |
 | register | 你 (fix 5×您 → 你) | 您 (fix 18×你 → 您) |
+
+### Other Models feature (VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet)
+
+The `other` model type exposes five sub_types. They are **model-type names**, so they follow
+R3 and stay in Latin in every locale. The `settings.folderSettings.subType*` values are
+therefore **intentionally byte-identical to `en.json`** (same precedent as
+`settings.priorityTags.modelTypes` / `checkpoints.modelTypes.checkpoint`) — a §6 sweep must
+not "fix" them.
+
+| Term | Rendering | Note |
+|---|---|---|
+| VAE | `VAE` everywhere | acronym, always upper-case |
+| Upscaler | `Upscaler` everywhere | CivitAI `ModelType` name |
+| Text Encoder | `Text Encoder` everywhere | de compounds as `Text-Encoder-Stammordner` |
+| CLIP Vision | `CLIP Vision` everywhere | de compounds as `CLIP-Vision-Stammordner` |
+| ControlNet | `ControlNet` everywhere | brand casing, capital N |
+
+In prose these names sit next to localized nouns the same way `Diffusion Model` does
+(zh `VAE 根目录`, ja `VAEルート`, ko `VAE 루트`, ru `Корневая папка VAE`).
+
+**"Other Models" is the page/feature name, not a model type — translate it:**
+
+| Locale | `other.title` | `header.navigation.other` |
+|---|---|---|
+| fr | Autres modèles | Autres |
+| zh-CN | 其他模型 | 其他 |
+| zh-TW | 其他模型 | 其他 |
+| ja | その他のモデル | その他 |
+| ko | 기타 모델 | 기타 |
+| de | Weitere Modelle | Andere |
+| es | Otros modelos | Otros |
+| ru | Другие модели | Другое |
+| he | מודלים אחרים | אחרים |
+
+`settings.folderSettings.otherSubTypes` ("Managed Types") must name **model** types, matching
+each locale's `header.filter.modelTypes` rendering (zh `管理的模型类型`, ja `管理するモデルタイプ`,
+de `Verwaltete Modelltypen`, …).
+
+The "no folders found" empty state (`other.noPaths.*`) uses two phrases that must stay
+consistent whenever that copy is edited. `folder key` means the `folder_paths` key name
+(`vae`, `upscale_models`, … — Latin per the table above); `on disk` means the folder must
+physically exist:
+
+| Phrase | Rendering |
+|---|---|
+| folder key | zh-CN 文件夹键 · zh-TW 資料夾鍵 · ja フォルダーキー · ko 폴더 키 · fr clé de dossier · de Ordnerschlüssel · es clave de carpeta · ru ключ папки · he מפתח תיקייה |
+| on disk | zh-CN 在磁盘上 · zh-TW 在磁碟上 · ja ディスク上 · ko 디스크에 · fr sur le disque · de auf dem Datenträger · es en el disco · ru на диске · he בדיסק |
+
+`settings.json` and `ComfyUI` stay verbatim in every locale; "reload this page" / "restart
+LoRA Manager" reuse each locale's existing restart wording (`settings.extraFolderPaths.*`).
+
+### Model source feature (Hugging Face / ModelScope / TensorArt)
+
+A model file can be linked to the page of an external model site. **Hugging Face**,
+**ModelScope** and **TensorArt** are brand names and stay Latin in every locale (R3); the
+generic nouns around them are translated:
+
+| Term | Rendering |
+|---|---|
+| model source | zh-CN 模型来源 · zh-TW 模型來源 · ja モデルソース · ko 모델 소스 · fr source de modèle · de Modellquelle · es fuente de modelo · ru источник модели · he מקור מודל |
+| model page | zh-CN 模型页面 · zh-TW 模型頁面 · ja モデルページ · ko 모델 페이지 · fr page du modèle · de Modellseite · es página del modelo · ru страница модели · he עמוד המודל |
+| model card | zh-CN 模型卡 · zh-TW 模型卡 · ja モデルカード · ko 모델 카드 · fr fiche de modèle · de Modellkarte · es ficha de modelo · ru карточка модели · he כרטיס מודל |
+| AI enrichment (noun) | reuse the existing pair per locale: zh-CN 增强 · zh-TW 增強 · ja 補完 · ko 보강 · fr enrichissement (par IA) · de Anreicherung (KI-) · es enriquecimiento (con IA) · ru обогащение (с помощью ИИ) · he העשרה (AI) |
+
+`modelCard.actions.viewOnSource` ("View on {source}") follows each locale's existing
+`viewOnHuggingFace` pattern — de `Auf … ansehen`, ru `Открыть …`, he `צפייה ב-…`,
+ja `… で見る`, ko `…에서 보기`, zh `在 … 查看`, fr `Voir sur …`, es `Ver en …`. `{source}` is
+replaced at runtime with the untranslated platform name, so the brand never appears inside the
+translated text.
+
+`modals.linkModelSource.enrichNote` states the rule that only sites exposing a readable model
+card can be enriched and names TensorArt as the current exception. Keep the parenthetical
+exception in sync if another link-only source is ever added — the sentence is deliberately
+phrased as a rule, not as an apology for one site.
+
+The context-menu and bulk-operation enrichment entry points read **"Enrich Metadata with AI"**
+in `en`, not "Enrich HF Metadata": they cover ModelScope as well, so no locale may reintroduce
+an `HF` qualifier in `loras.contextMenu.enrichHfAgent` / `loras.bulkOperations.enrichHfAgent`
+(the key names keep the historical `Hf`; only the values changed).
+
+### Folder sidebar feature (create / rename / delete folders, empty folders, view options)
+
+The model-root sidebar manages on-disk folders. "Folder" reuses the noun already fixed in §2
+(the `folder key` row); the rest is new surface:
+
+| Term | Rendering |
+|---|---|
+| folder | zh-CN 文件夹 · zh-TW 資料夾 · ja フォルダ · ko 폴더 · fr dossier · de Ordner · es carpeta · ru папка · he תיקייה |
+| model root (as in "no model root is configured") | zh-CN 模型根目录 · zh-TW 模型根目錄 · ja モデルルート · ko 모델 루트 · fr racine de modèle · de Modell-Stammverzeichnis · es raíz de modelo · ru корневая папка моделей · he שורש מודלים — note `sidebar.modelRoot` alone is the shorter 根目录 / 根目錄 / ルート / 루트 / Racine / Stammverzeichnis / Raíz / Корень / שורש |
+| tree view / list view | zh-CN 树形视图 / 列表视图 · zh-TW 樹狀檢視 / 清單檢視 · ja ツリー表示 / リスト表示 · ko 트리 보기 / 목록 보기 · fr Vue arborescente / Vue liste · de Baumansicht / Listenansicht · es Vista de árbol / Vista de lista · ru Дерево / Список · he תצוגת עץ / תצוגת רשימה |
+| sidebar | reuse each locale's `sidebar.hideOnThisPage` noun: zh-CN 侧边栏 · zh-TW 側邊欄 · ja サイドバー · ko 사이드바 · fr barre latérale · de Seitenleiste · es barra lateral · ru боковая панель · he סרגל צד |
+
+Deleting a folder **never cascades over model files** — the backend refuses it and
+`sidebar.deleteFolderModal.notEmptyMessage` states the rule in every locale, so keep that
+clause (and its `—`) when the copy is edited. The `{name}` / `{count}` / `{message}` tokens in
+`sidebar.createFolderResult.*`, `sidebar.deleteFolderResult.*` and `sidebar.renameFolderResult.*`
+are verbatim §1-R2 placeholders; `successWithFiles` is the only key carrying `{count}`.
+
+### Chip reordering (model tags / trigger words)
+
+Model tags and trigger-word chips share a single reorder affordance (drag the chip or its
+`⠿` grip, or move it with `Alt + ↑/↓`), so the copy sits in `common.reorder.*` instead of a
+feature namespace. `dragHandle` is both the grip tooltip and the hint shown in the edit
+controls row; `ariaLabel` is the per-grip screen-reader label (`{item}` is the tag/word text);
+`announcement` is the aria-live message after a keyboard move and deliberately has no
+`{item}`. Keep `{item}` / `{position}` / `{total}` verbatim (§1-R2) — the caller supplies
+exactly those.
+
+`Alt` and the `↑/↓` glyphs stay Latin/verbatim in every locale (same precedent as
+`Shift+Enter`), and `position X of Y` reuses each locale's established ordering phrasing
+(ja `{total} 件中 … 番目`, ko `총 {total}개 중 …번째`, fr `sur {total}`, ru `из {total}`, …).
+
+| Term | Rendering |
+|---|---|
+| drag to reorder | zh-CN 拖拽以调整顺序 · zh-TW 拖曳以調整順序 · ja ドラッグして並べ替え · ko 드래그하여 순서 변경 · fr Glisser pour réordonner · de Zum Neuordnen ziehen · es Arrastra para reordenar · ru Перетащите, чтобы изменить порядок · he גרור כדי לשנות סדר |
+| position {position} of {total} | zh-CN 第 {position} 个，共 {total} 个 · zh-TW 第 {position} 個，共 {total} 個 · ja {total} 件中 {position} 番目 · ko 총 {total}개 중 {position}번째 · fr position {position} sur {total} · de Position {position} von {total} · es posición {position} de {total} · ru позиция {position} из {total} · he מיקום {position} מתוך {total} |
+
+The grip/handle noun itself is never translated (it is an icon); the hint carries the whole
+instruction, so no locale needs a separate "grip" term.
 
 ---
 
@@ -312,8 +475,9 @@ blocks are translated** in every locale: `recipes.batchImport.*` + `toast.recipe
 The only values that remain intentionally identical to `en.json` are non-translatable:
 URL/path placeholders (`https://…`, `C:/…`), numeric presets (`5 (1080p), 6 (2K), 8 (4K)`),
 example token lists (`character, concept, style(toon|toon_style)`), service/provider names
-(`CivitAI → CivArchive → Archive DB`), and the external playlist title
-(`help.updateVlogs.playlistTitle`, de: translated to "LoRA Manager-Update-Playlist").
+(`CivitAI → CivArchive → Archive DB`), model-type names (`settings.priorityTags.modelTypes.*`,
+`settings.folderSettings.subTypeVae` … `subTypeControlnet` — see §2), and the external playlist
+title (`help.updateVlogs.playlistTitle`, de: translated to "LoRA Manager-Update-Playlist").
 
 Rule for `uiHelpers.workflow.noPromptTargets`: the second line (`Mark as → Send Prompt
 Target`) quotes literal ComfyUI context-menu items — keep those menu labels in English in

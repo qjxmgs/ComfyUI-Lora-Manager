@@ -2,6 +2,11 @@
     "common": {
         "cancel": "Отмена",
         "confirm": "Подтвердить",
+        "reorder": {
+            "dragHandle": "Перетащите, чтобы изменить порядок (Alt + ↑/↓)",
+            "ariaLabel": "Изменить порядок {item}, позиция {position} из {total}",
+            "announcement": "Перемещено на позицию {position} из {total}"
+        },
         "actions": {
             "save": "Сохранить",
             "cancel": "Отмена",
@@ -50,6 +55,27 @@
             "mb": "МБ",
             "gb": "ГБ",
             "tb": "ТБ"
+        },
+        "scanProgress": {
+            "refreshing": "Обновление {type}...",
+            "fullRebuilding": "Полная пересборка {type}...",
+            "actionRefresh": "Обновление",
+            "actionFullRebuild": "Полная пересборка",
+            "actionRefreshLower": "обновить",
+            "actionRebuildLower": "пересобрать",
+            "stages": {
+                "scan_folders": "Сканирование папок...",
+                "count_models": "Найдено файлов: {total}",
+                "process_models": "Обработка моделей",
+                "reconcile_scan": "Проверка изменений...",
+                "process_new": "Обработка новых моделей",
+                "finalizing": "Завершение..."
+            },
+            "eta": {
+                "lessThanMinute": "Осталось меньше минуты",
+                "minutes": "Осталось ~{minutes} мин",
+                "hours": "Осталось ~{hours} ч {minutes} мин"
+            }
         }
     },
     "onboarding": {
@@ -75,7 +101,7 @@
             },
             "bulk": {
                 "title": "Массовые операции",
-                "content": "Войдите в массовый режим, нажав эту кнопку или клавишу <span class=\"onboarding-shortcut\">B</span>. Выберите несколько моделей и выполните пакетные операции. Используйте <span class=\"onboarding-shortcut\">Ctrl+A</span> для выбора всех видимых моделей."
+                "content": "Войдите в массовый режим, нажав эту кнопку или клавишу <span class=\"onboarding-shortcut\">B</span>, чтобы выбрать несколько моделей и выполнить пакетные операции.<br>• <span class=\"onboarding-shortcut\">Ctrl/Cmd+A</span> — выбрать все видимые модели, <span class=\"onboarding-shortcut\">Shift+Click</span> — выбрать диапазон.<br>• <span class=\"onboarding-shortcut\">Esc</span> или клик по пустой области выходит из массового режима."
             },
             "searchOptions": {
                 "title": "Опции поиска",
@@ -95,7 +121,19 @@
             },
             "contextMenu": {
                 "title": "Контекстное меню",
-                "content": "<strong>Правый клик</strong> по карточке модели откроет контекстное меню с дополнительными действиями."
+                "content": "<strong>Правый клик</strong> по любой карточке модели открывает контекстное меню с действиями над карточкой, такими как перемещение, удаление или редактирование метаданных."
+            },
+            "marqueeSelect": {
+                "title": "Выделение рамкой",
+                "content": "Удерживайте <strong>левую кнопку мыши</strong> на пустой области сетки и перетащите, чтобы нарисовать рамку, выделяющую сразу несколько карточек."
+            },
+            "dragToSidebar": {
+                "title": "Организация перетаскиванием",
+                "content": "Перетащите карточку модели на папку в боковой панели, чтобы переместить туда файл. Это также работает с несколькими выделенными карточками в массовом режиме."
+            },
+            "contextMenus": {
+                "title": "Другие контекстные меню",
+                "content": "В массовом режиме <strong>правый клик по выделенной карточке</strong> открывает меню массовых операций. <strong>Правый клик по пустой области</strong> страницы открывает глобальные действия, такие как проверка обновлений и управление исключёнными моделями."
             }
         }
     },
@@ -106,6 +144,7 @@
             "viewOnCivitai": "Посмотреть на CivitAI",
             "notAvailableFromCivitai": "Недоступно на CivitAI",
             "viewOnHuggingFace": "Открыть Hugging Face",
+            "viewOnSource": "Открыть {source}",
             "sendToWorkflow": "Отправить в ComfyUI (Клик: Добавить, Shift+Клик: Заменить)",
             "copyLoRASyntax": "Копировать синтаксис LoRA",
             "checkpointNameCopied": "Имя checkpoint скопировано",
@@ -116,6 +155,7 @@
             "copyCheckpointName": "Копировать имя checkpoint",
             "copyEmbeddingName": "Копировать имя embedding",
             "embeddingNameCopied": "Синтаксис embedding скопирован",
+            "modelNameCopied": "Имя модели скопировано",
             "sendCheckpointToWorkflow": "Отправить в ComfyUI",
             "sendEmbeddingToWorkflow": "Отправить в ComfyUI"
         },
@@ -179,20 +219,10 @@
             "none": "У всех {typePlural} уже есть метаданные лицензии",
             "error": "Не удалось обновить метаданные лицензии для {typePlural}: {message}"
         },
-        "repairRecipes": {
-            "label": "Восстановить данные рецептов",
-            "loading": "Восстановление данных рецептов...",
-            "success": "Успешно восстановлено {count} рецептов.",
-            "cancelled": "Восстановление отменено. {count} рецептов было восстановлено.",
-            "error": "Ошибка восстановления рецептов: {message}"
-        },
         "rematchRecipes": {
             "label": "Повторное сопоставление рецептов с локальными моделями",
             "loading": "Повторное сопоставление рецептов с локальными моделями...",
             "success": "Сопоставлено записей: {entries} в рецептах: {recipes}",
-            "successErrors": "Сопоставлено записей: {entries} в рецептах: {recipes}, ошибок: {failures}",
-            "allFailed": "Не удалось сопоставить: {failures} из {total} рецептов",
-            "noMatch": "Не найдено локального сопоставления для {entries} записей в {recipes} рецептах",
             "cancelled": "Сопоставление отменено. Обновлено рецептов: {recipes} (записей: {entries})",
             "error": "Не удалось выполнить сопоставление рецептов: {message}"
         },
@@ -210,6 +240,7 @@
             "recipes": "Рецепты",
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
+            "other": "Другое",
             "statistics": "Статистика"
         },
         "search": {
@@ -451,6 +482,8 @@
         "layoutSettings": {
             "groupByModel": "Группировать по модели",
             "groupByModelHelp": "При включении отображается только последняя версия каждой модели CivitAI в виде одной карточки. Старые версии скрыты.",
+            "stickyControls": "Держать панель действий видимой",
+            "stickyControlsHelp": "При включении панель действий (Обновить, Загрузить и т. д.) остаётся закреплённой вверху при прокрутке вместе с навигацией по папкам.",
             "displayDensity": "Плотность отображения",
             "displayDensityOptions": {
                 "default": "По умолчанию",
@@ -508,6 +541,25 @@
             "defaultUnetRootHelp": "Установить корневую папку Diffusion Model (UNET) по умолчанию для загрузок, импорта и перемещений",
             "defaultEmbeddingRoot": "Корневая папка Embedding",
             "defaultEmbeddingRootHelp": "Установить корневую папку embedding по умолчанию для загрузок, импорта и перемещений",
+            "defaultVaeRoot": "Корневая папка VAE",
+            "defaultVaeRootHelp": "Установить корневую папку VAE по умолчанию для загрузок, импорта и перемещений",
+            "defaultUpscalerRoot": "Корневая папка Upscaler",
+            "defaultUpscalerRootHelp": "Установить корневую папку Upscaler по умолчанию для загрузок, импорта и перемещений",
+            "defaultTextEncoderRoot": "Корневая папка Text Encoder",
+            "defaultTextEncoderRootHelp": "Установить корневую папку Text Encoder по умолчанию для загрузок, импорта и перемещений",
+            "defaultClipVisionRoot": "Корневая папка CLIP Vision",
+            "defaultClipVisionRootHelp": "Установить корневую папку CLIP Vision по умолчанию для загрузок, импорта и перемещений",
+            "defaultControlnetRoot": "Корневая папка ControlNet",
+            "defaultControlnetRootHelp": "Установить корневую папку ControlNet по умолчанию для загрузок, импорта и перемещений",
+            "enableOtherModels": "Управление другими моделями",
+            "enableOtherModelsHelp": "Если выключено, папки VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet не сканируются, страница «Другие модели» остаётся отключённой, а эти типы моделей нельзя загрузить.",
+            "otherSubTypes": "Управляемые типы моделей",
+            "otherSubTypesHelp": "Выберите, какие категории других моделей сканируются и отображаются на странице «Другие модели».",
+            "subTypeVae": "VAE",
+            "subTypeUpscaler": "Upscaler",
+            "subTypeTextEncoder": "Text Encoder",
+            "subTypeClipVision": "CLIP Vision",
+            "subTypeControlnet": "ControlNet",
             "recipesPath": "Путь хранения рецептов",
             "recipesPathHelp": "Дополнительный пользовательский каталог для сохранённых рецептов. Оставьте пустым, чтобы использовать папку recipes в первом корне LoRA.",
             "recipesPathPlaceholder": "/path/to/recipes",
@@ -786,7 +838,6 @@
             "setContentRating": "Установить рейтинг контента для всех",
             "copyAll": "Копировать весь синтаксис",
             "refreshAll": "Обновить все метаданные",
-            "repairMetadata": "Восстановить метаданные для выбранных",
             "rematchMetadata": "Сопоставить выбранные с локальными моделями",
             "reimportMetadata": "Переимпортировать из источника",
             "checkUpdates": "Проверить обновления для выбранных",
@@ -822,14 +873,14 @@
                 "complete": "Автоматическая организация завершена",
                 "error": "Ошибка: {error}"
             },
-            "enrichHfAgent": "Обогатить HF метаданные (ИИ)"
+            "enrichHfAgent": "Обогатить метаданные с помощью ИИ"
         },
         "contextMenu": {
             "refreshMetadata": "Обновить данные CivitAI",
             "checkUpdates": "Проверить обновления",
             "linkModel": "Связать модель",
             "linkCivitai": "Пересвязать с CivitAI",
-            "linkHuggingFace": "Связать с HuggingFace",
+            "linkModelSource": "Связать с источником модели",
             "copySyntax": "Копировать синтаксис LoRA",
             "copyFilename": "Копировать имя файла модели",
             "copyRecipeSyntax": "Копировать синтаксис рецепта",
@@ -842,7 +893,6 @@
             "replacePreview": "Заменить превью",
             "setContentRating": "Установить рейтинг контента",
             "moveToFolder": "Переместить в папку",
-            "repairMetadata": "Восстановить метаданные",
             "rematchMetadata": "Сопоставить с локальными моделями",
             "reimportMetadata": "Переимпортировать из источника",
             "excludeModel": "Исключить модель",
@@ -852,7 +902,7 @@
             "viewAllLoras": "Посмотреть все LoRAs",
             "downloadMissingLoras": "Загрузить отсутствующие LoRAs",
             "deleteRecipe": "Удалить рецепт",
-            "enrichHfAgent": "Обогатить HF метаданные (ИИ)"
+            "enrichHfAgent": "Обогатить метаданные с помощью ИИ"
         }
     },
     "recipes": {
@@ -1095,13 +1145,6 @@
                 "getInfoFailed": "Не удалось получить информацию для отсутствующих LoRAs",
                 "prepareError": "Ошибка подготовки LoRAs для загрузки: {message}"
             },
-            "repair": {
-                "starting": "Восстановление метаданных рецепта...",
-                "success": "Метаданные рецепта успешно восстановлены",
-                "skipped": "Рецепт уже последней версии, восстановление не требуется",
-                "failed": "Не удалось восстановить рецепт: {message}",
-                "missingId": "Не удалось восстановить рецепт: отсутствует ID рецепта"
-            },
             "reimport": {
                 "starting": "Переимпорт рецепта из источника...",
                 "success": "Рецепт успешно переимпортирован",
@@ -1185,31 +1228,86 @@
     "embeddings": {
         "title": "Модели Embedding"
     },
+    "other": {
+        "title": "Другие модели",
+        "disabled": {
+            "title": "Управление другими моделями отключено",
+            "description": "Включите, чтобы сканировать и управлять файлами VAE, Upscaler, Text Encoder, CLIP Vision и ControlNet, а также загружать их с CivitAI.",
+            "enableButton": "Включить другие модели",
+            "hint": "Вы сможете изменить управляемые типы моделей позже в разделе «Настройки > Библиотека».",
+            "enableFailed": "Не удалось включить другие модели",
+            "downloadBlocked": "Управление другими моделями отключено для этого типа моделей. Включите его в разделе «Настройки > Библиотека», чтобы загрузить этот файл.",
+            "enableAction": "Включить другие модели"
+        },
+        "noPaths": {
+            "title": "Папки других моделей не найдены",
+            "descriptionStandalone": "Управление другими моделями включено, но ни одна из настроенных папок моделей не существует на диске. Добавьте указанные ниже пути к папкам в settings.json и перезапустите LoRA Manager.",
+            "hintStandalone": "Сканируются только перечисленные выше ключи папок; ненужные ключи можно опустить.",
+            "descriptionComfyUI": "Управление другими моделями включено, но ни одна из настроенных папок моделей не существует на диске. Добавьте соответствующие папки моделей в пути к моделям ComfyUI и перезагрузите эту страницу.",
+            "hintComfyUI": "Другие модели читаются из папок vae, upscale_models, text_encoders, clip_vision и controlnet в ComfyUI.",
+            "openSettings": "Открыть настройки"
+        }
+    },
     "sidebar": {
         "modelRoot": "Корень",
         "collapseAll": "Свернуть все папки",
+        "collapseAllDisabled": "Недоступно в виде списка",
         "hideOnThisPage": "Скрыть боковую панель на этой странице",
         "showSidebar": "Показать боковую панель",
         "sidebarHiddenNotification": "Боковая панель скрыта на странице {page}",
-        "switchToListView": "Переключить на вид списка",
-        "switchToTreeView": "Переключить на древовидный вид",
+        "viewOptions": "Параметры отображения",
+        "treeView": "Дерево",
+        "listView": "Список",
         "recursiveOn": "Включать вложенные папки",
-        "recursiveOff": "Только текущая папка",
-        "recursiveUnavailable": "Рекурсивный поиск доступен только в режиме дерева",
-        "collapseAllDisabled": "Недоступно в виде списка",
+        "createFolder": "Новая папка",
+        "newSubfolder": "Новая вложенная папка",
+        "showEmptyFolders": "Показывать пустые папки",
+        "createFolderResult": {
+            "success": "Папка \"{name}\" создана",
+            "failed": "Не удалось создать папку: {message}",
+            "unsupported": "Создание папок не поддерживается на этой странице",
+            "noRoot": "Корневая папка моделей не настроена"
+        },
+        "deleteFolder": "Удалить папку",
+        "deleteFolderModal": {
+            "title": "Удалить папку?",
+            "message": "Папка и всё её содержимое будут безвозвратно удалены с диска.",
+            "folderLabel": "Папка",
+            "emptyNote": "В этой папке нет моделей. Остальные файлы в ней тоже будут удалены.",
+            "notEmptyTitle": "Папка не пуста",
+            "notEmptyMessage": "В этой папке ещё есть модели. Сначала удалите или переместите их — удаление папки никогда не затрагивает файлы моделей.",
+            "confirm": "Удалить папку"
+        },
+        "deleteFolderResult": {
+            "success": "Папка \"{name}\" удалена",
+            "successWithFiles": "Папка \"{name}\" удалена вместе с ещё {count} элемент(ами)",
+            "restored": "Папка восстановлена",
+            "failed": "Не удалось удалить папку: {message}",
+            "notEmpty": "В этой папке ещё есть модели. Обновите боковую панель и повторите попытку.",
+            "busy": "В этой папке всё ещё есть отложенное удаление. Дождитесь окончания окна отмены.",
+            "unsupported": "Удаление папок не поддерживается на этой странице",
+            "noRoot": "Корневая папка моделей не настроена"
+        },
+        "renameFolder": "Переименовать папку",
+        "renameFolderResult": {
+            "success": "Папка переименована в \"{name}\"",
+            "failed": "Не удалось переименовать папку: {message}",
+            "targetExists": "Папка с таким именем уже существует здесь",
+            "busy": "В этой папке всё ещё есть отложенное удаление. Дождитесь окончания окна отмены.",
+            "unsupported": "Переименование папок не поддерживается на этой странице",
+            "noRoot": "Корневая папка моделей не настроена"
+        },
         "dragDrop": {
             "unableToResolveRoot": "Не удалось определить путь назначения для перемещения.",
             "moveUnsupported": "Перемещение этого элемента не поддерживается.",
-            "createFolderHint": "Отпустите, чтобы создать новую папку",
             "newFolderName": "Имя новой папки",
-            "folderNameHint": "Нажмите Enter для подтверждения, Escape для отмены",
             "emptyFolderName": "Пожалуйста, введите имя папки",
             "invalidFolderName": "Имя папки содержит недопустимые символы",
             "noDragState": "Ожидающая операция перетаскивания не найдена"
         },
         "empty": {
             "noFolders": "Папки не найдены",
-            "dragHint": "Перетащите элементы сюда, чтобы создать папки"
+            "createHint": "Нажмите кнопку «Новая папка» вверху, чтобы создать папки"
         },
         "folderUpdateCheck": {
             "label": "Проверить обновления в этой папке",
@@ -1337,9 +1435,9 @@
         "download": {
             "title": "Скачать модель по URL",
             "titleWithType": "Скачать {type} по URL",
-            "civitaiUrl": "CivitAI URL:",
+            "civitaiUrl": "URL модели:",
             "placeholder": "https://civitai.com/models/...",
-            "urlHint": "Введите один URL CivitAI, CivArchive или Hugging Face в каждой строке. Поддерживает несколько URL для пакетной загрузки.",
+            "urlHint": "Введите один URL CivitAI, CivArchive, Hugging Face или ModelScope в каждой строке. Поддерживает несколько URL для пакетной загрузки.",
             "selectHfFiles": "Выберите файл(ы) для загрузки из этого репозитория:",
             "selectAll": "Выбрать все",
             "fetchingRepoFiles": "Получение файлов репозитория...",
@@ -1372,9 +1470,9 @@
                 "inLibrary": "В библиотеке"
             },
             "errors": {
-                "invalidUrl": "Неверный формат URL CivitAI",
+                "invalidUrl": "Неверный формат URL модели",
                 "noVersions": "Нет доступных версий для этой модели",
-                "mixedSources": "Нельзя смешивать URL-адреса CivitAI и Hugging Face в одном пакете.",
+                "mixedSources": "Нельзя смешивать URL-адреса CivitAI и Hugging Face / ModelScope в одном пакете.",
                 "noModelFiles": "В этом репозитории не найдено файлов моделей."
             },
             "status": {
@@ -1482,6 +1580,41 @@
             "note": "Файлы будут скачаны с использованием шаблонов путей по умолчанию. Это может занять некоторое время в зависимости от количества LoRAs.",
             "downloadButton": "Скачать {count} LoRA(s)"
         },
+        "rematchOptions": {
+            "title": "Повторное сопоставление рецептов",
+            "messageGlobal": "Все рецепты будут проверены по вашей локальной библиотеке моделей.",
+            "messageSingle": "Этот рецепт будет проверен по вашей локальной библиотеке моделей.",
+            "messageBulk": "Выбранные рецепты ({count}) будут проверены по вашей локальной библиотеке моделей.",
+            "relaxedLabel": "Также переподключать отсутствующие модели по имени файла",
+            "relaxedDescription": "Эти модели также можно исправить загрузкой — загрузка точнее. Совпадения могут привязать другую версию; они будут перечислены для проверки, и их можно будет отменить.",
+            "confirmButton": "Сопоставить"
+        },
+        "rematchResults": {
+            "undo": "Отменить",
+            "undone": "Отменено",
+            "undoFailed": "Не удалось отменить сопоставление: {message}"
+        },
+        "rematchSummary": {
+            "title": "Сводка повторного сопоставления",
+            "successMessage": "Сопоставлено записей: {entries}",
+            "failed": "Не удалось выполнить сопоставление",
+            "completedWithWarnings": "Сопоставление завершено — рекомендуется проверка",
+            "cancelledNote": "Запуск отменён до завершения — подсчёты неполные.",
+            "statMatched": "Сопоставленные записи",
+            "statReview": "Требуют проверки",
+            "statUnresolved": "Не сопоставлено",
+            "statErrors": "Ошибки",
+            "reviewSection": "Совпадения по имени файла для проверки ({count})",
+            "columnRecipe": "Рецепт",
+            "columnEntry": "Запись",
+            "columnFile": "Совпавший файл",
+            "columnUndo": "Отменить",
+            "copyReport": "Скопировать отчёт",
+            "close": "Закрыть",
+            "scope_global": "Все рецепты",
+            "scope_bulk": "Выбранные рецепты",
+            "scope_single": "Один рецепт"
+        },
         "exampleAccess": {
             "title": "Локальные примеры изображений",
             "message": "Локальные примеры изображений для этой модели не найдены. Варианты просмотра:",
@@ -1504,12 +1637,16 @@
             "pathPlaceholder": "Введите путь к папке или выберите из дерева ниже...",
             "root": "Корень"
         },
-        "linkHuggingFace": {
-            "title": "Связать с HuggingFace",
-            "infoText": "Вставьте URL репозитория HuggingFace, чтобы связать эту модель с её источником. Это позволит обогащать метаданные с помощью ИИ.",
-            "urlLabel": "URL репозитория HuggingFace:",
+        "linkModelSource": {
+            "title": "Связать с источником модели",
+            "infoText": "Вставьте URL страницы модели, чтобы связать эту модель с её источником. Связывание включает обогащение метаданных с помощью ИИ для моделей Hugging Face и ModelScope.",
+            "urlLabel": "URL страницы модели:",
             "urlPlaceholder": "https://huggingface.co/user/repo",
-            "helpText": "Введите полный URL репозитория HuggingFace.",
+            "helpText": "Введите полный URL страницы модели. Поддерживаемые сайты:",
+            "enrichNote": "Для обогащения с помощью ИИ нужна читаемая карточка модели. Сайты, которые её не предоставляют (сейчас TensorArt), можно только связать.",
+            "urlRequired": "Введите URL страницы модели.",
+            "invalidUrl": "Неподдерживаемый URL. Поддерживаемые сайты: Hugging Face, ModelScope, TensorArt.",
+            "linking": "Связывание с источником модели...",
             "confirmAction": "Сохранить и связать"
         },
         "relinkCivitai": {
@@ -1593,7 +1730,11 @@
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "Значение",
                 "add": "Добавить",
-                "invalidRange": "Неверный формат диапазона. Используйте x.x-y.y"
+                "invalidRange": "Неверный формат диапазона. Используйте x.x-y.y",
+                "invalidValue": "Введите корректное число",
+                "saveFailed": "Не удалось сохранить предустановленный параметр",
+                "added": "Предустановленный параметр добавлен",
+                "updated": "Предустановленный параметр обновлён"
             },
             "triggerWords": {
                 "label": "Триггерные слова",
@@ -1604,7 +1745,7 @@
                 "addPlaceholder": "Введите для добавления или нажмите на предложения ниже",
                 "editWord": "Редактировать триггерное слово",
                 "editPlaceholder": "Редактировать триггерное слово",
-                "copyWord": "Копировать триггерное слово",
+                "copyOrEditWord": "Клик — скопировать, двойной клик — редактировать",
                 "deleteWord": "Удалить триггерное слово",
                 "suggestions": {
                     "noSuggestions": "Предложения недоступны",
@@ -1751,7 +1892,7 @@
                 "empty": "Для этой модели пока нет истории версий.",
                 "error": "Не удалось загрузить версии.",
                 "missingModelId": "У этой модели отсутствует идентификатор модели CivitAI.",
-                "hfGroupInfo": "Это группа моделей HuggingFace. Откройте библиотеку, чтобы увидеть все версии в сетке.",
+                "sourceGroupInfo": "Это группа моделей {source}. Откройте библиотеку, чтобы увидеть все версии в сетке.",
                 "confirm": {
                     "delete": "Удалить эту версию из библиотеки?"
                 },
@@ -1822,6 +1963,10 @@
         "embeddings": {
             "title": "Инициализация Embedding Manager",
             "message": "Сканирование и построение кэша embedding. Это может занять несколько минут..."
+        },
+        "other": {
+            "title": "Инициализация менеджера других моделей",
+            "message": "Сканирование и построение кэша моделей. Это может занять несколько минут..."
         },
         "recipes": {
             "title": "Инициализация менеджера рецептов",
@@ -1929,10 +2074,52 @@
         "tabs": {
             "gettingStarted": "Начало работы",
             "updateVlogs": "Видео обновлений",
-            "documentation": "Документация"
+            "documentation": "Документация",
+            "shortcuts": "Горячие клавиши"
         },
         "gettingStarted": {
-            "title": "Начало работы с LoRA Manager"
+            "title": "Начало работы с LoRA Manager",
+            "replayTutorial": "Повторить обучение"
+        },
+        "shortcuts": {
+            "title": "Горячие клавиши и действия мыши",
+            "groups": {
+                "general": "Общие",
+                "actions": "Действия",
+                "selection": "Выделение и массовый режим",
+                "navigation": "Навигация",
+                "modelModal": "Окно модели / рецепта",
+                "mediaViewer": "Просмотр медиа / Витрина"
+            },
+            "keys": {
+                "click": "Клик",
+                "drag": "Перетаскивание",
+                "rightClick": "Правый клик",
+                "letter": "Буква",
+                "swipe": "Свайп"
+            },
+            "entries": {
+                "focusSearch": "Переход к поиску",
+                "closeModal": "Закрыть модальное окно / панель",
+                "openShortcuts": "Открыть эту панель горячих клавиш",
+                "refresh": "Обновить список моделей",
+                "fetchMetadata": "Получить метаданные с CivitAI (только на страницах моделей)",
+                "downloadModel": "Загрузить модель (только на страницах моделей)",
+                "toggleBulkMode": "Переключить массовый режим",
+                "selectAll": "Выбрать все видимые модели",
+                "rangeSelect": "Выбор диапазона",
+                "marqueeSelect": "Выделение карточек рамкой (на пустой области сетки)",
+                "exitBulkMode": "Выйти из массового режима",
+                "bulkActions": "На выделенной карточке: меню массовых операций",
+                "globalActions": "На пустой области страницы: меню глобальных действий (проверка обновлений, управление исключёнными моделями)",
+                "scrollPages": "Прокрутка страниц",
+                "jumpAlphabet": "Переход по алфавитной панели",
+                "prevNext": "Предыдущая / следующая модель",
+                "deleteEntry": "Удалить",
+                "cycleMedia": "Переключение медиа ([ / ] в галерее витрины)",
+                "swipeTouch": "Переключение медиа на сенсорных устройствах",
+                "closeViewer": "Закрыть окно просмотра"
+            }
         },
         "updateVlogs": {
             "title": "Последние обновления",
@@ -1949,7 +2136,8 @@
             "settings": "Настройки и конфигурация",
             "extensions": "Расширения",
             "newBadge": "НОВОЕ"
-        }
+        },
+        "newContentBadge": "НОВОЕ"
     },
     "update": {
         "title": "Проверить обновления",
@@ -2102,6 +2290,7 @@
             "createMissingData": "Отсутствуют необходимые данные для создания рецепта",
             "created": "Рецепт успешно создан",
             "noMissingLoras": "Нет отсутствующих LoRAs для загрузки",
+            "unresolvableMarkedForReconnect": "Помечено неразрешимых записей: {count} — теперь их можно переподключить к локальному LoRA.",
             "noPreviousRecipe": "Предыдущий рецепт отсутствует",
             "noNextRecipe": "Следующий рецепт отсутствует",
             "missingLorasInfoFailed": "Не удалось получить информацию для отсутствующих LoRAs",
@@ -2156,16 +2345,10 @@
             "batchImportBrowseFailed": "Не удалось открыть папку: {message}",
             "batchImportDirectorySelected": "Выбрана папка: {path}",
             "noRecipesSelected": "Рецепты не выбраны",
-            "repairBulkComplete": "Восстановление завершено: {repaired} восстановлено, {skipped} пропущено (из {total})",
-            "repairBulkSkipped": "Ни один из {total} выбранных рецептов не требует восстановления",
-            "repairBulkFailed": "Не удалось восстановить выбранные рецепты: {message}",
-            "rematchComplete": "Сопоставлено записей: {entries} в рецептах: {recipes}",
-            "rematchCompleteErrors": "Сопоставлено записей: {entries} в рецептах: {recipes}, ошибок: {failures}",
-            "rematchAllFailed": "Не удалось сопоставить: {failures} из {total} выбранных рецептов",
-            "rematchUnmatched": "Не найдено локального сопоставления для {entries} записей в {recipes} рецептах",
             "rematchSkipped": "Ни один из {total} выбранных рецептов не требует сопоставления",
             "rematchFailed": "Не удалось сопоставить выбранные рецепты: {message}",
             "reimporting": "Переимпорт рецепта из источника...",
+            "reimportingViaExtension": "Переимпорт рецепта {current}/{total} через расширение браузера...",
             "reimportSuccess": "Рецепт успешно переимпортирован",
             "reimportBulkComplete": "Переимпорт завершён: {completed} переимпортировано, {failed} ошибок (из {total})",
             "reimportBulkFailed": "Не удалось переимпортировать некоторые рецепты",
@@ -2240,6 +2423,7 @@
             "checkpointRootsFailed": "Не удалось загрузить корни checkpoint: {message}",
             "unetRootsFailed": "Не удалось загрузить корни Diffusion Model: {message}",
             "embeddingRootsFailed": "Не удалось загрузить корни embedding: {message}",
+            "otherRootsFailed": "Не удалось загрузить корни других моделей: {message}",
             "mappingsUpdated": "Сопоставления путей базовых моделей обновлены ({count})",
             "mappingsCleared": "Сопоставления путей базовых моделей очищены",
             "mappingSaveFailed": "Не удалось сохранить сопоставления базовых моделей: {message}",
@@ -2344,7 +2528,9 @@
             "linkCivArchSuccess": "Модель успешно пересвязана через CivitArchive",
             "fetchMetadataFirst": "Пожалуйста, сначала получите метаданные с CivitAI",
             "noCivitaiInfo": "Информация CivitAI недоступна",
-            "missingHash": "Хеш модели недоступен"
+            "missingHash": "Хеш модели недоступен",
+            "enrichNeedsSource": "Сначала свяжите эту модель с источником модели (Связать модель → Связать с источником модели)",
+            "enrichUnsupportedSource": "Обогащение с помощью ИИ недоступно для моделей {source}"
         },
         "exampleImages": {
             "pathUpdated": "Путь к примерам изображений успешно обновлен",
@@ -2502,6 +2688,12 @@
             "rebuilding": "Перестроение кэша...",
             "rebuildFailed": "Не удалось перестроить кэш: {error}",
             "retry": "Повторить"
+        },
+        "otherModels": {
+            "title": "Управление другими моделями доступно",
+            "content": "Сканирование и управление файлами VAE, Upscaler, Text Encoder, CLIP Vision и ControlNet, а также загрузка их с CivitAI — всё на одной отдельной странице.",
+            "enable": "Включить другие модели",
+            "openSettings": "Открыть настройки"
         }
     }
 }

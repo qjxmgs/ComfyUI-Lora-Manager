@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from ..utils.cache_paths import CacheType, resolve_cache_path_with_migration
+from .model_sources import normalize_metadata_source
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,9 @@ class PersistedCacheData:
     hash_rows: List[Tuple[str, str]]
     excluded_models: List[str]
     autov3_hash_rows: List[Tuple[str, str]] = field(default_factory=list)
+    # Every directory under the model roots (including empty ones), or None
+    # when the snapshot predates folder recording.
+    all_folders: Optional[List[str]] = None
 
 
 DEFAULT_LICENSE_FLAGS = 127  # 127 (0b1111111) encodes default CivitAI permissions with all commercial modes enabled.
@@ -59,6 +63,8 @@ class PersistentModelCache:
         "db_checked",
         "last_checked_at",
         "hash_status",
+        "source_platform",
+        "source_url",
         "hf_url",
     )
     _MODEL_UPDATE_COLUMNS: Tuple[str, ...] = _MODEL_COLUMNS[2:]
@@ -128,6 +134,14 @@ class PersistentModelCache:
                         "SELECT file_path FROM excluded_models WHERE model_type = ?",
                         (model_type,),
                     ).fetchall()
+                    folder_rows = conn.execute(
+                        "SELECT path FROM folders WHERE model_type = ?",
+                        (model_type,),
+                    ).fetchall()
+                    folders_recorded = conn.execute(
+                        "SELECT value FROM cache_meta WHERE key = ?",
+                        (f"folders_recorded:{model_type}",),
+                    ).fetchone()
                 finally:
                     conn.close()
         except Exception as exc:
@@ -195,8 +209,13 @@ class PersistentModelCache:
                 "skip_metadata_refresh": bool(row["skip_metadata_refresh"]),
                 "license_flags": int(license_value),
                 "hash_status": row["hash_status"] or "completed",
+                "source_platform": row["source_platform"] or "",
+                "source_url": row["source_url"] or "",
                 "hf_url": row["hf_url"] or "",
             }
+            # Legacy rows only carry `hf_url`; derive the canonical pair so
+            # every consumer sees the same shape.
+            normalize_metadata_source(item)
             if row["autov3"] is not None:
                 item["autov3"] = (row["autov3"] or "").lower()
             raw_data.append(item)
@@ -216,14 +235,20 @@ class PersistentModelCache:
         ]
 
         excluded_paths = [row["file_path"] for row in excluded]
+        all_folders: Optional[List[str]] = None
+        if folders_recorded is not None:
+            all_folders = sorted(
+                (row["path"] for row in folder_rows), key=lambda x: x.lower()
+            )
         return PersistedCacheData(
             raw_data=raw_data,
             hash_rows=hash_pairs,
             excluded_models=excluded_paths,
             autov3_hash_rows=autov3_pairs,
+            all_folders=all_folders,
         )
 
-    def save_cache(self, model_type: str, raw_data: Sequence[Dict[str, Any]], hash_index: Dict[str, List[str]], excluded_models: Sequence[str], autov3_hash_index: Optional[Dict[str, List[str]]] = None) -> None:
+    def save_cache(self, model_type: str, raw_data: Sequence[Dict[str, Any]], hash_index: Dict[str, List[str]], excluded_models: Sequence[str], autov3_hash_index: Optional[Dict[str, List[str]]] = None, all_folders: Optional[Sequence[str]] = None) -> None:
         if not self.is_enabled():
             return
         if not self._schema_initialized:
@@ -469,6 +494,27 @@ class PersistentModelCache:
                             excluded_inserts,
                         )
 
+                    if all_folders is not None:
+                        conn.execute(
+                            "DELETE FROM folders WHERE model_type = ?",
+                            (model_type,),
+                        )
+                        folder_inserts = [
+                            (model_type, path) for path in all_folders if path
+                        ]
+                        if folder_inserts:
+                            conn.executemany(
+                                "INSERT OR IGNORE INTO folders (model_type, path) VALUES (?, ?)",
+                                folder_inserts,
+                            )
+                        # Mark the snapshot as having folder data even when the
+                        # library has no subfolders, so an empty list is not
+                        # mistaken for "never recorded" on load.
+                        conn.execute(
+                            "INSERT OR REPLACE INTO cache_meta (key, value) VALUES (?, ?)",
+                            (f"folders_recorded:{model_type}", "1"),
+                        )
+
                     conn.commit()
                 finally:
                     conn.close()
@@ -524,6 +570,8 @@ class PersistentModelCache:
                             db_checked INTEGER,
                             last_checked_at REAL,
                             hash_status TEXT,
+                            source_platform TEXT DEFAULT '',
+                            source_url TEXT DEFAULT '',
                             hf_url TEXT DEFAULT '',
                             PRIMARY KEY (model_type, file_path)
                         );
@@ -554,6 +602,17 @@ class PersistentModelCache:
                             file_path TEXT NOT NULL,
                             PRIMARY KEY (model_type, file_path)
                         );
+
+                        CREATE TABLE IF NOT EXISTS folders (
+                            model_type TEXT NOT NULL,
+                            path TEXT NOT NULL,
+                            PRIMARY KEY (model_type, path)
+                        );
+
+                        CREATE TABLE IF NOT EXISTS cache_meta (
+                            key TEXT PRIMARY KEY,
+                            value TEXT
+                        );
                         """
                     )
                     self._ensure_additional_model_columns(conn)
@@ -580,6 +639,8 @@ class PersistentModelCache:
             # Persisting without explicit flags should assume CivitAI's documented defaults (0b111001 == 57).
             "license_flags": f"INTEGER DEFAULT {DEFAULT_LICENSE_FLAGS}",
             "hash_status": "TEXT DEFAULT 'completed'",
+            "source_platform": "TEXT DEFAULT ''",
+            "source_url": "TEXT DEFAULT ''",
             "hf_url": "TEXT DEFAULT ''",
             "autov3": "TEXT",
         }
@@ -601,6 +662,9 @@ class PersistentModelCache:
         return conn
 
     def _prepare_model_row(self, model_type: str, item: Dict[str, Any]) -> Tuple[Any, ...]:
+        # Keep `source_*` and the legacy `hf_url` alias consistent no matter
+        # which caller populated the item.
+        normalize_metadata_source(item)
         civitai = item.get("civitai") or {}
         trained_words = civitai.get("trainedWords")
         if isinstance(trained_words, str):
@@ -664,6 +728,8 @@ class PersistentModelCache:
             1 if item.get("db_checked") else 0,
             float(item.get("last_checked_at") or 0.0),
             item.get("hash_status", "completed"),
+            item.get("source_platform") or "",
+            item.get("source_url") or "",
             item.get("hf_url") or "",
         )
 

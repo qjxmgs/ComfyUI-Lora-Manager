@@ -2,6 +2,11 @@
     "common": {
         "cancel": "Cancelar",
         "confirm": "Confirmar",
+        "reorder": {
+            "dragHandle": "Arrastra para reordenar (Alt + ↑/↓)",
+            "ariaLabel": "Reordenar {item}, posición {position} de {total}",
+            "announcement": "Movido a la posición {position} de {total}"
+        },
         "actions": {
             "save": "Guardar",
             "cancel": "Cancelar",
@@ -50,6 +55,27 @@
             "mb": "MB",
             "gb": "GB",
             "tb": "TB"
+        },
+        "scanProgress": {
+            "refreshing": "Actualizando {type}...",
+            "fullRebuilding": "Reconstrucción completa de {type}...",
+            "actionRefresh": "Actualización",
+            "actionFullRebuild": "Reconstrucción completa",
+            "actionRefreshLower": "actualizar",
+            "actionRebuildLower": "reconstruir",
+            "stages": {
+                "scan_folders": "Escaneando carpetas...",
+                "count_models": "Se encontraron {total} archivos",
+                "process_models": "Procesando modelos",
+                "reconcile_scan": "Comprobando cambios...",
+                "process_new": "Procesando modelos nuevos",
+                "finalizing": "Finalizando..."
+            },
+            "eta": {
+                "lessThanMinute": "Queda menos de un minuto",
+                "minutes": "Quedan ~{minutes} min",
+                "hours": "Quedan ~{hours} h {minutes} min"
+            }
         }
     },
     "onboarding": {
@@ -75,7 +101,7 @@
             },
             "bulk": {
                 "title": "Operaciones por lotes",
-                "content": "Entra en el modo por lotes haciendo clic en este botón o presionando <span class=\"onboarding-shortcut\">B</span>. Selecciona varios modelos y realiza operaciones por lotes. Usa <span class=\"onboarding-shortcut\">Ctrl+A</span> para seleccionar todos los modelos visibles."
+                "content": "Entra en el modo por lotes haciendo clic en este botón o presionando <span class=\"onboarding-shortcut\">B</span> para seleccionar varios modelos y realizar operaciones por lotes.<br>• <span class=\"onboarding-shortcut\">Ctrl/Cmd+A</span> selecciona todos los modelos visibles, <span class=\"onboarding-shortcut\">Shift+Click</span> selecciona un rango.<br>• <span class=\"onboarding-shortcut\">Esc</span> o hacer clic en un área vacía sale del modo por lotes."
             },
             "searchOptions": {
                 "title": "Opciones de búsqueda",
@@ -95,7 +121,19 @@
             },
             "contextMenu": {
                 "title": "Menú contextual",
-                "content": "<strong>Clic derecho</strong> en cualquier tarjeta de modelo para ver un menú contextual con acciones adicionales."
+                "content": "<strong>Clic derecho</strong> en cualquier tarjeta de modelo para ver un menú contextual con acciones de la tarjeta como mover, eliminar o editar metadatos."
+            },
+            "marqueeSelect": {
+                "title": "Arrastrar para seleccionar",
+                "content": "Mantén pulsado el <strong>botón izquierdo del ratón</strong> en un área vacía de la cuadrícula y arrastra para dibujar un rectángulo de selección que selecciona varias tarjetas a la vez."
+            },
+            "dragToSidebar": {
+                "title": "Organizar arrastrando",
+                "content": "Arrastra una tarjeta de modelo hasta una carpeta de la barra lateral para mover el archivo allí. Esto también funciona con varias tarjetas seleccionadas en el modo por lotes."
+            },
+            "contextMenus": {
+                "title": "Más menús contextuales",
+                "content": "En el modo por lotes, <strong>haz clic derecho en una tarjeta seleccionada</strong> para ver las acciones por lotes. <strong>Haz clic derecho en un área vacía</strong> de la página para ver acciones globales como comprobar actualizaciones y gestionar modelos excluidos."
             }
         }
     },
@@ -106,6 +144,7 @@
             "viewOnCivitai": "Ver en CivitAI",
             "notAvailableFromCivitai": "No disponible en CivitAI",
             "viewOnHuggingFace": "Ver en Hugging Face",
+            "viewOnSource": "Ver en {source}",
             "sendToWorkflow": "Enviar a ComfyUI (Clic: Añadir, Shift+Clic: Reemplazar)",
             "copyLoRASyntax": "Copiar sintaxis de LoRA",
             "checkpointNameCopied": "Nombre del checkpoint copiado",
@@ -116,6 +155,7 @@
             "copyCheckpointName": "Copiar nombre del checkpoint",
             "copyEmbeddingName": "Copiar nombre del embedding",
             "embeddingNameCopied": "Sintaxis de embedding copiada",
+            "modelNameCopied": "Nombre del modelo copiado",
             "sendCheckpointToWorkflow": "Enviar a ComfyUI",
             "sendEmbeddingToWorkflow": "Enviar a ComfyUI"
         },
@@ -179,20 +219,10 @@
             "none": "Todos los {typePlural} ya tienen metadatos de licencia",
             "error": "No se pudieron actualizar los metadatos de licencia de los {typePlural}: {message}"
         },
-        "repairRecipes": {
-            "label": "Reparar datos de recetas",
-            "loading": "Reparando datos de recetas...",
-            "success": "Se repararon con éxito {count} recetas.",
-            "cancelled": "Reparación cancelada. {count} recetas fueron reparadas.",
-            "error": "Error al reparar recetas: {message}"
-        },
         "rematchRecipes": {
             "label": "Reasociar recetas con modelos locales",
             "loading": "Reasociando recetas con modelos locales...",
             "success": "{entries} entradas asociadas en {recipes} recetas",
-            "successErrors": "{entries} entradas asociadas en {recipes} recetas, {failures} fallidas",
-            "allFailed": "Falló la reasociación de {failures} de {total} recetas",
-            "noMatch": "No se encontró coincidencia local para {entries} entradas en {recipes} recetas",
             "cancelled": "Reasociación cancelada. {recipes} recetas actualizadas ({entries} entradas)",
             "error": "Falló la reasociación de recetas: {message}"
         },
@@ -210,6 +240,7 @@
             "recipes": "Recetas",
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
+            "other": "Otros",
             "statistics": "Estadísticas"
         },
         "search": {
@@ -451,6 +482,8 @@
         "layoutSettings": {
             "groupByModel": "Agrupar por modelo",
             "groupByModelHelp": "Cuando está activado, solo se muestra la versión más reciente de cada modelo de CivitAI como una tarjeta única. Las versiones anteriores están ocultas.",
+            "stickyControls": "Mantener visible la barra de acciones",
+            "stickyControlsHelp": "Cuando está activado, la barra de acciones (Actualizar, Descargar, etc.) permanece fijada en la parte superior al desplazarse, junto con la navegación por rutas.",
             "displayDensity": "Densidad de visualización",
             "displayDensityOptions": {
                 "default": "Predeterminado",
@@ -508,6 +541,25 @@
             "defaultUnetRootHelp": "Establecer el directorio raíz predeterminado de Diffusion Model (UNET) para descargas, importaciones y movimientos",
             "defaultEmbeddingRoot": "Raíz de embedding",
             "defaultEmbeddingRootHelp": "Establecer el directorio raíz predeterminado de embedding para descargas, importaciones y movimientos",
+            "defaultVaeRoot": "Raíz de VAE",
+            "defaultVaeRootHelp": "Establecer el directorio raíz predeterminado de VAE para descargas, importaciones y movimientos",
+            "defaultUpscalerRoot": "Raíz de Upscaler",
+            "defaultUpscalerRootHelp": "Establecer el directorio raíz predeterminado de Upscaler para descargas, importaciones y movimientos",
+            "defaultTextEncoderRoot": "Raíz de Text Encoder",
+            "defaultTextEncoderRootHelp": "Establecer el directorio raíz predeterminado de Text Encoder para descargas, importaciones y movimientos",
+            "defaultClipVisionRoot": "Raíz de CLIP Vision",
+            "defaultClipVisionRootHelp": "Establecer el directorio raíz predeterminado de CLIP Vision para descargas, importaciones y movimientos",
+            "defaultControlnetRoot": "Raíz de ControlNet",
+            "defaultControlnetRootHelp": "Establecer el directorio raíz predeterminado de ControlNet para descargas, importaciones y movimientos",
+            "enableOtherModels": "Gestión de otros modelos",
+            "enableOtherModelsHelp": "Cuando está desactivado, las carpetas VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet no se escanean, la página Otros modelos permanece desactivada y estos tipos de modelos no se pueden descargar.",
+            "otherSubTypes": "Tipos de modelos gestionados",
+            "otherSubTypesHelp": "Elige qué categorías de otros modelos se escanean y se muestran en la página Otros modelos.",
+            "subTypeVae": "VAE",
+            "subTypeUpscaler": "Upscaler",
+            "subTypeTextEncoder": "Text Encoder",
+            "subTypeClipVision": "CLIP Vision",
+            "subTypeControlnet": "ControlNet",
             "recipesPath": "Ruta de almacenamiento de recetas",
             "recipesPathHelp": "Directorio personalizado opcional para las recetas guardadas. Déjalo vacío para usar la carpeta recipes del primer directorio raíz de LoRA.",
             "recipesPathPlaceholder": "/path/to/recipes",
@@ -786,7 +838,6 @@
             "setContentRating": "Establecer clasificación de contenido para todos",
             "copyAll": "Copiar toda la sintaxis",
             "refreshAll": "Actualizar todos los metadatos",
-            "repairMetadata": "Reparar metadatos de la selección",
             "rematchMetadata": "Reasociar los seleccionados con modelos locales",
             "reimportMetadata": "Reimportar desde origen",
             "checkUpdates": "Comprobar actualizaciones para la selección",
@@ -822,14 +873,14 @@
                 "complete": "Auto-organización completada",
                 "error": "Error: {error}"
             },
-            "enrichHfAgent": "Enriquecer metadatos HF (IA)"
+            "enrichHfAgent": "Enriquecer metadatos con IA"
         },
         "contextMenu": {
             "refreshMetadata": "Actualizar datos de CivitAI",
             "checkUpdates": "Comprobar actualizaciones",
             "linkModel": "Vincular modelo",
             "linkCivitai": "Re-vincular a CivitAI",
-            "linkHuggingFace": "Vincular a HuggingFace",
+            "linkModelSource": "Vincular a una fuente de modelo",
             "copySyntax": "Copiar sintaxis de LoRA",
             "copyFilename": "Copiar nombre de archivo del modelo",
             "copyRecipeSyntax": "Copiar sintaxis de receta",
@@ -842,7 +893,6 @@
             "replacePreview": "Reemplazar vista previa",
             "setContentRating": "Establecer clasificación de contenido",
             "moveToFolder": "Mover a carpeta",
-            "repairMetadata": "Reparar metadatos",
             "rematchMetadata": "Reasociar con modelos locales",
             "reimportMetadata": "Reimportar desde origen",
             "excludeModel": "Excluir modelo",
@@ -852,7 +902,7 @@
             "viewAllLoras": "Ver todos los LoRAs",
             "downloadMissingLoras": "Descargar LoRAs faltantes",
             "deleteRecipe": "Eliminar receta",
-            "enrichHfAgent": "Enriquecer metadatos HF (IA)"
+            "enrichHfAgent": "Enriquecer metadatos con IA"
         }
     },
     "recipes": {
@@ -1095,13 +1145,6 @@
                 "getInfoFailed": "Error al obtener información de LoRAs faltantes",
                 "prepareError": "Error preparando LoRAs para descarga: {message}"
             },
-            "repair": {
-                "starting": "Reparando metadatos de la receta...",
-                "success": "Metadatos de la receta reparados con éxito",
-                "skipped": "La receta ya está en la última versión, no se necesita reparación",
-                "failed": "Error al reparar la receta: {message}",
-                "missingId": "No se puede reparar la receta: falta el ID de la receta"
-            },
             "reimport": {
                 "starting": "Reimportando receta desde origen...",
                 "success": "Receta reimportada exitosamente",
@@ -1185,31 +1228,86 @@
     "embeddings": {
         "title": "Modelos embedding"
     },
+    "other": {
+        "title": "Otros modelos",
+        "disabled": {
+            "title": "La gestión de otros modelos está desactivada",
+            "description": "Actívala para escanear y gestionar archivos VAE, Upscaler, Text Encoder, CLIP Vision y ControlNet, y para descargarlos desde CivitAI.",
+            "enableButton": "Activar otros modelos",
+            "hint": "Puedes cambiar los tipos de modelos gestionados más adelante en Configuración > Biblioteca.",
+            "enableFailed": "No se pudieron activar los otros modelos",
+            "downloadBlocked": "La gestión de otros modelos está desactivada para este tipo de modelo. Actívala en Configuración > Biblioteca para descargar este archivo.",
+            "enableAction": "Activar otros modelos"
+        },
+        "noPaths": {
+            "title": "No se encontraron carpetas de otros modelos",
+            "descriptionStandalone": "La gestión de otros modelos está activada, pero ninguna de las carpetas de modelos configuradas existe en el disco. Añade las rutas de carpetas de abajo a settings.json y reinicia LoRA Manager.",
+            "hintStandalone": "Solo se escanean las claves de carpeta listadas arriba; las claves que no necesites puedes omitirlas.",
+            "descriptionComfyUI": "La gestión de otros modelos está activada, pero ninguna de las carpetas de modelos configuradas existe en el disco. Añade las carpetas de modelos correspondientes a tus rutas de modelos de ComfyUI y recarga esta página.",
+            "hintComfyUI": "Los otros modelos se leen de las carpetas vae, upscale_models, text_encoders, clip_vision y controlnet de ComfyUI.",
+            "openSettings": "Abrir configuración"
+        }
+    },
     "sidebar": {
         "modelRoot": "Raíz",
         "collapseAll": "Colapsar todas las carpetas",
+        "collapseAllDisabled": "No disponible en la vista de lista",
         "hideOnThisPage": "Ocultar barra lateral en esta página",
         "showSidebar": "Mostrar barra lateral",
         "sidebarHiddenNotification": "Barra lateral oculta en la página {page}",
-        "switchToListView": "Cambiar a vista de lista",
-        "switchToTreeView": "Cambiar a vista de árbol",
+        "viewOptions": "Opciones de vista",
+        "treeView": "Vista de árbol",
+        "listView": "Vista de lista",
         "recursiveOn": "Incluir subcarpetas",
-        "recursiveOff": "Solo carpeta actual",
-        "recursiveUnavailable": "La búsqueda recursiva solo está disponible en la vista en árbol",
-        "collapseAllDisabled": "No disponible en vista de lista",
+        "createFolder": "Nueva carpeta",
+        "newSubfolder": "Nueva subcarpeta",
+        "showEmptyFolders": "Mostrar carpetas vacías",
+        "createFolderResult": {
+            "success": "Carpeta \"{name}\" creada",
+            "failed": "Error al crear la carpeta: {message}",
+            "unsupported": "La creación de carpetas no es compatible con esta página",
+            "noRoot": "No hay ninguna raíz de modelo configurada"
+        },
+        "deleteFolder": "Eliminar carpeta",
+        "deleteFolderModal": {
+            "title": "¿Eliminar carpeta?",
+            "message": "La carpeta y todo su contenido se eliminarán permanentemente del disco.",
+            "folderLabel": "Carpeta",
+            "emptyNote": "Esta carpeta no contiene modelos. Los demás archivos que contenga también se eliminarán.",
+            "notEmptyTitle": "La carpeta no está vacía",
+            "notEmptyMessage": "Esta carpeta aún contiene modelos. Elimínalos o muévelos primero — eliminar una carpeta nunca elimina los archivos de modelo en cascada.",
+            "confirm": "Eliminar carpeta"
+        },
+        "deleteFolderResult": {
+            "success": "Carpeta \"{name}\" eliminada",
+            "successWithFiles": "Carpeta \"{name}\" eliminada junto con {count} elemento(s) más",
+            "restored": "Carpeta restaurada",
+            "failed": "Error al eliminar la carpeta: {message}",
+            "notEmpty": "Esta carpeta aún contiene modelos. Actualiza la barra lateral e inténtalo de nuevo.",
+            "busy": "Todavía hay una eliminación pendiente dentro de esta carpeta. Espera a que caduque la ventana de deshacer.",
+            "unsupported": "La eliminación de carpetas no es compatible con esta página",
+            "noRoot": "No hay ninguna raíz de modelo configurada"
+        },
+        "renameFolder": "Cambiar nombre de la carpeta",
+        "renameFolderResult": {
+            "success": "Carpeta renombrada a \"{name}\"",
+            "failed": "Error al cambiar el nombre de la carpeta: {message}",
+            "targetExists": "Ya existe una carpeta con ese nombre aquí",
+            "busy": "Todavía hay una eliminación pendiente dentro de esta carpeta. Espera a que caduque la ventana de deshacer.",
+            "unsupported": "El cambio de nombre de carpetas no es compatible con esta página",
+            "noRoot": "No hay ninguna raíz de modelo configurada"
+        },
         "dragDrop": {
             "unableToResolveRoot": "No se puede determinar la ruta de destino para el movimiento.",
             "moveUnsupported": "El movimiento no es compatible con este elemento.",
-            "createFolderHint": "Suelta para crear una nueva carpeta",
             "newFolderName": "Nombre de la nueva carpeta",
-            "folderNameHint": "Presiona Enter para confirmar, Escape para cancelar",
             "emptyFolderName": "Por favor, introduce un nombre de carpeta",
             "invalidFolderName": "El nombre de la carpeta contiene caracteres no válidos",
             "noDragState": "No se encontró ninguna operación de arrastre pendiente"
         },
         "empty": {
             "noFolders": "No se encontraron carpetas",
-            "dragHint": "Arrastra elementos aquí para crear carpetas"
+            "createHint": "Haz clic en el botón Nueva carpeta de arriba para crear carpetas"
         },
         "folderUpdateCheck": {
             "label": "Buscar actualizaciones en esta carpeta",
@@ -1337,9 +1435,9 @@
         "download": {
             "title": "Descargar modelo desde URL",
             "titleWithType": "Descargar {type} desde URL",
-            "civitaiUrl": "URL de CivitAI:",
+            "civitaiUrl": "URL del modelo:",
             "placeholder": "https://civitai.com/models/...",
-            "urlHint": "Ingrese una URL de CivitAI, CivArchive o Hugging Face por línea. Admite múltiples URLs para descarga por lotes.",
+            "urlHint": "Ingrese una URL de CivitAI, CivArchive, Hugging Face o ModelScope por línea. Admite múltiples URLs para descarga por lotes.",
             "selectHfFiles": "Seleccione el/los archivo(s) para descargar de este repositorio:",
             "selectAll": "Seleccionar todo",
             "fetchingRepoFiles": "Obteniendo archivos del repositorio...",
@@ -1372,9 +1470,9 @@
                 "inLibrary": "En la biblioteca"
             },
             "errors": {
-                "invalidUrl": "Formato de URL de CivitAI inválido",
+                "invalidUrl": "Formato de URL de modelo inválido",
                 "noVersions": "No hay versiones disponibles para este modelo",
-                "mixedSources": "No se pueden mezclar URL de CivitAI y Hugging Face en el mismo lote.",
+                "mixedSources": "No se pueden mezclar URL de CivitAI y Hugging Face / ModelScope en el mismo lote.",
                 "noModelFiles": "No se encontraron archivos de modelo en este repositorio."
             },
             "status": {
@@ -1482,6 +1580,41 @@
             "note": "Los archivos se descargarán usando las plantillas de ruta predeterminadas. Esto puede tomar un tiempo dependiendo del número de LoRAs.",
             "downloadButton": "Descargar {count} LoRA(s)"
         },
+        "rematchOptions": {
+            "title": "Reasociar recetas",
+            "messageGlobal": "Se escanearán todas las recetas contra tu biblioteca local de modelos.",
+            "messageSingle": "Se escaneará esta receta contra tu biblioteca local de modelos.",
+            "messageBulk": "Se escanearán {count} receta(s) seleccionada(s) contra tu biblioteca local de modelos.",
+            "relaxedLabel": "Reconectar también los modelos faltantes por nombre de archivo",
+            "relaxedDescription": "Estos modelos también se pueden corregir descargándolos; la descarga es más precisa. Las coincidencias pueden enlazar una versión diferente; se listarán para su revisión y se pueden deshacer.",
+            "confirmButton": "Reasociar"
+        },
+        "rematchResults": {
+            "undo": "Deshacer",
+            "undone": "Deshecho",
+            "undoFailed": "No se pudo deshacer la reasociación: {message}"
+        },
+        "rematchSummary": {
+            "title": "Resumen de la reasociación",
+            "successMessage": "{entries} entradas asociadas",
+            "failed": "Falló la reasociación",
+            "completedWithWarnings": "Reasociación completada — se recomienda revisar",
+            "cancelledNote": "Ejecución cancelada antes de completarse — los recuentos son parciales.",
+            "statMatched": "Entradas asociadas",
+            "statReview": "Por revisar",
+            "statUnresolved": "Sin coincidencia",
+            "statErrors": "Errores",
+            "reviewSection": "Coincidencias por nombre de archivo para revisar ({count})",
+            "columnRecipe": "Receta",
+            "columnEntry": "Entrada",
+            "columnFile": "Archivo coincidente",
+            "columnUndo": "Deshacer",
+            "copyReport": "Copiar informe",
+            "close": "Cerrar",
+            "scope_global": "Todas las recetas",
+            "scope_bulk": "Recetas seleccionadas",
+            "scope_single": "Receta individual"
+        },
         "exampleAccess": {
             "title": "Imágenes de ejemplo locales",
             "message": "No se encontraron imágenes de ejemplo locales para este modelo. Opciones de visualización:",
@@ -1504,12 +1637,16 @@
             "pathPlaceholder": "Escribe la ruta de la carpeta o selecciona del árbol de abajo...",
             "root": "Raíz"
         },
-        "linkHuggingFace": {
-            "title": "Vincular a HuggingFace",
-            "infoText": "Pegue la URL del repositorio de HuggingFace para asociar este modelo. Esto permite el enriquecimiento de metadatos con IA.",
-            "urlLabel": "URL del repositorio de HuggingFace:",
+        "linkModelSource": {
+            "title": "Vincular a una fuente de modelo",
+            "infoText": "Pegue la URL de la página del modelo para asociar este modelo con su fuente. La vinculación permite el enriquecimiento de metadatos con IA para modelos de Hugging Face y ModelScope.",
+            "urlLabel": "URL de la página del modelo:",
             "urlPlaceholder": "https://huggingface.co/user/repo",
-            "helpText": "Ingrese la URL completa del repositorio de HuggingFace.",
+            "helpText": "Ingrese la URL completa de la página del modelo. Sitios soportados:",
+            "enrichNote": "El enriquecimiento con IA necesita una ficha de modelo legible. Los sitios que no la exponen (actualmente TensorArt) solo se pueden vincular.",
+            "urlRequired": "Ingrese la URL de la página del modelo.",
+            "invalidUrl": "URL no soportada. Sitios soportados: Hugging Face, ModelScope, TensorArt.",
+            "linking": "Vinculando la fuente del modelo...",
             "confirmAction": "Guardar y vincular"
         },
         "relinkCivitai": {
@@ -1593,7 +1730,11 @@
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "Valor",
                 "add": "Añadir",
-                "invalidRange": "Formato de rango inválido. Use x.x-y.y"
+                "invalidRange": "Formato de rango inválido. Use x.x-y.y",
+                "invalidValue": "Introduce un número válido",
+                "saveFailed": "Error al guardar el parámetro preajustado",
+                "added": "Parámetro preajustado añadido",
+                "updated": "Parámetro preajustado actualizado"
             },
             "triggerWords": {
                 "label": "Palabras clave",
@@ -1604,7 +1745,7 @@
                 "addPlaceholder": "Escribe para añadir o haz clic en sugerencias de abajo",
                 "editWord": "Editar palabra de activación",
                 "editPlaceholder": "Editar palabra de activación",
-                "copyWord": "Copiar palabra de activación",
+                "copyOrEditWord": "Haz clic para copiar, doble clic para editar",
                 "deleteWord": "Eliminar palabra de activación",
                 "suggestions": {
                     "noSuggestions": "No hay sugerencias disponibles",
@@ -1751,7 +1892,7 @@
                 "empty": "Aún no hay historial de versiones para este modelo.",
                 "error": "No se pudieron cargar las versiones.",
                 "missingModelId": "Este modelo no tiene un ID de modelo de CivitAI.",
-                "hfGroupInfo": "Este es un grupo de modelos de HuggingFace. Abra la biblioteca para ver todas las versiones en la cuadrícula.",
+                "sourceGroupInfo": "Este es un grupo de modelos de {source}. Abra la biblioteca para ver todas las versiones en la cuadrícula.",
                 "confirm": {
                     "delete": "¿Eliminar esta versión de tu biblioteca?"
                 },
@@ -1822,6 +1963,10 @@
         "embeddings": {
             "title": "Inicializando gestor de embedding",
             "message": "Escaneando y construyendo caché de embedding. Esto puede tomar unos minutos..."
+        },
+        "other": {
+            "title": "Inicializando el gestor de otros modelos",
+            "message": "Escaneando y construyendo la caché de modelos. Esto puede tomar unos minutos..."
         },
         "recipes": {
             "title": "Inicializando gestor de recetas",
@@ -1929,10 +2074,52 @@
         "tabs": {
             "gettingStarted": "Comenzando",
             "updateVlogs": "Vlogs de actualización",
-            "documentation": "Documentación"
+            "documentation": "Documentación",
+            "shortcuts": "Atajos"
         },
         "gettingStarted": {
-            "title": "Comenzando con el gestor de LoRA"
+            "title": "Comenzando con el gestor de LoRA",
+            "replayTutorial": "Repetir tutorial"
+        },
+        "shortcuts": {
+            "title": "Atajos de teclado y ratón",
+            "groups": {
+                "general": "General",
+                "actions": "Acciones",
+                "selection": "Selección y modo por lotes",
+                "navigation": "Navegación",
+                "modelModal": "Modal de modelo / receta",
+                "mediaViewer": "Visor de medios / Ejemplos"
+            },
+            "keys": {
+                "click": "Clic",
+                "drag": "Arrastrar",
+                "rightClick": "Clic derecho",
+                "letter": "Letra",
+                "swipe": "Deslizar"
+            },
+            "entries": {
+                "focusSearch": "Enfocar la búsqueda",
+                "closeModal": "Cerrar modal / panel",
+                "openShortcuts": "Abrir este panel de atajos",
+                "refresh": "Actualizar la lista de modelos",
+                "fetchMetadata": "Obtener metadatos de CivitAI (solo páginas de modelos)",
+                "downloadModel": "Descargar un modelo (solo páginas de modelos)",
+                "toggleBulkMode": "Activar/desactivar el modo por lotes",
+                "selectAll": "Seleccionar todos los modelos visibles",
+                "rangeSelect": "Selección por rango",
+                "marqueeSelect": "Seleccionar tarjetas con un rectángulo de selección (en un área vacía de la cuadrícula)",
+                "exitBulkMode": "Salir del modo por lotes",
+                "bulkActions": "En una tarjeta seleccionada: menú de acciones por lotes",
+                "globalActions": "En un área vacía de la página: menú de acciones globales (comprobar actualizaciones, gestionar modelos excluidos)",
+                "scrollPages": "Desplazarse por las páginas",
+                "jumpAlphabet": "Saltar con la barra alfabética",
+                "prevNext": "Modelo anterior / siguiente",
+                "deleteEntry": "Eliminar",
+                "cycleMedia": "Cambiar de medio ([ / ] en la galería de ejemplos)",
+                "swipeTouch": "Cambiar de medio en dispositivos táctiles",
+                "closeViewer": "Cerrar el visor"
+            }
         },
         "updateVlogs": {
             "title": "Últimas actualizaciones",
@@ -1949,7 +2136,8 @@
             "settings": "Configuración",
             "extensions": "Extensiones",
             "newBadge": "NUEVO"
-        }
+        },
+        "newContentBadge": "NUEVO"
     },
     "update": {
         "title": "Comprobar actualizaciones",
@@ -2102,6 +2290,7 @@
             "createMissingData": "Faltan datos necesarios para crear la receta",
             "created": "Receta creada exitosamente",
             "noMissingLoras": "No hay LoRAs faltantes para descargar",
+            "unresolvableMarkedForReconnect": "Se marcaron {count} entrada(s) no resoluble(s) — ahora se pueden reconectar a un LoRA local.",
             "noPreviousRecipe": "No hay receta anterior disponible",
             "noNextRecipe": "No hay siguiente receta disponible",
             "missingLorasInfoFailed": "Error al obtener información de LoRAs faltantes",
@@ -2156,16 +2345,10 @@
             "batchImportBrowseFailed": "No se pudo examinar el directorio: {message}",
             "batchImportDirectorySelected": "Directorio seleccionado: {path}",
             "noRecipesSelected": "No se han seleccionado recetas",
-            "repairBulkComplete": "Reparación completa: {repaired} reparadas, {skipped} omitidas (de {total})",
-            "repairBulkSkipped": "No se necesita reparación para ninguna de las {total} recetas seleccionadas",
-            "repairBulkFailed": "Error al reparar las recetas seleccionadas: {message}",
-            "rematchComplete": "{entries} entradas asociadas en {recipes} recetas",
-            "rematchCompleteErrors": "{entries} entradas asociadas en {recipes} recetas, {failures} fallidas",
-            "rematchAllFailed": "Falló la reasociación de {failures} de {total} recetas seleccionadas",
-            "rematchUnmatched": "No se encontró coincidencia local para {entries} entradas en {recipes} recetas",
             "rematchSkipped": "Ninguna de las {total} recetas seleccionadas necesita reasociación",
             "rematchFailed": "Falló la reasociación de las recetas seleccionadas: {message}",
             "reimporting": "Reimportando receta desde origen...",
+            "reimportingViaExtension": "Reimportando receta {current}/{total} mediante la extensión del navegador...",
             "reimportSuccess": "Receta reimportada exitosamente",
             "reimportBulkComplete": "Reimportación completa: {completed} reimportadas, {failed} fallidas (de {total})",
             "reimportBulkFailed": "Error al reimportar algunas recetas",
@@ -2240,6 +2423,7 @@
             "checkpointRootsFailed": "Error al cargar raíces de checkpoint: {message}",
             "unetRootsFailed": "Error al cargar raíces de Diffusion Model: {message}",
             "embeddingRootsFailed": "Error al cargar raíces de embedding: {message}",
+            "otherRootsFailed": "Error al cargar raíces de otros modelos: {message}",
             "mappingsUpdated": "Mapeos de rutas de modelo base actualizados ({count} mapeo{plural})",
             "mappingsCleared": "Mapeos de rutas de modelo base limpiados",
             "mappingSaveFailed": "Error al guardar mapeos de modelo base: {message}",
@@ -2344,7 +2528,9 @@
             "linkCivArchSuccess": "Modelo re-vinculado exitosamente mediante CivitArchive",
             "fetchMetadataFirst": "Por favor obtén metadatos de CivitAI primero",
             "noCivitaiInfo": "No hay información de CivitAI disponible",
-            "missingHash": "Hash del modelo no disponible"
+            "missingHash": "Hash del modelo no disponible",
+            "enrichNeedsSource": "Vincule este modelo a una fuente de modelo primero (Vincular modelo → Vincular a una fuente de modelo)",
+            "enrichUnsupportedSource": "El enriquecimiento con IA no está disponible para modelos de {source}"
         },
         "exampleImages": {
             "pathUpdated": "Ruta de imágenes de ejemplo actualizada exitosamente",
@@ -2502,6 +2688,12 @@
             "rebuilding": "Reconstruyendo caché...",
             "rebuildFailed": "Error al reconstruir la caché: {error}",
             "retry": "Reintentar"
+        },
+        "otherModels": {
+            "title": "La gestión de otros modelos ya está disponible",
+            "content": "Escanea y gestiona archivos VAE, Upscaler, Text Encoder, CLIP Vision y ControlNet, y descárgalos desde CivitAI, todo desde una página dedicada.",
+            "enable": "Activar otros modelos",
+            "openSettings": "Abrir configuración"
         }
     }
 }

@@ -60,6 +60,9 @@ class StubRecipeScanner:
         self.rematch_all_calls: List[Any] = []
         self.rematch_by_id_calls: List[str] = []
         self.rematch_bulk_calls: List[List[str]] = []
+        self.rematch_all_relaxed: List[bool] = []
+        self.rematch_by_id_relaxed: List[bool] = []
+        self.rematch_bulk_relaxed: List[bool] = []
         self.rematch_results: Dict[str, Dict[str, Any]] = {}
 
         async def _noop_get_cached_data(force_refresh: bool = False) -> None:  # noqa: ARG001 - signature mirrors real scanner
@@ -131,7 +134,7 @@ class StubRecipeScanner:
     def reset_cancellation(self) -> None:
         self.reset_calls += 1
 
-    async def rematch_all_recipes(self, progress_callback=None):
+    async def rematch_all_recipes(self, progress_callback=None, *, relaxed: bool = False):
         """Run a canned rematch-all run, mirroring the real progress events."""
         if progress_callback:
             await progress_callback({"status": "started"})
@@ -142,6 +145,7 @@ class StubRecipeScanner:
                 {"status": "completed", "rematched": 1, "skipped": 0, "errors": 0, "total": 1}
             )
         self.rematch_all_calls.append(progress_callback)
+        self.rematch_all_relaxed.append(relaxed)
         return {
             "success": True,
             "status": "completed",
@@ -151,14 +155,20 @@ class StubRecipeScanner:
             "total": 1,
         }
 
-    async def rematch_recipe_by_id(self, recipe_id: str) -> Dict[str, Any]:
+    async def rematch_recipe_by_id(
+        self, recipe_id: str, *, relaxed: bool = False
+    ) -> Dict[str, Any]:
         self.rematch_by_id_calls.append(recipe_id)
+        self.rematch_by_id_relaxed.append(relaxed)
         if recipe_id not in self.rematch_results:
             raise RecipeNotFoundError(f"Recipe not found: {recipe_id}")
         return self.rematch_results[recipe_id]
 
-    async def rematch_recipes_bulk(self, recipe_ids: List[str]) -> Dict[str, Any]:
+    async def rematch_recipes_bulk(
+        self, recipe_ids: List[str], *, relaxed: bool = False
+    ) -> Dict[str, Any]:
         self.rematch_bulk_calls.append(list(recipe_ids))
+        self.rematch_bulk_relaxed.append(relaxed)
         total = len(recipe_ids)
         rematched = 0
         skipped = 0
@@ -1874,18 +1884,12 @@ async def test_create_from_example_does_not_recompute_stored_autov3(
 def _clean_recipe_run_progress_state():
     """Keep the shared WS manager run-state isolated between tests."""
     ws_manager._recipe_rematch_progress = None
-    ws_manager._recipe_repair_progress = None
     yield
     ws_manager._recipe_rematch_progress = None
-    ws_manager._recipe_repair_progress = None
 
 
 def _set_rematch_running(status: str = "processing") -> None:
     ws_manager._recipe_rematch_progress = {"status": status}
-
-
-def _set_repair_running(status: str = "processing") -> None:
-    ws_manager._recipe_repair_progress = {"status": status}
 
 
 async def test_rematch_recipes_starts_background_run(monkeypatch, tmp_path: Path) -> None:
@@ -1910,15 +1914,6 @@ async def test_rematch_recipes_409_when_rematch_running(monkeypatch, tmp_path: P
         assert payload["success"] is False
         assert "already in progress" in payload["error"].lower()
 
-
-async def test_rematch_recipes_409_when_repair_running(monkeypatch, tmp_path: Path) -> None:
-    async with recipe_harness(monkeypatch, tmp_path) as harness:
-        _set_repair_running()
-        response = await harness.client.post("/api/lm/recipes/rematch")
-        payload = await response.json()
-        assert response.status == 409
-        assert payload["success"] is False
-        assert "already in progress" in payload["error"].lower()
 
 
 async def test_rematch_recipe_409_when_rematch_running(monkeypatch, tmp_path: Path) -> None:
@@ -2005,6 +2000,82 @@ async def test_rematch_recipe_maps_not_found_to_404(monkeypatch, tmp_path: Path)
         assert response.status == 404
         assert payload["success"] is False
         assert harness.scanner.rematch_by_id_calls == ["ghost"]
+
+
+async def test_rematch_recipes_passes_relaxed_flag_from_body(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipes/rematch", json={"relaxed": True}
+        )
+        payload = await response.json()
+        assert response.status == 200, payload
+        await asyncio.sleep(0.1)
+        assert harness.scanner.rematch_all_relaxed == [True]
+
+
+async def test_rematch_recipes_relaxed_defaults_to_false(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post("/api/lm/recipes/rematch")
+        payload = await response.json()
+        assert response.status == 200, payload
+        await asyncio.sleep(0.1)
+        assert harness.scanner.rematch_all_relaxed == [False]
+
+
+async def test_rematch_recipes_relaxed_query_param_fallback(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post("/api/lm/recipes/rematch?relaxed=true")
+        payload = await response.json()
+        assert response.status == 200, payload
+        await asyncio.sleep(0.1)
+        assert harness.scanner.rematch_all_relaxed == [True]
+
+
+async def test_rematch_recipes_bulk_passes_relaxed_flag_from_body(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipes/rematch-bulk",
+            json={"recipe_ids": ["r1"], "relaxed": True},
+        )
+        payload = await response.json()
+        assert response.status == 200, payload
+        assert harness.scanner.rematch_bulk_relaxed == [True]
+
+
+async def test_rematch_recipes_bulk_relaxed_query_param_fallback(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipes/rematch-bulk?relaxed=true",
+            json={"recipe_ids": ["r1"]},
+        )
+        payload = await response.json()
+        assert response.status == 200, payload
+        assert harness.scanner.rematch_bulk_relaxed == [True]
+
+
+async def test_rematch_recipe_passes_relaxed_flag_from_query(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.scanner.rematch_results = {
+            "abc123": {"success": True, "rematched": 1},
+        }
+        response = await harness.client.post(
+            "/api/lm/recipe/abc123/rematch?relaxed=true"
+        )
+        payload = await response.json()
+        assert response.status == 200, payload
+        assert harness.scanner.rematch_by_id_relaxed == [True]
 
 
 async def test_get_rematch_progress_404_when_no_progress(
@@ -2222,10 +2293,92 @@ async def test_reimport_without_source_path_falls_back_to_recipe_file(
         # The already-optimized preview image must be stored verbatim.
         assert harness.persistence.save_calls[-1]["skip_optimize"] is True
         assert harness.persistence.save_calls[-1]["image_bytes"] == b"fake-image"
+        # The fallback source is the recipe's own previous preview, which gets
+        # deleted with the old recipe — it must not be recorded as source_path.
+        assert harness.persistence.save_calls[-1]["metadata"]["source_path"] == ""
         # User edits (title, tags) are carried over to the new recipe.
         assert harness.persistence.update_calls[-1]["recipe_id"] == "new-rec"
         assert harness.persistence.update_calls[-1]["updates"]["title"] == "Old title"
         assert harness.persistence.update_calls[-1]["updates"]["tags"] == ["tag1"]
+
+
+async def test_reimport_with_dangling_source_path_falls_back_to_recipe_file(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """A source_path pointing to a deleted file (left by an earlier re-import)
+    must not block re-import: fall back to the recipe's own saved image and
+    clear the dangling source_path."""
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        recipe_file = harness.tmp_dir / "recipes" / "rec3.webp"
+        recipe_file.parent.mkdir(parents=True, exist_ok=True)
+        recipe_file.write_bytes(b"fake-image")
+
+        harness.scanner.recipes["rec3"] = {
+            "id": "rec3",
+            "title": "Dangling source",
+            "file_path": str(recipe_file),
+            "tags": [],
+            # Dangling local path: the file no longer exists.
+            "source_path": str(harness.tmp_dir / "recipes" / "deleted.webp"),
+        }
+        harness.analysis.result = SimpleNamespace(
+            payload={"success": True, "recipe_id": "new-rec-3", "loras": []},
+            status=200,
+        )
+        harness.persistence.save_result = SimpleNamespace(
+            payload={"success": True, "recipe_id": "new-rec-3"}, status=200
+        )
+
+        response = await harness.client.post("/api/lm/recipe/rec3/reimport")
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["success"] is True
+        assert payload["recipe_id"] == "new-rec-3"
+        assert harness.analysis.local_calls == [str(recipe_file)]
+        assert harness.persistence.delete_calls == ["rec3"]
+        # The dangling path is not carried over to the new recipe.
+        assert harness.persistence.save_calls[-1]["metadata"]["source_path"] == ""
+
+
+async def test_reimport_with_accessible_local_source_keeps_source_path(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """When the recorded source_path is an existing external file, it remains
+    the source of truth and stays recorded on the new recipe."""
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        source_file = harness.tmp_dir / "imports" / "original.png"
+        source_file.parent.mkdir(parents=True, exist_ok=True)
+        source_file.write_bytes(b"original-image")
+        recipe_file = harness.tmp_dir / "recipes" / "rec4.webp"
+        recipe_file.parent.mkdir(parents=True, exist_ok=True)
+        recipe_file.write_bytes(b"fake-image")
+
+        harness.scanner.recipes["rec4"] = {
+            "id": "rec4",
+            "title": "External source",
+            "file_path": str(recipe_file),
+            "tags": [],
+            "source_path": str(source_file),
+        }
+        harness.analysis.result = SimpleNamespace(
+            payload={"success": True, "recipe_id": "new-rec-4", "loras": []},
+            status=200,
+        )
+        harness.persistence.save_result = SimpleNamespace(
+            payload={"success": True, "recipe_id": "new-rec-4"}, status=200
+        )
+
+        response = await harness.client.post("/api/lm/recipe/rec4/reimport")
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["success"] is True
+        # The external source file is re-parsed, not the recipe preview.
+        assert harness.analysis.local_calls == [str(source_file)]
+        assert harness.persistence.save_calls[-1]["metadata"]["source_path"] == str(
+            source_file
+        )
 
 
 async def test_reimport_without_any_source_returns_400(
@@ -2274,3 +2427,147 @@ async def test_get_recipe_detail_includes_recipe_json_path(
         assert response.status == 200
         payload = await response.json()
         assert "recipe_json_path" not in payload
+
+
+async def test_reimport_with_extension_payload_uses_payload_path(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """A re-import carrying the companion extension's metadata payload must
+    use the payload-based import engine (caller-supplied LoRAs) instead of
+    the legacy CivitAI image URL import, and report loras_count."""
+    provider_calls: list[str | int] = []
+
+    class Provider:
+        async def get_model_version_info(self, model_version_id):
+            provider_calls.append(model_version_id)
+            return {}, None
+
+    async def fake_get_default_metadata_provider():
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.enrichment.get_default_metadata_provider",
+        fake_get_default_metadata_provider,
+    )
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        old_file = harness.tmp_dir / "recipes" / "sub" / "rec-ext.webp"
+        harness.scanner.recipes["rec-ext"] = {
+            "id": "rec-ext",
+            "title": "Old title",
+            "file_path": str(old_file),
+            "tags": ["tag1"],
+            "source_path": "https://civitai.com/images/12345",
+        }
+        harness.civitai.image_info["12345"] = {
+            "id": 12345,
+            "url": "https://image.civitai.com/x/y/original=true/pic.png",
+            "type": "image",
+        }
+        harness.persistence.save_result = SimpleNamespace(
+            payload={"success": True, "recipe_id": "new-rec-ext"}, status=200
+        )
+        # The freshly saved recipe as the scanner would see it (for loras_count).
+        harness.scanner.recipes["new-rec-ext"] = {
+            "id": "new-rec-ext",
+            "loras": [{"file_name": "Painterly"}],
+        }
+
+        resources = [
+            {
+                "type": "lora",
+                "modelId": 20,
+                "modelVersionId": 44,
+                "modelName": "Painterly",
+                "modelVersionName": "v2",
+                "weight": 0.5,
+            },
+        ]
+        # The extension only issues GET requests (per its API convention).
+        response = await harness.client.get(
+            "/api/lm/recipe/rec-ext/reimport",
+            params={
+                "image_url": "https://civitai.com/images/12345",
+                "name": "Extension Recipe",
+                "resources": json.dumps(resources),
+                "gen_params": json.dumps({"prompt": "from extension"}),
+                "base_model": "Flux",
+            },
+        )
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["success"] is True
+        assert payload["old_recipe_id"] == "rec-ext"
+        assert payload["recipe_id"] == "new-rec-ext"
+        assert payload["loras_count"] == 1
+
+        save_call = harness.persistence.save_calls[-1]
+        # Caller-supplied payload data wins: name, LoRAs, gen params.
+        assert save_call["name"] == "Extension Recipe"
+        assert save_call["metadata"]["loras"][0]["file_name"] == "Painterly"
+        assert save_call["metadata"]["loras"][0]["weight"] == 0.5
+        assert save_call["metadata"]["gen_params"]["prompt"] == "from extension"
+        # Reimport semantics: original source_path and folder are preserved.
+        assert save_call["metadata"]["source_path"] == "https://civitai.com/images/12345"
+        assert save_call["target_dir"] == str(harness.tmp_dir / "recipes" / "sub")
+        # The old recipe is deleted and user edits carried over.
+        assert harness.persistence.delete_calls == ["rec-ext"]
+        assert harness.persistence.update_calls[-1]["recipe_id"] == "new-rec-ext"
+        assert harness.persistence.update_calls[-1]["updates"]["title"] == "Old title"
+        assert harness.persistence.update_calls[-1]["updates"]["tags"] == ["tag1"]
+
+
+async def test_reimport_with_malformed_payload_falls_back_to_legacy(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Malformed resources JSON must be treated as "no payload": the legacy
+    source-URL import runs and the request still succeeds."""
+    async def fake_get_default_metadata_provider():
+        return SimpleNamespace(get_model_version_info=lambda id: ({}, None))
+
+    monkeypatch.setattr(
+        "py.recipes.enrichment.get_default_metadata_provider",
+        fake_get_default_metadata_provider,
+    )
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.scanner.recipes["rec-bad"] = {
+            "id": "rec-bad",
+            "title": "Broken payload",
+            "file_path": str(harness.tmp_dir / "recipes" / "rec-bad.webp"),
+            "tags": [],
+            "source_path": "https://civitai.com/images/12345",
+        }
+        harness.civitai.image_info["12345"] = {
+            "id": 12345,
+            "url": "https://image.civitai.com/x/y/original=true/pic.png",
+            "type": "image",
+        }
+        harness.persistence.save_result = SimpleNamespace(
+            payload={"success": True, "recipe_id": "legacy-new"}, status=200
+        )
+        harness.scanner.recipes["legacy-new"] = {"id": "legacy-new", "loras": []}
+
+        response = await harness.client.get(
+            "/api/lm/recipe/rec-bad/reimport",
+            params={
+                "image_url": "https://civitai.com/images/12345",
+                "name": "Ignored Name",
+                "resources": "{not valid json",
+            },
+        )
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["success"] is True
+        assert payload["recipe_id"] == "legacy-new"
+        assert payload["loras_count"] == 0
+
+        save_call = harness.persistence.save_calls[-1]
+        # Legacy URL path: the payload name is ignored and the title is
+        # derived from the (empty) metadata, and no caller LoRAs are used.
+        assert save_call["name"] == "Civitai Image 12345"
+        assert save_call["metadata"]["loras"] == []
+        assert save_call["metadata"]["source_path"] == "https://civitai.com/images/12345"
+        assert harness.persistence.delete_calls == ["rec-bad"]

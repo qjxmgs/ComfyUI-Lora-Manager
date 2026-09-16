@@ -2,6 +2,11 @@
     "common": {
         "cancel": "取消",
         "confirm": "確認",
+        "reorder": {
+            "dragHandle": "拖曳以調整順序（Alt + ↑/↓）",
+            "ariaLabel": "調整 {item} 的順序，第 {position} 個，共 {total} 個",
+            "announcement": "已移動到第 {position} 個，共 {total} 個"
+        },
         "actions": {
             "save": "儲存",
             "cancel": "取消",
@@ -50,6 +55,27 @@
             "mb": "MB",
             "gb": "GB",
             "tb": "TB"
+        },
+        "scanProgress": {
+            "refreshing": "正在重新整理 {type}...",
+            "fullRebuilding": "正在完整重建 {type}...",
+            "actionRefresh": "重新整理",
+            "actionFullRebuild": "完整重建",
+            "actionRefreshLower": "重新整理",
+            "actionRebuildLower": "重建",
+            "stages": {
+                "scan_folders": "正在掃描資料夾...",
+                "count_models": "找到 {total} 個檔案",
+                "process_models": "正在處理模型",
+                "reconcile_scan": "正在檢查變更...",
+                "process_new": "正在處理新模型",
+                "finalizing": "正在收尾..."
+            },
+            "eta": {
+                "lessThanMinute": "剩餘時間不到一分鐘",
+                "minutes": "剩餘約 {minutes} 分鐘",
+                "hours": "剩餘約 {hours} 小時 {minutes} 分鐘"
+            }
         }
     },
     "onboarding": {
@@ -75,7 +101,7 @@
             },
             "bulk": {
                 "title": "批次操作",
-                "content": "點擊此按鈕或按下 <span class=\"onboarding-shortcut\">B</span> 進入批次模式。可選取多個模型並執行批量操作。使用 <span class=\"onboarding-shortcut\">Ctrl+A</span> 選取所有可見模型。"
+                "content": "點擊此按鈕或按下 <span class=\"onboarding-shortcut\">B</span> 進入批量模式，選取多個模型並執行批量操作。<br>• <span class=\"onboarding-shortcut\">Ctrl/Cmd+A</span> 選取所有可見模型，<span class=\"onboarding-shortcut\">Shift+Click</span> 選取一段範圍。<br>• <span class=\"onboarding-shortcut\">Esc</span> 或點擊空白處離開批量模式。"
             },
             "searchOptions": {
                 "title": "搜尋選項",
@@ -95,7 +121,19 @@
             },
             "contextMenu": {
                 "title": "右鍵選單",
-                "content": "<strong>右鍵點擊</strong>任一模型卡片可開啟更多操作選單。"
+                "content": "<strong>右鍵點擊</strong>任一模型卡片，可開啟包含移動、刪除或編輯中繼資料等卡片操作的右鍵選單。"
+            },
+            "marqueeSelect": {
+                "title": "拖曳框選",
+                "content": "在網格空白處按住<strong>滑鼠左鍵</strong>並拖曳，畫出框選範圍，一次選取多張卡片。"
+            },
+            "dragToSidebar": {
+                "title": "拖曳整理",
+                "content": "將模型卡片拖曳到側邊欄的資料夾上，即可將檔案移動到該處。在批量模式下選取多張卡片也可一起拖曳。"
+            },
+            "contextMenus": {
+                "title": "更多右鍵選單",
+                "content": "在批量模式下，<strong>右鍵點擊已選取的卡片</strong>可開啟批量操作選單。<strong>右鍵點擊頁面空白處</strong>可開啟全域操作選單，例如檢查更新與管理已排除的模型。"
             }
         }
     },
@@ -106,6 +144,7 @@
             "viewOnCivitai": "在 CivitAI 查看",
             "notAvailableFromCivitai": "CivitAI 不提供",
             "viewOnHuggingFace": "在 Hugging Face 查看",
+            "viewOnSource": "在 {source} 查看",
             "sendToWorkflow": "傳送到 ComfyUI（點擊：附加，Shift+點擊：取代）",
             "copyLoRASyntax": "複製 LoRA 語法",
             "checkpointNameCopied": "Checkpoint 名稱已複製",
@@ -116,6 +155,7 @@
             "copyCheckpointName": "複製 Checkpoint 名稱",
             "copyEmbeddingName": "複製嵌入名稱",
             "embeddingNameCopied": "已複製 Embedding 語法",
+            "modelNameCopied": "模型名稱已複製",
             "sendCheckpointToWorkflow": "傳送到 ComfyUI",
             "sendEmbeddingToWorkflow": "傳送到 ComfyUI"
         },
@@ -179,20 +219,10 @@
             "none": "所有 {typePlural} 已具備授權中繼資料",
             "error": "重新整理 {typePlural} 授權中繼資料失敗：{message}"
         },
-        "repairRecipes": {
-            "label": "修復配方資料",
-            "loading": "正在修復配方資料...",
-            "success": "成功修復 {count} 個配方。",
-            "cancelled": "修復已取消。已修復 {count} 個配方。",
-            "error": "配方修復失敗：{message}"
-        },
         "rematchRecipes": {
             "label": "將配方重新匹配到本地模型",
             "loading": "正在將配方重新匹配到本地模型...",
             "success": "已匹配 {entries} 個條目，涉及 {recipes} 個配方",
-            "successErrors": "已匹配 {entries} 個條目，涉及 {recipes} 個配方，{failures} 個失敗",
-            "allFailed": "{failures}/{total} 個配方重新匹配失敗",
-            "noMatch": "在 {recipes} 個配方中找不到 {entries} 個條目的本地匹配",
             "cancelled": "已取消重新匹配。{recipes} 個配方已更新（{entries} 個條目）。",
             "error": "配方重新匹配失敗：{message}"
         },
@@ -210,6 +240,7 @@
             "recipes": "配方",
             "checkpoints": "Checkpoint",
             "embeddings": "Embedding",
+            "other": "其他",
             "statistics": "統計"
         },
         "search": {
@@ -451,6 +482,8 @@
         "layoutSettings": {
             "groupByModel": "按模型分組",
             "groupByModelHelp": "啟用後，每個 CivitAI 模型僅顯示最新版本的單張卡片，舊版本將被隱藏。",
+            "stickyControls": "保持操作列可見",
+            "stickyControlsHelp": "啟用後，操作列（重新整理、下載等）會在捲動時與麵包屑導覽一起固定在頁面頂端。",
             "displayDensity": "顯示密度",
             "displayDensityOptions": {
                 "default": "預設",
@@ -508,6 +541,25 @@
             "defaultUnetRootHelp": "設定下載、匯入和移動時的預設 Diffusion Model (UNET) 根目錄",
             "defaultEmbeddingRoot": "Embedding 根目錄",
             "defaultEmbeddingRootHelp": "設定下載、匯入和移動時的預設 Embedding 根目錄",
+            "defaultVaeRoot": "VAE 根目錄",
+            "defaultVaeRootHelp": "設定下載、匯入和移動時的預設 VAE 根目錄",
+            "defaultUpscalerRoot": "Upscaler 根目錄",
+            "defaultUpscalerRootHelp": "設定下載、匯入和移動時的預設 Upscaler 根目錄",
+            "defaultTextEncoderRoot": "Text Encoder 根目錄",
+            "defaultTextEncoderRootHelp": "設定下載、匯入和移動時的預設 Text Encoder 根目錄",
+            "defaultClipVisionRoot": "CLIP Vision 根目錄",
+            "defaultClipVisionRootHelp": "設定下載、匯入和移動時的預設 CLIP Vision 根目錄",
+            "defaultControlnetRoot": "ControlNet 根目錄",
+            "defaultControlnetRootHelp": "設定下載、匯入和移動時的預設 ControlNet 根目錄",
+            "enableOtherModels": "其他模型管理",
+            "enableOtherModelsHelp": "關閉後，不會掃描 VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet 資料夾，其他模型頁面會保持停用，且無法下載這些模型類型。",
+            "otherSubTypes": "管理的模型類型",
+            "otherSubTypesHelp": "選擇要在其他模型頁面中掃描和顯示的其他模型類別。",
+            "subTypeVae": "VAE",
+            "subTypeUpscaler": "Upscaler",
+            "subTypeTextEncoder": "Text Encoder",
+            "subTypeClipVision": "CLIP Vision",
+            "subTypeControlnet": "ControlNet",
             "recipesPath": "配方儲存路徑",
             "recipesPathHelp": "已儲存配方的可選自訂目錄。留空則使用第一個 LoRA 根目錄下的 recipes 資料夾。",
             "recipesPathPlaceholder": "/path/to/recipes",
@@ -786,7 +838,6 @@
             "setContentRating": "為全部設定內容分級",
             "copyAll": "複製全部語法",
             "refreshAll": "刷新全部 metadata",
-            "repairMetadata": "修復所選中元數據",
             "rematchMetadata": "將所選中重新匹配到本地模型",
             "reimportMetadata": "從來源重新匯入",
             "checkUpdates": "檢查所選更新",
@@ -822,14 +873,14 @@
                 "complete": "自動整理完成",
                 "error": "錯誤：{error}"
             },
-            "enrichHfAgent": "AI HF 中繼資料增強"
+            "enrichHfAgent": "AI 中繼資料增強"
         },
         "contextMenu": {
             "refreshMetadata": "刷新 CivitAI 資料",
             "checkUpdates": "檢查更新",
             "linkModel": "連結模型",
             "linkCivitai": "連結到 CivitAI",
-            "linkHuggingFace": "連結到 HuggingFace",
+            "linkModelSource": "連結到模型來源",
             "copySyntax": "複製 LoRA 語法",
             "copyFilename": "複製模型檔名",
             "copyRecipeSyntax": "複製配方語法",
@@ -842,7 +893,6 @@
             "replacePreview": "更換預覽圖",
             "setContentRating": "設定內容分級",
             "moveToFolder": "移動到資料夾",
-            "repairMetadata": "修復元數據",
             "rematchMetadata": "重新匹配到本地模型",
             "reimportMetadata": "從來源重新匯入",
             "excludeModel": "排除模型",
@@ -852,7 +902,7 @@
             "viewAllLoras": "檢視全部 LoRA",
             "downloadMissingLoras": "下載缺少的 LoRA",
             "deleteRecipe": "刪除配方",
-            "enrichHfAgent": "AI HF 中繼資料增強"
+            "enrichHfAgent": "AI 中繼資料增強"
         }
     },
     "recipes": {
@@ -1095,13 +1145,6 @@
                 "getInfoFailed": "取得缺少 LoRA 資訊失敗",
                 "prepareError": "準備下載 LoRA 時發生錯誤：{message}"
             },
-            "repair": {
-                "starting": "正在修復配方元數據...",
-                "success": "配方元數據修復成功",
-                "skipped": "配方已是最新版本，無需修復",
-                "failed": "修復配方失敗：{message}",
-                "missingId": "無法修復配方：缺少配方 ID"
-            },
             "reimport": {
                 "starting": "正在從來源重新匯入配方...",
                 "success": "配方已從來源重新匯入成功",
@@ -1185,31 +1228,86 @@
     "embeddings": {
         "title": "Embedding 模型"
     },
+    "other": {
+        "title": "其他模型",
+        "disabled": {
+            "title": "其他模型管理已關閉",
+            "description": "啟用後可掃描和管理 VAE、Upscaler、Text Encoder、CLIP Vision 和 ControlNet 檔案，並從 CivitAI 下載。",
+            "enableButton": "啟用其他模型",
+            "hint": "您稍後可以在「設定 > 模型庫」中變更管理的模型類型。",
+            "enableFailed": "啟用其他模型失敗",
+            "downloadBlocked": "其他模型管理已對此模型類型停用。請在「設定 > 模型庫」中啟用以下載此檔案。",
+            "enableAction": "啟用其他模型"
+        },
+        "noPaths": {
+            "title": "找不到其他模型資料夾",
+            "descriptionStandalone": "其他模型管理已開啟，但設定的模型資料夾在磁碟上都不存在。請將下方的資料夾路徑加入 settings.json，然後重新啟動 LoRA Manager。",
+            "hintStandalone": "只會掃描上方列出的資料夾鍵；不需要的鍵可以省略。",
+            "descriptionComfyUI": "其他模型管理已開啟，但設定的模型資料夾在磁碟上都不存在。請將對應的模型資料夾加入 ComfyUI 的模型路徑，然後重新載入此頁面。",
+            "hintComfyUI": "其他模型會從 ComfyUI 的 vae、upscale_models、text_encoders、clip_vision 和 controlnet 資料夾讀取。",
+            "openSettings": "開啟設定"
+        }
+    },
     "sidebar": {
         "modelRoot": "根目錄",
         "collapseAll": "全部摺疊資料夾",
+        "collapseAllDisabled": "清單檢視下無法使用",
         "hideOnThisPage": "隱藏此頁面側邊欄",
         "showSidebar": "顯示側邊欄",
         "sidebarHiddenNotification": "{page}頁面的資料夾側邊欄已隱藏",
-        "switchToListView": "切換至列表檢視",
-        "switchToTreeView": "切換到樹狀檢視",
+        "viewOptions": "檢視選項",
+        "treeView": "樹狀檢視",
+        "listView": "清單檢視",
         "recursiveOn": "包含子資料夾",
-        "recursiveOff": "僅目前資料夾",
-        "recursiveUnavailable": "遞迴搜尋僅能在樹狀檢視中使用",
-        "collapseAllDisabled": "列表檢視下不可用",
+        "createFolder": "新增資料夾",
+        "newSubfolder": "新增子資料夾",
+        "showEmptyFolders": "顯示空資料夾",
+        "createFolderResult": {
+            "success": "已建立資料夾 \"{name}\"",
+            "failed": "建立資料夾失敗: {message}",
+            "unsupported": "此頁面不支援建立資料夾",
+            "noRoot": "未設定模型根目錄"
+        },
+        "deleteFolder": "刪除資料夾",
+        "deleteFolderModal": {
+            "title": "刪除資料夾？",
+            "message": "該資料夾及其中的所有內容都將從磁碟上永久刪除。",
+            "folderLabel": "資料夾",
+            "emptyNote": "該資料夾中沒有模型，其中的其他檔案也會一併刪除。",
+            "notEmptyTitle": "資料夾不是空的",
+            "notEmptyMessage": "該資料夾中仍有模型，請先刪除或移出這些模型 —— 刪除資料夾不會串聯刪除模型檔案。",
+            "confirm": "刪除資料夾"
+        },
+        "deleteFolderResult": {
+            "success": "已刪除資料夾 \"{name}\"",
+            "successWithFiles": "已刪除資料夾 \"{name}\"，同時刪除了另外 {count} 項內容",
+            "restored": "資料夾已還原",
+            "failed": "刪除資料夾失敗: {message}",
+            "notEmpty": "該資料夾中仍有模型。請重新整理側邊欄後再試。",
+            "busy": "該資料夾內仍有待處理的刪除操作，請等待復原時間結束。",
+            "unsupported": "此頁面不支援刪除資料夾",
+            "noRoot": "未設定模型根目錄"
+        },
+        "renameFolder": "重新命名資料夾",
+        "renameFolderResult": {
+            "success": "資料夾已重新命名為 \"{name}\"",
+            "failed": "重新命名資料夾失敗: {message}",
+            "targetExists": "此處已存在同名資料夾",
+            "busy": "該資料夾內仍有待處理的刪除操作，請等待復原時間結束。",
+            "unsupported": "此頁面不支援重新命名資料夾",
+            "noRoot": "未設定模型根目錄"
+        },
         "dragDrop": {
             "unableToResolveRoot": "無法確定移動的目標路徑。",
             "moveUnsupported": "此項目不支援移動。",
-            "createFolderHint": "放開以建立新資料夾",
             "newFolderName": "新資料夾名稱",
-            "folderNameHint": "按 Enter 確認，Escape 取消",
             "emptyFolderName": "請輸入資料夾名稱",
             "invalidFolderName": "資料夾名稱包含無效字元",
             "noDragState": "未找到待處理的拖放操作"
         },
         "empty": {
             "noFolders": "未找到資料夾",
-            "dragHint": "將項目拖到此處以建立資料夾"
+            "createHint": "點擊上方的新增資料夾按鈕即可建立資料夾"
         },
         "folderUpdateCheck": {
             "label": "檢查此資料夾的更新",
@@ -1337,9 +1435,9 @@
         "download": {
             "title": "從網址下載模型",
             "titleWithType": "從網址下載 {type}",
-            "civitaiUrl": "CivitAI 網址：",
+            "civitaiUrl": "模型網址：",
             "placeholder": "https://civitai.com/models/...",
-            "urlHint": "每行輸入一個 CivitAI、CivArchive 或 Hugging Face URL。支援批量下載多個 URL。",
+            "urlHint": "每行輸入一個 CivitAI、CivArchive、Hugging Face 或 ModelScope URL。支援批量下載多個 URL。",
             "selectHfFiles": "選擇從此倉庫下載的檔案：",
             "selectAll": "全選",
             "fetchingRepoFiles": "正在獲取倉庫檔案...",
@@ -1372,9 +1470,9 @@
                 "inLibrary": "已在庫中"
             },
             "errors": {
-                "invalidUrl": "CivitAI 網址格式無效",
+                "invalidUrl": "模型網址格式無效",
                 "noVersions": "此模型無可用版本",
-                "mixedSources": "無法在同一批次中混合使用 CivitAI 和 Hugging Face URL。",
+                "mixedSources": "無法在同一批次中混合使用 CivitAI 和 Hugging Face / ModelScope URL。",
                 "noModelFiles": "在此倉庫中未找到模型檔案。"
             },
             "status": {
@@ -1482,6 +1580,41 @@
             "note": "檔案將使用預設路徑模板下載。根據 LoRAs 的數量，這可能需要一些時間。",
             "downloadButton": "下載 {count} 個 LoRA(s)"
         },
+        "rematchOptions": {
+            "title": "重新匹配配方",
+            "messageGlobal": "所有配方將對照您的本地模型庫進行掃描。",
+            "messageSingle": "此配方將對照您的本地模型庫進行掃描。",
+            "messageBulk": "將對照您的本地模型庫掃描 {count} 個所選配方。",
+            "relaxedLabel": "同時依檔案名稱重新關聯缺少的模型",
+            "relaxedDescription": "這些模型也可以透過下載修復——下載更為準確。比對可能會連結到模型的不同版本；比對結果將列出供您檢閱，且可以撤銷。",
+            "confirmButton": "重新匹配"
+        },
+        "rematchResults": {
+            "undo": "撤銷",
+            "undone": "已撤銷",
+            "undoFailed": "撤銷重新匹配失敗：{message}"
+        },
+        "rematchSummary": {
+            "title": "重新匹配摘要",
+            "successMessage": "已匹配 {entries} 個條目",
+            "failed": "重新匹配失敗",
+            "completedWithWarnings": "重新匹配已完成——建議檢查",
+            "cancelledNote": "執行在完成前已取消——統計不完整。",
+            "statMatched": "已匹配條目",
+            "statReview": "需要檢查",
+            "statUnresolved": "未匹配",
+            "statErrors": "錯誤",
+            "reviewSection": "需要檢查的檔案名稱匹配（{count}）",
+            "columnRecipe": "配方",
+            "columnEntry": "條目",
+            "columnFile": "匹配到的檔案",
+            "columnUndo": "撤銷",
+            "copyReport": "複製報告",
+            "close": "關閉",
+            "scope_global": "所有配方",
+            "scope_bulk": "所選配方",
+            "scope_single": "單個配方"
+        },
         "exampleAccess": {
             "title": "本機範例圖片",
             "message": "此模型未找到本機範例圖片。可選擇：",
@@ -1504,12 +1637,16 @@
             "pathPlaceholder": "輸入資料夾路徑或從下方樹狀結構選擇...",
             "root": "根目錄"
         },
-        "linkHuggingFace": {
-            "title": "連結到 HuggingFace",
-            "infoText": "貼上 HuggingFace 倉庫 URL 以關聯此模型。關聯後可啟用 AI 中繼資料增強功能。",
-            "urlLabel": "HuggingFace 倉庫 URL：",
+        "linkModelSource": {
+            "title": "連結到模型來源",
+            "infoText": "貼上模型頁面 URL 以關聯此模型與其來源。關聯後可對 Hugging Face 和 ModelScope 模型啟用 AI 中繼資料增強。",
+            "urlLabel": "模型頁面 URL：",
             "urlPlaceholder": "https://huggingface.co/user/repo",
-            "helpText": "請輸入完整的 HuggingFace 倉庫 URL。",
+            "helpText": "請輸入完整的模型頁面 URL。支援的站點：",
+            "enrichNote": "AI 增強需要可讀取的模型卡。未提供模型卡的站點（目前為 TensorArt）只能建立連結。",
+            "urlRequired": "請輸入模型頁面 URL。",
+            "invalidUrl": "URL 不受支援。支援的站點：Hugging Face、ModelScope、TensorArt。",
+            "linking": "正在連結模型來源...",
             "confirmAction": "儲存並連結"
         },
         "relinkCivitai": {
@@ -1593,7 +1730,11 @@
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "數值",
                 "add": "新增",
-                "invalidRange": "無效的範圍格式。請使用 x.x-y.y"
+                "invalidRange": "無效的範圍格式。請使用 x.x-y.y",
+                "invalidValue": "請輸入有效的數值",
+                "saveFailed": "儲存預設參數失敗",
+                "added": "已新增預設參數",
+                "updated": "已更新預設參數"
             },
             "triggerWords": {
                 "label": "觸發詞",
@@ -1604,7 +1745,7 @@
                 "addPlaceholder": "輸入或點擊下方建議",
                 "editWord": "編輯觸發詞",
                 "editPlaceholder": "編輯觸發詞",
-                "copyWord": "複製觸發詞",
+                "copyOrEditWord": "點擊複製，雙擊編輯",
                 "deleteWord": "刪除觸發詞",
                 "suggestions": {
                     "noSuggestions": "無可用建議",
@@ -1751,7 +1892,7 @@
                 "empty": "此模型尚無版本歷史。",
                 "error": "載入版本失敗。",
                 "missingModelId": "此模型缺少 CivitAI 模型 ID。",
-                "hfGroupInfo": "這是一個 HuggingFace 模型組。打開庫頁面即可在網格中查看所有版本。",
+                "sourceGroupInfo": "這是一個 {source} 模型組。打開庫頁面即可在網格中查看所有版本。",
                 "confirm": {
                     "delete": "要從庫中刪除此版本嗎？"
                 },
@@ -1822,6 +1963,10 @@
         "embeddings": {
             "title": "初始化 Embedding 管理器",
             "message": "正在掃描並建立 Embedding 快取，可能需要幾分鐘..."
+        },
+        "other": {
+            "title": "正在初始化其他模型管理器",
+            "message": "正在掃描並建立模型快取。這可能需要幾分鐘..."
         },
         "recipes": {
             "title": "初始化配方管理器",
@@ -1929,10 +2074,52 @@
         "tabs": {
             "gettingStarted": "快速開始",
             "updateVlogs": "更新影片",
-            "documentation": "文件"
+            "documentation": "文件",
+            "shortcuts": "快捷鍵"
         },
         "gettingStarted": {
-            "title": "LoRA 管理器快速開始"
+            "title": "LoRA 管理器快速開始",
+            "replayTutorial": "重新播放教學"
+        },
+        "shortcuts": {
+            "title": "鍵盤與滑鼠快捷鍵",
+            "groups": {
+                "general": "一般",
+                "actions": "操作",
+                "selection": "選取與批量模式",
+                "navigation": "導覽",
+                "modelModal": "模型 / 配方彈窗",
+                "mediaViewer": "媒體檢視器 / 範例展示"
+            },
+            "keys": {
+                "click": "點擊",
+                "drag": "拖曳",
+                "rightClick": "右鍵點擊",
+                "letter": "字母鍵",
+                "swipe": "滑動"
+            },
+            "entries": {
+                "focusSearch": "聚焦搜尋欄",
+                "closeModal": "關閉彈窗 / 面板",
+                "openShortcuts": "開啟此快捷鍵面板",
+                "refresh": "重新整理模型列表",
+                "fetchMetadata": "從 CivitAI 擷取中繼資料（僅限模型頁面）",
+                "downloadModel": "下載模型（僅限模型頁面）",
+                "toggleBulkMode": "切換批量模式",
+                "selectAll": "選取所有可見模型",
+                "rangeSelect": "範圍選取",
+                "marqueeSelect": "框選卡片（在網格空白處拖曳）",
+                "exitBulkMode": "離開批量模式",
+                "bulkActions": "在已選取的卡片上：批量操作選單",
+                "globalActions": "在頁面空白處：全域操作選單（檢查更新、管理已排除的模型）",
+                "scrollPages": "捲動頁面",
+                "jumpAlphabet": "字母列跳轉",
+                "prevNext": "上一個 / 下一個模型",
+                "deleteEntry": "刪除",
+                "cycleMedia": "切換媒體（範例展示中的 [ / ]）",
+                "swipeTouch": "在觸控裝置上滑動切換媒體",
+                "closeViewer": "關閉檢視器"
+            }
         },
         "updateVlogs": {
             "title": "最新更新",
@@ -1949,7 +2136,8 @@
             "settings": "設定與配置",
             "extensions": "擴充功能",
             "newBadge": "新"
-        }
+        },
+        "newContentBadge": "新"
     },
     "update": {
         "title": "檢查更新",
@@ -2102,6 +2290,7 @@
             "createMissingData": "缺少建立配方所需的資料",
             "created": "配方建立成功",
             "noMissingLoras": "無缺少的 LoRA 可下載",
+            "unresolvableMarkedForReconnect": "已標記 {count} 個無法解析的條目——現在可以將它們重新關聯到本地 LoRA。",
             "noPreviousRecipe": "沒有上一個配方",
             "noNextRecipe": "沒有下一個配方",
             "missingLorasInfoFailed": "取得缺少 LoRA 資訊失敗",
@@ -2156,16 +2345,10 @@
             "batchImportBrowseFailed": "瀏覽目錄失敗：{message}",
             "batchImportDirectorySelected": "已選擇目錄：{path}",
             "noRecipesSelected": "未選取任何配方",
-            "repairBulkComplete": "修復完成：{repaired} 個已修復，{skipped} 個已跳過（共 {total} 個）",
-            "repairBulkSkipped": "所選 {total} 個配方無需修復",
-            "repairBulkFailed": "修復所選配方失敗：{message}",
-            "rematchComplete": "已匹配 {entries} 個條目，涉及 {recipes} 個配方",
-            "rematchCompleteErrors": "已匹配 {entries} 個條目，涉及 {recipes} 個配方，{failures} 個失敗",
-            "rematchAllFailed": "{failures}/{total} 個所選配方重新匹配失敗",
-            "rematchUnmatched": "在 {recipes} 個配方中找不到 {entries} 個條目的本地匹配",
             "rematchSkipped": "{total} 個所選配方均無需重新匹配",
             "rematchFailed": "重新匹配所選配方失敗：{message}",
             "reimporting": "正在從來源重新匯入配方...",
+            "reimportingViaExtension": "正在透過瀏覽器擴充功能重新匯入配方 {current}/{total}...",
             "reimportSuccess": "配方已從來源重新匯入成功",
             "reimportBulkComplete": "重新匯入完成：{completed} 個已匯入，{failed} 個失敗（共 {total} 個）",
             "reimportBulkFailed": "重新匯入某些配方失敗",
@@ -2240,6 +2423,7 @@
             "checkpointRootsFailed": "載入 checkpoint 根目錄失敗：{message}",
             "unetRootsFailed": "載入 Diffusion Model 根目錄失敗：{message}",
             "embeddingRootsFailed": "載入 embedding 根目錄失敗：{message}",
+            "otherRootsFailed": "載入其他模型根目錄失敗：{message}",
             "mappingsUpdated": "基礎模型路徑對應已更新（{count} 個對應）",
             "mappingsCleared": "基礎模型路徑對應已清除",
             "mappingSaveFailed": "儲存基礎模型對應失敗：{message}",
@@ -2344,7 +2528,9 @@
             "linkCivArchSuccess": "模型已成功透過 CivitArchive 重新連結",
             "fetchMetadataFirst": "請先從 CivitAI 取得 metadata",
             "noCivitaiInfo": "無 CivitAI 資訊",
-            "missingHash": "模型雜湊不可用"
+            "missingHash": "模型雜湊不可用",
+            "enrichNeedsSource": "請先將此模型連結到模型來源（連結模型 → 連結到模型來源）",
+            "enrichUnsupportedSource": "{source} 模型不支援 AI 增強"
         },
         "exampleImages": {
             "pathUpdated": "範例圖片路徑已更新",
@@ -2502,6 +2688,12 @@
             "rebuilding": "重建快取中...",
             "rebuildFailed": "重建快取失敗：{error}",
             "retry": "重試"
+        },
+        "otherModels": {
+            "title": "其他模型管理現已可用",
+            "content": "在專屬頁面中掃描和管理 VAE、Upscaler、Text Encoder、CLIP Vision 和 ControlNet 檔案，並從 CivitAI 下載。",
+            "enable": "啟用其他模型",
+            "openSettings": "開啟設定"
         }
     }
 }

@@ -8,10 +8,16 @@ import {
     isValidModelType,
     DOWNLOAD_ENDPOINTS,
     HF_ENDPOINTS,
+    MODEL_SOURCE_ENDPOINTS,
     WS_ENDPOINTS
 } from './apiConfig.js';
 import { resetAndReload } from './modelApiFactory.js';
 import { sidebarManager } from '../components/SidebarManager.js';
+// Shared scan ETA helpers live in a dependency-light module so pages that do
+// not use BaseModelApiClient (e.g. recipes) can reuse them without pulling
+// this module's import cycle (modelApiFactory -> loraApi -> baseModelApi).
+import { createScanEtaTracker, formatScanRemainingTime } from '../utils/scanEtaUtils.js';
+export { createScanEtaTracker, formatScanRemainingTime };
 
 /**
  * Abstract base class for all model API clients
@@ -507,15 +513,59 @@ export class BaseModelApiClient {
 
     async refreshModels(fullRebuild = false) {
         const abortController = new AbortController();
-        try {
-            state.loadingManager.show(
-                `${fullRebuild ? 'Full rebuild' : 'Refreshing'} ${this.apiConfig.config.displayName}s...`,
-                0
+        const displayName = this.apiConfig.config.displayName;
+        const singularName = this.apiConfig.config.singularName;
+        const actionText = translate(
+            fullRebuild ? 'common.scanProgress.actionFullRebuild' : 'common.scanProgress.actionRefresh',
+            {},
+            fullRebuild ? 'Full rebuild' : 'Refresh'
+        );
+        const actionLowerText = translate(
+            fullRebuild ? 'common.scanProgress.actionRebuildLower' : 'common.scanProgress.actionRefreshLower',
+            {},
+            fullRebuild ? 'rebuild' : 'refresh'
+        );
+        const initialMessage = translate(
+            fullRebuild ? 'common.scanProgress.fullRebuilding' : 'common.scanProgress.refreshing',
+            { type: displayName },
+            `${fullRebuild ? 'Full rebuild' : 'Refreshing'} ${displayName}s...`
+        );
+        const etaTracker = createScanEtaTracker();
+        let ws = null;
+
+        const handleScanProgress = (data) => {
+            if (typeof data.progress === 'number') {
+                state.loadingManager.setProgress(data.progress);
+            }
+            let statusText = translate(
+                `common.scanProgress.stages.${data.stage}`,
+                { total: data.total },
+                data.stage || ''
             );
+            if (data.status === 'processing' && data.total > 0) {
+                statusText += ` (${data.processed}/${data.total})`;
+                if (data.current_name) {
+                    statusText += ` ${data.current_name}`;
+                }
+                const etaText = etaTracker.update(data.processed, data.total);
+                if (etaText) {
+                    statusText += ` | ${etaText}`;
+                }
+            }
+            state.loadingManager.setStatus(statusText);
+        };
+
+        try {
+            state.loadingManager.show(initialMessage, 0);
             state.loadingManager.showCancelButton(() => {
                 this.cancelTask();
                 abortController.abort();
             });
+
+            // Connect to the shared progress channel for live scan updates.
+            // Failure to connect must not block the refresh itself — fall back
+            // to the plain loading indicator.
+            ws = await this._connectScanProgressSocket(handleScanProgress, singularName);
 
             const url = new URL(this.apiConfig.endpoints.scan, window.location.origin);
             url.searchParams.append('full_rebuild', fullRebuild);
@@ -523,7 +573,7 @@ export class BaseModelApiClient {
             const response = await fetch(url, { signal: abortController.signal });
 
             if (!response.ok) {
-                throw new Error(`Failed to refresh ${this.apiConfig.config.displayName}s: ${response.status} ${response.statusText}`);
+                throw new Error(`Failed to refresh ${displayName}s: ${response.status} ${response.statusText}`);
             }
 
             const data = await response.json();
@@ -534,17 +584,66 @@ export class BaseModelApiClient {
 
             resetAndReload(true);
 
-            showToast('toast.api.refreshComplete', { action: fullRebuild ? 'Full rebuild' : 'Refresh' }, 'success');
+            showToast('toast.api.refreshComplete', { action: actionText }, 'success');
         } catch (error) {
             if (error.name === 'AbortError') {
                 showToast('toast.api.operationCancelled', {}, 'info');
                 return;
             }
             console.error('Refresh failed:', error);
-            showToast('toast.api.refreshFailed', { action: fullRebuild ? 'rebuild' : 'refresh', type: this.apiConfig.config.displayName }, 'error');
+            showToast('toast.api.refreshFailed', { action: actionLowerText, type: displayName }, 'error');
         } finally {
+            if (ws) {
+                ws.close();
+            }
             state.loadingManager.hide();
             state.loadingManager.restoreProgressBar();
+        }
+    }
+
+    /**
+     * Connect to the shared fetch-progress WebSocket for scan progress updates.
+     * Returns null when the connection cannot be established (silent fallback).
+     * @param {Function} onScanProgress - Handler for scan_progress messages
+     * @param {string} singularName - Model type filter (e.g. 'lora')
+     * @returns {Promise<WebSocket|null>}
+     */
+    async _connectScanProgressSocket(onScanProgress, singularName) {
+        let socket = null;
+        try {
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+            socket = new WebSocket(`${wsProtocol}${window.location.host}${WS_ENDPOINTS.fetchProgress}`);
+
+            await new Promise((resolve, reject) => {
+                socket.onopen = resolve;
+                socket.onerror = reject;
+            });
+
+            socket.onmessage = (event) => {
+                let data;
+                try {
+                    data = JSON.parse(event.data);
+                } catch (parseError) {
+                    return;
+                }
+                // Only handle scan progress for this client's model type;
+                // other operations share this channel and must be ignored.
+                if (data.type !== 'scan_progress' || data.model_type !== singularName) {
+                    return;
+                }
+                onScanProgress(data);
+            };
+
+            return socket;
+        } catch (error) {
+            if (socket) {
+                try {
+                    socket.close();
+                } catch (closeError) {
+                    // Ignore close errors during fallback
+                }
+            }
+            return null;
         }
     }
 
@@ -604,6 +703,9 @@ export class BaseModelApiClient {
                 const operationComplete = new Promise((resolve, reject) => {
                     ws.onmessage = (event) => {
                         const data = JSON.parse(event.data);
+
+                        // Scan progress shares this channel; it is handled by refreshModels
+                        if (data.type === 'scan_progress') return;
 
                         switch (data.status) {
                             case 'started':
@@ -1193,9 +1295,13 @@ export class BaseModelApiClient {
         }
     }
 
-    async fetchModelFolders() {
+    async fetchModelFolders(options = {}) {
         try {
-            const response = await fetch(this.apiConfig.endpoints.folders);
+            const { includeEmpty = false } = options || {};
+            const url = includeEmpty
+                ? `${this.apiConfig.endpoints.folders}?include_empty=1`
+                : this.apiConfig.endpoints.folders;
+            const response = await fetch(url);
             if (!response.ok) {
                 throw new Error(`Failed to fetch ${this.apiConfig.config.displayName} folders`);
             }
@@ -1204,6 +1310,89 @@ export class BaseModelApiClient {
             console.error('Error fetching model folders:', error);
             throw error;
         }
+    }
+
+    async createFolder(folderPath) {
+        const response = await fetch(this.apiConfig.endpoints.createFolder, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ folder_path: folderPath })
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || result.success === false) {
+            throw new Error(result.error || `Failed to create folder`);
+        }
+
+        return result;
+    }
+
+    /**
+     * Delete a model-free folder inside the library roots.
+     *
+     * Only model-free folders can be removed; the backend answers with a 409
+     * `not_empty`/`busy` conflict otherwise. Those codes are attached to the
+     * thrown Error (`code`, `manifest`) so callers can explain the refusal
+     * instead of showing a bare message.
+     *
+     * @param {string} folderPath Absolute business path of the folder
+     * @param {{dryRun?: boolean}} [options]
+     */
+    async deleteFolder(folderPath, options = {}) {
+        const { dryRun = false } = options || {};
+
+        const response = await fetch(this.apiConfig.endpoints.deleteFolder, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ folder_path: folderPath, dry_run: dryRun })
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || result.success === false) {
+            const error = new Error(result.error || `Failed to delete folder`);
+            error.code = result.code || null;
+            error.manifest = result.manifest || null;
+            throw error;
+        }
+
+        return result;
+    }
+
+    /**
+     * Rename a folder inside the library roots.
+     *
+     * Works on folders that hold models too — the backend re-keys the affected
+     * cache records instead of cascading. A name collision or a staged delete
+     * inside the subtree surfaces as a 409 conflict, attached to the thrown
+     * Error as `code`.
+     *
+     * @param {string} folderPath Absolute business path of the folder
+     * @param {string} newName New leaf name (a single path segment)
+     */
+    async renameFolder(folderPath, newName) {
+        const response = await fetch(this.apiConfig.endpoints.renameFolder, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ folder_path: folderPath, new_name: newName })
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || result.success === false) {
+            const error = new Error(result.error || `Failed to rename folder`);
+            error.code = result.code || null;
+            throw error;
+        }
+
+        return result;
     }
 
     async fetchUnifiedFolderTree(options = {}) {
@@ -1266,30 +1455,52 @@ export class BaseModelApiClient {
         }
     }
 
-    async fetchHfRepoFiles(repo, revision = 'main') {
+    /**
+     * List the downloadable weight files of an external repository.
+     * @param {string} repo - `owner/name`
+     * @param {string} [platform] - `huggingface` (default) or `modelscope`
+     * @param {string} [revision] - branch; each site has its own default
+     */
+    async fetchModelSourceFiles(repo, platform = 'huggingface', revision = '') {
         try {
-            const params = new URLSearchParams({ repo, revision });
-            const response = await fetch(`${HF_ENDPOINTS.repoFiles}?${params}`);
+            const params = new URLSearchParams({ repo, platform });
+            if (revision) params.set('revision', revision);
+            const response = await fetch(`${MODEL_SOURCE_ENDPOINTS.repoFiles}?${params}`);
             if (!response.ok) {
                 const err = await response.json().catch(() => ({}));
-                throw new Error(err.error || 'Failed to fetch HF repo files');
+                throw new Error(err.error || 'Failed to fetch repository files');
             }
             return await response.json();
         } catch (error) {
-            console.error('Error fetching HF repo files:', error);
+            console.error('Error fetching repository files:', error);
             throw error;
         }
     }
 
-    async downloadHfModel({ repo, filename, revision, modelRoot, relativePath, useDefaultPaths, download_id }) {
+    /** Backwards-compatible Hugging Face wrapper. */
+    async fetchHfRepoFiles(repo, revision = 'main') {
+        return this.fetchModelSourceFiles(repo, 'huggingface', revision);
+    }
+
+    async downloadModelSource({
+        platform = 'huggingface',
+        repo,
+        filename,
+        revision,
+        modelRoot,
+        relativePath,
+        useDefaultPaths,
+        download_id,
+    }) {
         try {
-            const response = await fetch(HF_ENDPOINTS.download, {
+            const response = await fetch(MODEL_SOURCE_ENDPOINTS.download, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    platform,
                     repo,
                     filename,
-                    revision: revision || 'main',
+                    revision: revision || '',
                     model_root: modelRoot,
                     relative_path: relativePath || '',
                     use_default_paths: useDefaultPaths || false,
@@ -1303,9 +1514,23 @@ export class BaseModelApiClient {
 
             return await response.json();
         } catch (error) {
-            console.error('Error downloading HF model:', error);
+            console.error('Error downloading model:', error);
             throw error;
         }
+    }
+
+    /** Backwards-compatible Hugging Face wrapper. */
+    async downloadHfModel({ repo, filename, revision, modelRoot, relativePath, useDefaultPaths, download_id }) {
+        return this.downloadModelSource({
+            platform: 'huggingface',
+            repo,
+            filename,
+            revision: revision || 'main',
+            modelRoot,
+            relativePath,
+            useDefaultPaths,
+            download_id,
+        });
     }
 
     _buildQueryParams(baseParams, pageState) {

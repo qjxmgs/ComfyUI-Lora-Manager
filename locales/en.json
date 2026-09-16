@@ -2,6 +2,11 @@
   "common": {
     "cancel": "Cancel",
     "confirm": "Confirm",
+    "reorder": {
+      "dragHandle": "Drag to reorder (Alt + ↑/↓)",
+      "ariaLabel": "Reorder {item}, position {position} of {total}",
+      "announcement": "Moved to position {position} of {total}"
+    },
     "actions": {
       "save": "Save",
       "cancel": "Cancel",
@@ -50,6 +55,27 @@
       "mb": "MB",
       "gb": "GB",
       "tb": "TB"
+    },
+    "scanProgress": {
+      "refreshing": "Refreshing {type}s...",
+      "fullRebuilding": "Full rebuild {type}s...",
+      "actionRefresh": "Refresh",
+      "actionFullRebuild": "Full rebuild",
+      "actionRefreshLower": "refresh",
+      "actionRebuildLower": "rebuild",
+      "stages": {
+        "scan_folders": "Scanning folders...",
+        "count_models": "Found {total} files",
+        "process_models": "Processing models",
+        "reconcile_scan": "Checking for changes...",
+        "process_new": "Processing new models",
+        "finalizing": "Finalizing..."
+      },
+      "eta": {
+        "lessThanMinute": "Less than a minute remaining",
+        "minutes": "~{minutes} min remaining",
+        "hours": "~{hours} hr {minutes} min remaining"
+      }
     }
   },
   "onboarding": {
@@ -75,7 +101,7 @@
       },
       "bulk": {
         "title": "Bulk Operations",
-        "content": "Enter bulk mode by clicking this button or pressing <span class=\"onboarding-shortcut\">B</span>. Select multiple models and perform batch operations. Use <span class=\"onboarding-shortcut\">Ctrl+A</span> to select all visible models."
+        "content": "Enter bulk mode by clicking this button or pressing <span class=\"onboarding-shortcut\">B</span> to select multiple models and perform batch operations.<br>• <span class=\"onboarding-shortcut\">Ctrl/Cmd+A</span> select all visible models, <span class=\"onboarding-shortcut\">Shift+Click</span> select a range.<br>• <span class=\"onboarding-shortcut\">Esc</span> or clicking an empty area exits bulk mode."
       },
       "searchOptions": {
         "title": "Search Options",
@@ -95,7 +121,19 @@
       },
       "contextMenu": {
         "title": "Context Menu",
-        "content": "<strong>Right-click</strong> any model card for a context menu with additional actions."
+        "content": "<strong>Right-click</strong> any model card for a context menu with card actions like moving, deleting, or editing metadata."
+      },
+      "marqueeSelect": {
+        "title": "Drag to Select",
+        "content": "Hold the <strong>left mouse button</strong> on an empty area of the grid and drag to draw a marquee that selects multiple cards at once."
+      },
+      "dragToSidebar": {
+        "title": "Organize by Dragging",
+        "content": "Drag a model card onto a folder in the sidebar to move the file there. This also works with multiple selected cards in bulk mode."
+      },
+      "contextMenus": {
+        "title": "More Context Menus",
+        "content": "In bulk mode, <strong>right-click a selected card</strong> for bulk actions. <strong>Right-click an empty area</strong> of the page for global actions like update checks and managing excluded models."
       }
     }
   },
@@ -106,6 +144,7 @@
       "viewOnCivitai": "View on CivitAI",
       "notAvailableFromCivitai": "Not available from CivitAI",
       "viewOnHuggingFace": "View on Hugging Face",
+      "viewOnSource": "View on {source}",
       "sendToWorkflow": "Send to ComfyUI (Click: Append, Shift+Click: Replace)",
       "copyLoRASyntax": "Copy LoRA Syntax",
       "checkpointNameCopied": "Checkpoint name copied",
@@ -116,6 +155,7 @@
       "copyCheckpointName": "Copy checkpoint name",
       "copyEmbeddingName": "Copy embedding name",
       "embeddingNameCopied": "Embedding syntax copied",
+      "modelNameCopied": "Model name copied",
       "sendCheckpointToWorkflow": "Send to ComfyUI",
       "sendEmbeddingToWorkflow": "Send to ComfyUI"
     },
@@ -179,20 +219,10 @@
       "none": "All {typePlural} already have license metadata",
       "error": "Failed to refresh license metadata for {typePlural}: {message}"
     },
-    "repairRecipes": {
-      "label": "Repair recipes data",
-      "loading": "Repairing recipe data...",
-      "success": "Successfully repaired {count} recipes.",
-      "cancelled": "Repair cancelled. {count} recipes were repaired.",
-      "error": "Recipe repair failed: {message}"
-    },
     "rematchRecipes": {
       "label": "Rematch recipes to local models",
       "loading": "Rematching recipes to local models...",
       "success": "Matched {entries} entries across {recipes} recipes",
-      "successErrors": "Matched {entries} entries across {recipes} recipes, {failures} failed",
-      "allFailed": "Rematch failed for {failures} of {total} recipes",
-      "noMatch": "No local match found for {entries} entries in {recipes} recipes",
       "cancelled": "Rematch cancelled. {recipes} recipes updated ({entries} entries).",
       "error": "Recipe rematch failed: {message}"
     },
@@ -210,6 +240,7 @@
       "recipes": "Recipes",
       "checkpoints": "Checkpoints",
       "embeddings": "Embeddings",
+      "other": "Other",
       "statistics": "Stats"
     },
     "search": {
@@ -451,6 +482,8 @@
     "layoutSettings": {
       "groupByModel": "Group by Model",
       "groupByModelHelp": "When enabled, only the latest version of each CivitAI model is shown as a single card. Older versions are hidden.",
+      "stickyControls": "Keep Action Bar Visible",
+      "stickyControlsHelp": "When enabled, the action bar (Refresh, Download, etc.) stays pinned at the top while scrolling, together with the breadcrumb navigation.",
       "displayDensity": "Display Density",
       "displayDensityOptions": {
         "default": "Default",
@@ -508,6 +541,25 @@
       "defaultUnetRootHelp": "Set default diffusion model (UNET) root directory for downloads, imports and moves",
       "defaultEmbeddingRoot": "Embedding Root",
       "defaultEmbeddingRootHelp": "Set default embedding root directory for downloads, imports and moves",
+      "defaultVaeRoot": "VAE Root",
+      "defaultVaeRootHelp": "Set default VAE root directory for downloads, imports and moves",
+      "defaultUpscalerRoot": "Upscaler Root",
+      "defaultUpscalerRootHelp": "Set default upscaler root directory for downloads, imports and moves",
+      "defaultTextEncoderRoot": "Text Encoder Root",
+      "defaultTextEncoderRootHelp": "Set default text encoder root directory for downloads, imports and moves",
+      "defaultClipVisionRoot": "CLIP Vision Root",
+      "defaultClipVisionRootHelp": "Set default CLIP vision root directory for downloads, imports and moves",
+      "defaultControlnetRoot": "ControlNet Root",
+      "defaultControlnetRootHelp": "Set default ControlNet root directory for downloads, imports and moves",
+      "enableOtherModels": "Other Models Management",
+      "enableOtherModelsHelp": "When off, VAE / upscaler / text encoder / CLIP vision / ControlNet folders are not scanned, the Other Models page stays disabled, and these model types cannot be downloaded.",
+      "otherSubTypes": "Managed Types",
+      "otherSubTypesHelp": "Choose which other-model categories are scanned and shown on the Other Models page.",
+      "subTypeVae": "VAE",
+      "subTypeUpscaler": "Upscaler",
+      "subTypeTextEncoder": "Text Encoder",
+      "subTypeClipVision": "CLIP Vision",
+      "subTypeControlnet": "ControlNet",
       "recipesPath": "Recipes Storage Path",
       "recipesPathHelp": "Optional custom directory for stored recipes. Leave empty to use the first LoRA root's recipes folder.",
       "recipesPathPlaceholder": "/path/to/recipes",
@@ -786,7 +838,6 @@
       "setContentRating": "Set Content Rating for Selected",
       "copyAll": "Copy Selected Syntax",
       "refreshAll": "Refresh Selected Metadata",
-      "repairMetadata": "Repair Metadata for Selected",
       "rematchMetadata": "Rematch Selected to Local Models",
       "reimportMetadata": "Re-import from Source",
       "checkUpdates": "Check Updates for Selected",
@@ -822,14 +873,14 @@
         "complete": "Auto-organize complete",
         "error": "Error: {error}"
       },
-      "enrichHfAgent": "Enrich HF Metadata (AI)"
+      "enrichHfAgent": "Enrich Metadata with AI"
     },
     "contextMenu": {
       "refreshMetadata": "Refresh CivitAI Data",
       "checkUpdates": "Check Updates",
       "linkModel": "Link Model",
       "linkCivitai": "Link to CivitAI",
-      "linkHuggingFace": "Link to HuggingFace",
+      "linkModelSource": "Link to Model Source",
       "copySyntax": "Copy LoRA Syntax",
       "copyFilename": "Copy Model Filename",
       "copyRecipeSyntax": "Copy Recipe Syntax",
@@ -842,7 +893,6 @@
       "replacePreview": "Replace Preview",
       "setContentRating": "Set Content Rating",
       "moveToFolder": "Move to Folder",
-      "repairMetadata": "Repair metadata",
       "rematchMetadata": "Rematch to local models",
       "reimportMetadata": "Re-import from Source",
       "excludeModel": "Exclude Model",
@@ -852,7 +902,7 @@
       "viewAllLoras": "View All LoRAs",
       "downloadMissingLoras": "Download Missing LoRAs",
       "deleteRecipe": "Delete Recipe",
-      "enrichHfAgent": "Enrich HF Metadata (AI)"
+      "enrichHfAgent": "Enrich Metadata with AI"
     }
   },
   "recipes": {
@@ -1095,13 +1145,6 @@
         "getInfoFailed": "Failed to get information for missing LoRAs",
         "prepareError": "Error preparing LoRAs for download: {message}"
       },
-      "repair": {
-        "starting": "Repairing recipe metadata...",
-        "success": "Recipe metadata repaired successfully",
-        "skipped": "Recipe already at latest version, no repair needed",
-        "failed": "Failed to repair recipe: {message}",
-        "missingId": "Cannot repair recipe: Missing recipe ID"
-      },
       "reimport": {
         "starting": "Re-importing recipe from source...",
         "success": "Recipe re-imported successfully",
@@ -1185,31 +1228,86 @@
   "embeddings": {
     "title": "Embedding Models"
   },
+  "other": {
+    "title": "Other Models",
+    "disabled": {
+      "title": "Other Models management is off",
+      "description": "Enable it to scan and manage VAE, upscaler, text encoder, CLIP vision and ControlNet files, and to download them from CivitAI.",
+      "enableButton": "Enable Other Models",
+      "hint": "You can change the managed model types later in Settings > Library.",
+      "enableFailed": "Failed to enable Other Models",
+      "downloadBlocked": "Other Models management is disabled for this model type. Enable it in Settings > Library to download this file.",
+      "enableAction": "Enable Other Models"
+    },
+    "noPaths": {
+      "title": "No other-model folders found",
+      "descriptionStandalone": "Other Models management is on, but none of the configured model folders exist on disk. Add the folder paths below to settings.json and restart LoRA Manager.",
+      "hintStandalone": "Only the folder keys listed above are scanned; keys you do not need can be omitted.",
+      "descriptionComfyUI": "Other Models management is on, but none of the configured model folders exist on disk. Add the matching model folders to your ComfyUI model paths, then reload this page.",
+      "hintComfyUI": "Other models are read from ComfyUI's vae, upscale_models, text_encoders, clip_vision and controlnet folders.",
+      "openSettings": "Open Settings"
+    }
+  },
   "sidebar": {
     "modelRoot": "Root",
     "collapseAll": "Collapse All Folders",
+    "collapseAllDisabled": "Not available in list view",
     "hideOnThisPage": "Hide sidebar on this page",
     "showSidebar": "Show sidebar",
     "sidebarHiddenNotification": "Folder sidebar hidden on {page} page",
-    "switchToListView": "Switch to List View",
-    "switchToTreeView": "Switch to Tree View",
+    "viewOptions": "View options",
+    "treeView": "Tree view",
+    "listView": "List view",
     "recursiveOn": "Include subfolders",
-    "recursiveOff": "Current folder only",
-    "recursiveUnavailable": "Recursive search is available in tree view only",
-    "collapseAllDisabled": "Not available in list view",
+    "createFolder": "New folder",
+    "newSubfolder": "New subfolder",
+    "showEmptyFolders": "Show empty folders",
+    "createFolderResult": {
+      "success": "Folder \"{name}\" created",
+      "failed": "Failed to create folder: {message}",
+      "unsupported": "Folder creation is not supported on this page",
+      "noRoot": "No model root is configured"
+    },
+    "deleteFolder": "Delete folder",
+    "deleteFolderModal": {
+      "title": "Delete folder?",
+      "message": "The folder and everything inside it will be permanently removed from disk.",
+      "folderLabel": "Folder",
+      "emptyNote": "This folder contains no models. Any other files it holds will be deleted too.",
+      "notEmptyTitle": "Folder is not empty",
+      "notEmptyMessage": "This folder still contains models. Delete or move them first — deleting a folder never cascades over model files.",
+      "confirm": "Delete folder"
+    },
+    "deleteFolderResult": {
+      "success": "Folder \"{name}\" deleted",
+      "successWithFiles": "Folder \"{name}\" deleted along with {count} other item(s)",
+      "restored": "Folder restored",
+      "failed": "Failed to delete folder: {message}",
+      "notEmpty": "This folder still contains models. Refresh the sidebar and try again.",
+      "busy": "A deletion is still pending inside this folder. Wait for the undo window to expire.",
+      "unsupported": "Folder deletion is not supported on this page",
+      "noRoot": "No model root is configured"
+    },
+    "renameFolder": "Rename folder",
+    "renameFolderResult": {
+      "success": "Folder renamed to \"{name}\"",
+      "failed": "Failed to rename folder: {message}",
+      "targetExists": "A folder with that name already exists here",
+      "busy": "A deletion is still pending inside this folder. Wait for the undo window to expire.",
+      "unsupported": "Folder renaming is not supported on this page",
+      "noRoot": "No model root is configured"
+    },
     "dragDrop": {
       "unableToResolveRoot": "Unable to determine destination path for move.",
       "moveUnsupported": "Move is not supported for this item.",
-      "createFolderHint": "Release to create new folder",
       "newFolderName": "New folder name",
-      "folderNameHint": "Press Enter to confirm, Escape to cancel",
       "emptyFolderName": "Please enter a folder name",
       "invalidFolderName": "Folder name contains invalid characters",
       "noDragState": "No pending drag operation found"
     },
     "empty": {
       "noFolders": "No folders found",
-      "dragHint": "Drag items here to create folders"
+      "createHint": "Click the New Folder button above to create folders"
     },
     "folderUpdateCheck": {
       "label": "Check for updates in this folder",
@@ -1337,9 +1435,9 @@
     "download": {
       "title": "Download Model from URL",
       "titleWithType": "Download {type} from URL",
-      "civitaiUrl": "CivitAI URL(s):",
+      "civitaiUrl": "Model URL(s):",
       "placeholder": "https://civitai.com/models/...",
-      "urlHint": "Enter one CivitAI, CivArchive, or Hugging Face URL per line. Supports multiple URLs for batch download.",
+      "urlHint": "Enter one CivitAI, CivArchive, Hugging Face, or ModelScope URL per line. Supports multiple URLs for batch download.",
       "selectHfFiles": "Select file(s) to download from this repository:",
       "selectAll": "Select All",
       "fetchingRepoFiles": "Fetching repository files...",
@@ -1372,9 +1470,9 @@
         "inLibrary": "In Library"
       },
       "errors": {
-        "invalidUrl": "Invalid CivitAI URL format",
+        "invalidUrl": "Invalid model URL format",
         "noVersions": "No versions available for this model",
-        "mixedSources": "Cannot mix CivitAI and Hugging Face URLs in the same batch.",
+        "mixedSources": "Cannot mix CivitAI and Hugging Face / ModelScope URLs in the same batch.",
         "noModelFiles": "No model files found in this repository."
       },
       "status": {
@@ -1482,6 +1580,41 @@
       "note": "Files will be downloaded using default path templates. This may take a while depending on the number of LoRAs.",
       "downloadButton": "Download {count} LoRA(s)"
     },
+    "rematchOptions": {
+      "title": "Rematch Recipes",
+      "messageGlobal": "All recipes will be scanned against your local model library.",
+      "messageSingle": "This recipe will be scanned against your local model library.",
+      "messageBulk": "{count} selected recipe(s) will be scanned against your local model library.",
+      "relaxedLabel": "Also reconnect missing models by file name",
+      "relaxedDescription": "These models could also be fixed by downloading — download is more accurate. Matches may link a different version; they'll be listed for review and can be undone.",
+      "confirmButton": "Rematch"
+    },
+    "rematchResults": {
+      "undo": "Undo",
+      "undone": "Undone",
+      "undoFailed": "Failed to undo rematch: {message}"
+    },
+    "rematchSummary": {
+      "title": "Rematch Summary",
+      "successMessage": "Matched {entries} entries",
+      "failed": "Rematch failed",
+      "completedWithWarnings": "Rematch completed — review recommended",
+      "cancelledNote": "Run cancelled before completion — counts are partial.",
+      "statMatched": "Matched entries",
+      "statReview": "Needs review",
+      "statUnresolved": "Unresolved",
+      "statErrors": "Errors",
+      "reviewSection": "Filename matches to review ({count})",
+      "columnRecipe": "Recipe",
+      "columnEntry": "Entry",
+      "columnFile": "Matched file",
+      "columnUndo": "Undo",
+      "copyReport": "Copy Report",
+      "close": "Close",
+      "scope_global": "All recipes",
+      "scope_bulk": "Selected recipes",
+      "scope_single": "Single recipe"
+    },
     "exampleAccess": {
       "title": "Local Example Images",
       "message": "No local example images found for this model. View options:",
@@ -1504,12 +1637,16 @@
       "pathPlaceholder": "Type folder path or select from tree below...",
       "root": "Root"
     },
-    "linkHuggingFace": {
-      "title": "Link to HuggingFace",
-      "infoText": "Paste the HuggingFace repository URL to associate this model with its source. This enables AI-powered metadata enrichment.",
-      "urlLabel": "HuggingFace Repository URL:",
+    "linkModelSource": {
+      "title": "Link to Model Source",
+      "infoText": "Paste the model page URL to associate this model with its source. Linking enables AI-powered metadata enrichment for Hugging Face and ModelScope models.",
+      "urlLabel": "Model Page URL:",
       "urlPlaceholder": "https://huggingface.co/user/repo",
-      "helpText": "Enter the full URL of the HuggingFace repository.",
+      "helpText": "Enter the full URL of the model page. Supported sites:",
+      "enrichNote": "AI enrichment needs a readable model card. Sites that don't expose one (currently TensorArt) can only be linked.",
+      "urlRequired": "Please enter a model page URL.",
+      "invalidUrl": "Unsupported URL. Supported sites: Hugging Face, ModelScope, TensorArt.",
+      "linking": "Linking model source...",
       "confirmAction": "Save & Link"
     },
     "relinkCivitai": {
@@ -1593,7 +1730,11 @@
         "clipSkip": "Clip Skip",
         "valuePlaceholder": "Value",
         "add": "Add",
-        "invalidRange": "Invalid range format. Use x.x-y.y"
+        "invalidRange": "Invalid range format. Use x.x-y.y",
+        "invalidValue": "Please enter a valid number",
+        "saveFailed": "Failed to save preset parameter",
+        "added": "Preset parameter added",
+        "updated": "Preset parameter updated"
       },
       "triggerWords": {
         "label": "Trigger Words",
@@ -1604,7 +1745,7 @@
         "addPlaceholder": "Type to add or click suggestions below",
         "editWord": "Edit trigger word",
         "editPlaceholder": "Edit trigger word",
-        "copyWord": "Copy trigger word",
+        "copyOrEditWord": "Click to copy, double-click to edit",
         "deleteWord": "Delete trigger word",
         "suggestions": {
           "noSuggestions": "No suggestions available",
@@ -1751,7 +1892,7 @@
         "empty": "No version history available for this model yet.",
         "error": "Failed to load versions.",
         "missingModelId": "This model is missing a CivitAI model id.",
-        "hfGroupInfo": "This is a HuggingFace model group. Open the library to see all versions in the grid.",
+        "sourceGroupInfo": "This is a {source} model group. Open the library to see all versions in the grid.",
         "confirm": {
           "delete": "Delete this version from your library?"
         },
@@ -1822,6 +1963,10 @@
     "embeddings": {
       "title": "Initializing Embedding Manager",
       "message": "Scanning and building embedding cache. This may take a few minutes..."
+    },
+    "other": {
+      "title": "Initializing Other Models Manager",
+      "message": "Scanning and building model cache. This may take a few minutes..."
     },
     "recipes": {
       "title": "Initializing Recipe Manager",
@@ -1929,10 +2074,52 @@
     "tabs": {
       "gettingStarted": "Getting Started",
       "updateVlogs": "Update Vlogs",
-      "documentation": "Documentation"
+      "documentation": "Documentation",
+      "shortcuts": "Shortcuts"
     },
     "gettingStarted": {
-      "title": "Getting Started with LoRA Manager"
+      "title": "Getting Started with LoRA Manager",
+      "replayTutorial": "Replay Tutorial"
+    },
+    "shortcuts": {
+      "title": "Keyboard & Mouse Shortcuts",
+      "groups": {
+        "general": "General",
+        "actions": "Actions",
+        "selection": "Selection & Bulk Mode",
+        "navigation": "Navigation",
+        "modelModal": "Model / Recipe Modal",
+        "mediaViewer": "Media Viewer / Showcase"
+      },
+      "keys": {
+        "click": "Click",
+        "drag": "Drag",
+        "rightClick": "Right-click",
+        "letter": "Letter",
+        "swipe": "Swipe"
+      },
+      "entries": {
+        "focusSearch": "Focus search",
+        "closeModal": "Close modal / panel",
+        "openShortcuts": "Open this shortcuts panel",
+        "refresh": "Refresh model list",
+        "fetchMetadata": "Fetch metadata from CivitAI (model pages only)",
+        "downloadModel": "Download a model (model pages only)",
+        "toggleBulkMode": "Toggle bulk mode",
+        "selectAll": "Select all visible models",
+        "rangeSelect": "Range select",
+        "marqueeSelect": "Marquee-select cards (on empty grid area)",
+        "exitBulkMode": "Exit bulk mode",
+        "bulkActions": "On selected card: bulk actions menu",
+        "globalActions": "On empty page area: global actions menu (update check, manage excluded models)",
+        "scrollPages": "Scroll pages",
+        "jumpAlphabet": "Jump alphabet bar",
+        "prevNext": "Previous / next model",
+        "deleteEntry": "Delete",
+        "cycleMedia": "Cycle media ([ / ] in showcase gallery)",
+        "swipeTouch": "Cycle media on touch devices",
+        "closeViewer": "Close viewer"
+      }
     },
     "updateVlogs": {
       "title": "Latest Updates",
@@ -1949,7 +2136,8 @@
       "settings": "Settings & Configuration",
       "extensions": "Extensions",
       "newBadge": "NEW"
-    }
+    },
+    "newContentBadge": "New"
   },
   "update": {
     "title": "Check for Updates",
@@ -2102,6 +2290,7 @@
       "createMissingData": "Missing required data to create recipe",
       "created": "Recipe created successfully",
       "noMissingLoras": "No missing LoRAs to download",
+      "unresolvableMarkedForReconnect": "{count} unresolvable entr(ies) marked — they can now be reconnected to a local LoRA.",
       "noPreviousRecipe": "No previous recipe available",
       "noNextRecipe": "No next recipe available",
       "missingLorasInfoFailed": "Failed to get information for missing LoRAs",
@@ -2156,16 +2345,10 @@
       "batchImportBrowseFailed": "Failed to browse directory: {message}",
       "batchImportDirectorySelected": "Directory selected: {path}",
       "noRecipesSelected": "No recipes selected",
-      "repairBulkComplete": "Repair complete: {repaired} repaired, {skipped} skipped (of {total})",
-      "repairBulkSkipped": "No repair needed for any of the {total} selected recipes",
-      "repairBulkFailed": "Failed to repair selected recipes: {message}",
-      "rematchComplete": "Matched {entries} entries across {recipes} recipes",
-      "rematchCompleteErrors": "Matched {entries} entries across {recipes} recipes, {failures} failed",
-      "rematchAllFailed": "Rematch failed for {failures} of {total} selected recipes",
-      "rematchUnmatched": "No local match found for {entries} entries in {recipes} recipes",
       "rematchSkipped": "No rematch needed for any of the {total} selected recipes",
       "rematchFailed": "Failed to rematch selected recipes: {message}",
       "reimporting": "Re-importing recipe from source...",
+      "reimportingViaExtension": "Re-importing recipe {current}/{total} via browser extension...",
       "reimportSuccess": "Recipe re-imported successfully",
       "reimportBulkComplete": "Re-import complete: {completed} re-imported, {failed} failed (of {total})",
       "reimportBulkFailed": "Failed to re-import some recipes",
@@ -2240,6 +2423,7 @@
       "checkpointRootsFailed": "Failed to load checkpoint roots: {message}",
       "unetRootsFailed": "Failed to load diffusion model roots: {message}",
       "embeddingRootsFailed": "Failed to load embedding roots: {message}",
+      "otherRootsFailed": "Failed to load other model roots: {message}",
       "mappingsUpdated": "Base model path mappings updated ({count} mapping{plural})",
       "mappingsCleared": "Base model path mappings cleared",
       "mappingSaveFailed": "Failed to save base model mappings: {message}",
@@ -2339,12 +2523,14 @@
       "contentRatingFailed": "Failed to set content rating: {message}",
       "relinkSuccess": "Model successfully re-linked to CivitAI",
       "relinkFailed": "Error: {message}",
-      "linkHfSuccess": "Model successfully linked to HuggingFace",
+      "linkHfSuccess": "Model successfully linked to its model source",
       "linkHfFailed": "Error: {message}",
       "linkCivArchSuccess": "Model successfully re-linked via CivitArchive",
       "fetchMetadataFirst": "Please fetch metadata from CivitAI first",
       "noCivitaiInfo": "No CivitAI information available",
-      "missingHash": "Model hash not available"
+      "missingHash": "Model hash not available",
+      "enrichNeedsSource": "Link this model to a model source first (Link Model → Link to Model Source)",
+      "enrichUnsupportedSource": "AI enrichment is not available for {source} models"
     },
     "exampleImages": {
       "pathUpdated": "Example images path updated successfully",
@@ -2502,6 +2688,12 @@
       "rebuilding": "Rebuilding cache...",
       "rebuildFailed": "Failed to rebuild cache: {error}",
       "retry": "Retry"
+    },
+    "otherModels": {
+      "title": "Other Models Management is available",
+      "content": "Scan and manage VAE, upscaler, text encoder, CLIP vision and ControlNet files — and download them from CivitAI — from one dedicated page.",
+      "enable": "Enable Other Models",
+      "openSettings": "Open Settings"
     }
   }
 }

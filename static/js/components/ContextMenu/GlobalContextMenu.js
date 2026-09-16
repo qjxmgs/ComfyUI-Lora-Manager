@@ -4,6 +4,8 @@ import { translate } from '../../utils/i18nHelpers.js';
 import { state } from '../../state/index.js';
 import { getCompleteApiConfig, getCurrentModelType } from '../../api/apiConfig.js';
 import { performModelUpdateCheck } from '../../utils/updateCheckHelpers.js';
+import { rematchModalManager } from '../../managers/RematchModalManager.js';
+import { showRematchSummary } from '../RematchSummaryModal.js';
 
 export class GlobalContextMenu extends BaseContextMenu {
     constructor() {
@@ -23,7 +25,6 @@ export class GlobalContextMenu extends BaseContextMenu {
         const downloadExamplesItem = this.menu.querySelector('[data-action="download-example-images"]');
         const cleanupExamplesItem = this.menu.querySelector('[data-action="cleanup-example-images-folders"]');
         const excludedModelsItem = this.menu.querySelector('[data-action="manage-excluded-models"]');
-        const repairRecipesItem = this.menu.querySelector('[data-action="repair-recipes"]');
         const rematchRecipesItem = this.menu.querySelector('[data-action="rematch-recipes"]');
         const groupByModelItem = this.menu.querySelector('[data-action="toggle-group-by-model"]');
         const groupByModelCheck = groupByModelItem?.querySelector('.check-indicator');
@@ -41,7 +42,6 @@ export class GlobalContextMenu extends BaseContextMenu {
             cleanupExamplesItem?.classList.add('hidden');
             excludedModelsItem?.classList.add('hidden');
             groupByModelItem?.classList.add('hidden');
-            repairRecipesItem?.classList.remove('hidden');
             rematchRecipesItem?.classList.remove('hidden');
         } else {
             modelUpdateItem?.classList.remove('hidden');
@@ -50,7 +50,6 @@ export class GlobalContextMenu extends BaseContextMenu {
             cleanupExamplesItem?.classList.remove('hidden');
             excludedModelsItem?.classList.remove('hidden');
             groupByModelItem?.classList.remove('hidden');
-            repairRecipesItem?.classList.add('hidden');
             rematchRecipesItem?.classList.add('hidden');
         }
 
@@ -93,11 +92,6 @@ export class GlobalContextMenu extends BaseContextMenu {
             case 'fetch-missing-licenses':
                 this.fetchMissingLicenses(menuItem).catch((error) => {
                     console.error('Failed to refresh missing license metadata:', error);
-                });
-                break;
-            case 'repair-recipes':
-                this.repairRecipes(menuItem).catch((error) => {
-                    console.error('Failed to repair recipes:', error);
                 });
                 break;
             case 'rematch-recipes':
@@ -371,100 +365,19 @@ export class GlobalContextMenu extends BaseContextMenu {
         return `${displayName}s`;
     }
 
-    async repairRecipes(menuItem) {
-        if (this._repairInProgress) {
+    async rematchRecipes(menuItem) {
+        if (this._rematchInProgress) {
             return;
         }
 
-        this._repairInProgress = true;
-        menuItem?.classList.add('disabled');
-
-        const loadingMessage = translate(
-            'globalContextMenu.repairRecipes.loading',
-            {},
-            'Repairing recipe data...'
-        );
-
-        const progressUI = state.loadingManager?.showEnhancedProgress(loadingMessage);
-        progressUI?.showCancelButton(() => this.cancelRepair());
-
-        try {
-            const response = await fetch('/api/lm/recipes/repair', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-            });
-
-            const result = await response.json();
-            if (!response.ok || !result.success) {
-                throw new Error(result.error || 'Failed to start repair');
-            }
-
-            // Poll for progress (or wait for WebSocket if preferred, but polling is simpler for this implementation)
-            let isComplete = false;
-            while (!isComplete && this._repairInProgress) {
-                const progressResponse = await fetch('/api/lm/recipes/repair-progress');
-                if (progressResponse.ok) {
-                    const progressResult = await progressResponse.json();
-                    if (progressResult.success && progressResult.progress) {
-                        const p = progressResult.progress;
-                        if (p.status === 'processing') {
-                            const percent = (p.current / p.total) * 100;
-                            progressUI?.updateProgress(percent, p.recipe_name, `${loadingMessage} (${p.current}/${p.total})`);
-                        } else if (p.status === 'completed') {
-                            isComplete = true;
-                            progressUI?.complete(translate(
-                                'globalContextMenu.repairRecipes.success',
-                                { count: p.repaired },
-                                `Repaired ${p.repaired} recipes.`
-                            ));
-                            showToast('globalContextMenu.repairRecipes.success', { count: p.repaired }, 'success');
-                            // Refresh recipes page if active
-                            if (window.recipesPage) {
-                                window.recipesPage.refresh();
-                            }
-                        } else if (p.status === 'error') {
-                            throw new Error(p.error || 'Repair failed');
-                        } else if (p.status === 'cancelled') {
-                            isComplete = true;
-                            progressUI?.complete(translate(
-                                'globalContextMenu.repairRecipes.cancelled',
-                                { count: p.repaired },
-                                `Repair cancelled. ${p.repaired} recipes were repaired.`
-                            ));
-                            showToast('globalContextMenu.repairRecipes.cancelled', { count: p.repaired }, 'info');
-                        }
-                    } else if (progressResponse.status === 404) {
-                        // Progress might have finished quickly and been cleaned up
-                        isComplete = true;
-                        progressUI?.complete();
-                    }
-                }
-
-                if (!isComplete) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-            }
-        } catch (error) {
-            console.error('Recipe repair failed:', error);
-            progressUI?.complete(translate('globalContextMenu.repairRecipes.error', { message: error.message }, 'Repair failed: {message}'));
-            showToast('globalContextMenu.repairRecipes.error', { message: error.message }, 'error');
-        } finally {
-            this._repairInProgress = false;
-            menuItem?.classList.remove('disabled');
-        }
+        // Collect options (relaxed matching) before starting anything; the
+        // run only begins when the user confirms the dialog.
+        rematchModalManager.showOptionsModal({
+            onConfirm: ({ relaxed }) => this._startRematch(menuItem, relaxed),
+        });
     }
 
-    async cancelRepair() {
-        try {
-            await fetch('/api/lm/recipes/cancel-repair', {
-                method: 'POST',
-            });
-        } catch (error) {
-            console.error('Failed to cancel recipe repair:', error);
-        }
-    }
-
-    async rematchRecipes(menuItem) {
+    async _startRematch(menuItem, relaxed = false) {
         if (this._rematchInProgress) {
             return;
         }
@@ -485,6 +398,7 @@ export class GlobalContextMenu extends BaseContextMenu {
             const response = await fetch('/api/lm/recipes/rematch', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ relaxed: !!relaxed }),
             });
 
             const result = await response.json();
@@ -512,48 +426,32 @@ export class GlobalContextMenu extends BaseContextMenu {
                             const recipes = p.matched_recipes ?? p.rematched ?? 0;
                             const failures = p.errors || 0;
                             const unresolved = p.unresolved_entries ?? 0;
-                            if (entries > 0) {
-                                const successKey = failures > 0
-                                    ? 'globalContextMenu.rematchRecipes.successErrors'
-                                    : 'globalContextMenu.rematchRecipes.success';
-                                const successText = failures > 0
-                                    ? `Matched ${entries} entries across ${recipes} recipes, ${failures} failed.`
-                                    : `Matched ${entries} entries across ${recipes} recipes.`;
-                                progressUI?.complete(translate(
-                                    successKey,
-                                    { count: recipes, recipes, entries, failures },
-                                    successText
-                                ));
-                                showToast(successKey, { count: recipes, recipes, entries, failures }, failures > 0 ? 'warning' : 'success');
-                            } else if (failures > 0) {
-                                // Nothing matched and at least one recipe
-                                // errored — "no rematch needed" would be
-                                // actively misleading here.
-                                progressUI?.complete(translate(
-                                    'globalContextMenu.rematchRecipes.allFailed',
-                                    { total: p.total, recipes, entries, failures },
-                                    `Rematch failed for ${failures} of ${p.total} recipes.`
-                                ));
-                                showToast('globalContextMenu.rematchRecipes.allFailed', { total: p.total, recipes, entries, failures }, 'error');
-                            } else if (unresolved > 0) {
-                                // Entries existed but have no local model —
-                                // expected for models deleted from Civitai;
-                                // informational, not an error.
-                                const unresolvedRecipes = p.unresolved_recipes ?? 0;
-                                progressUI?.complete(translate(
-                                    'globalContextMenu.rematchRecipes.noMatch',
-                                    { entries: unresolved, recipes: unresolvedRecipes, total: p.total, failures },
-                                    `No local match found for ${unresolved} entries in ${unresolvedRecipes} recipes.`
-                                ));
-                                showToast('globalContextMenu.rematchRecipes.noMatch', { entries: unresolved, recipes: unresolvedRecipes, total: p.total, failures }, 'info');
-                            } else {
-                                // Everything was skipped (nothing to do).
+                            const l4Matches = Array.isArray(p.l4_matches) ? p.l4_matches : [];
+                            // Complete no-op (nothing matched, nothing
+                            // unresolved, no errors) keeps the lightweight
+                            // toast; anything else opens the post-run summary
+                            // modal.
+                            const isNoop = entries === 0 && unresolved === 0 && failures === 0;
+                            if (isNoop) {
                                 progressUI?.complete(translate(
                                     'globalContextMenu.rematchRecipes.success',
                                     { count: recipes, recipes, entries, failures },
                                     `Matched ${entries} entries across ${recipes} recipes.`
                                 ));
                                 showToast('globalContextMenu.rematchRecipes.success', { count: recipes, recipes, entries, failures }, 'success');
+                            } else {
+                                progressUI?.complete();
+                                showRematchSummary({
+                                    scope: 'global',
+                                    total: p.total || 0,
+                                    matchedRecipes: recipes,
+                                    matchedEntries: entries,
+                                    unresolvedRecipes: p.unresolved_recipes ?? 0,
+                                    unresolvedEntries: unresolved,
+                                    skipped: p.skipped || 0,
+                                    errors: failures,
+                                    l4Matches,
+                                });
                             }
                             // Refresh recipes page if active
                             if (window.recipesPage) {
@@ -570,7 +468,23 @@ export class GlobalContextMenu extends BaseContextMenu {
                                 { count: cancelledRecipes, recipes: cancelledRecipes, entries: cancelledEntries },
                                 `Rematch cancelled. ${cancelledRecipes} recipes updated (${cancelledEntries} entries).`
                             ));
-                            showToast('globalContextMenu.rematchRecipes.cancelled', { count: cancelledRecipes, recipes: cancelledRecipes, entries: cancelledEntries }, 'info');
+                            // A cancelled run still reports partial results
+                            // via the summary modal (marked as cancelled).
+                            showRematchSummary({
+                                scope: 'global',
+                                cancelled: true,
+                                total: p.total || 0,
+                                matchedRecipes: cancelledRecipes,
+                                matchedEntries: cancelledEntries,
+                                unresolvedRecipes: p.unresolved_recipes ?? 0,
+                                unresolvedEntries: p.unresolved_entries ?? 0,
+                                skipped: p.skipped || 0,
+                                errors: p.errors || 0,
+                                l4Matches: Array.isArray(p.l4_matches) ? p.l4_matches : [],
+                            });
+                            if (window.recipesPage) {
+                                window.recipesPage.refresh();
+                            }
                         }
                     } else if (progressResponse.status === 404) {
                         // Progress might have finished quickly and been cleaned up

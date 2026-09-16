@@ -3,6 +3,8 @@ import { showToast, showActionToast, copyToClipboard, sendLoraToWorkflow, sendEm
 import { handleUndoDelete } from '../utils/undoHelpers.js';
 import { updateCardsForBulkMode } from '../components/shared/ModelCard.js';
 import { modalManager } from './ModalManager.js';
+import { rematchModalManager } from './RematchModalManager.js';
+import { showRematchSummary } from '../components/RematchSummaryModal.js';
 import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
 import { RecipeSidebarApiClient, updateRecipeMetadata, extractRecipeId } from '../api/recipeApi.js';
 import { MODEL_TYPES, MODEL_CONFIG } from '../api/apiConfig.js';
@@ -10,6 +12,7 @@ import { createBaseModelPicker, inferBaseModelsFromFilepaths } from '../componen
 import { getPriorityTagSuggestions } from '../utils/priorityTagHelpers.js';
 import { eventManager } from '../utils/EventManager.js';
 import { translate } from '../utils/i18nHelpers.js';
+import { probeExtension, delegateReimport, getCivitaiImageInfo } from '../utils/extensionReimportBridge.js';
 import { getNsfwLevelSelector } from '../components/shared/NsfwLevelSelector.js';
 
 export class BulkManager {
@@ -90,6 +93,20 @@ export class BulkManager {
                 setFavorite: true,
                 unfavorite: true
             },
+            [MODEL_TYPES.OTHER]: {
+                addTags: true,
+                sendToWorkflow: false,
+                copyAll: false,
+                refreshAll: true,
+                checkUpdates: true,
+                moveAll: true,
+                autoOrganize: true,
+                deleteAll: true,
+                setContentRating: true,
+                skipMetadataRefresh: true,
+                setFavorite: true,
+                unfavorite: true
+            },
             recipes: {
                 addTags: true,
                 sendToWorkflow: false,
@@ -103,7 +120,6 @@ export class BulkManager {
                 skipMetadataRefresh: false,
                 setFavorite: true,
                 unfavorite: true,
-                repairMetadata: true,
                 reimportMetadata: true,
                 rematchMetadata: true
             }
@@ -858,17 +874,74 @@ export class BulkManager {
             `Re-importing recipe 1/${total}...`
         );
 
+        // Partition the selection: recipes sourced from a CivitAI image page
+        // can be delegated to the companion browser extension (which scrapes
+        // the full page metadata); everything else uses the native endpoint.
+        const delegatable = [];
+        const nativeFilePaths = [];
+        for (const filePath of filePaths) {
+            const recipeItem = recipeMap.get(filePath);
+            const civitaiImage = getCivitaiImageInfo(recipeItem?.source_path);
+            if (civitaiImage && recipeItem?.id) {
+                delegatable.push({
+                    filePath,
+                    recipeId: recipeItem.id,
+                    imageId: civitaiImage.imageId,
+                    imageUrl: civitaiImage.imageUrl,
+                    title: recipeItem.title || '',
+                });
+            } else {
+                nativeFilePaths.push(filePath);
+            }
+        }
+
+        // Probe once; on any probe/delegate failure the delegatable recipes
+        // fall back to the native sequential loop below.
+        if (delegatable.length > 0) {
+            try {
+                const probe = await probeExtension();
+                if (probe?.supported && probe?.licenseValid) {
+                    const batchResult = await delegateReimport(
+                        delegatable.map(({ recipeId, imageId, imageUrl, title }) => ({
+                            recipeId, imageId, imageUrl, title,
+                        })),
+                        {
+                            onProgress: (progress) => {
+                                progressUI.updateProgress(
+                                    Math.floor(((progress.current || 0) / total) * 100),
+                                    progress.title || '',
+                                    translate('toast.recipes.reimportingViaExtension', {
+                                        current: progress.current || 0,
+                                        total,
+                                    })
+                                );
+                            },
+                        }
+                    );
+                    completed += batchResult.completed;
+                    failed += batchResult.failed;
+                } else {
+                    nativeFilePaths.push(...delegatable.map(entry => entry.filePath));
+                }
+            } catch (error) {
+                console.warn('[reimportSelectedRecipes] extension delegation failed, using native path:', error);
+                nativeFilePaths.push(...delegatable.map(entry => entry.filePath));
+            }
+        }
+
         try {
-            for (let i = 0; i < filePaths.length; i++) {
-                const filePath = filePaths[i];
+            const processedBeforeNative = completed + failed;
+            for (let i = 0; i < nativeFilePaths.length; i++) {
+                const filePath = nativeFilePaths[i];
                 const recipeItem = recipeMap.get(filePath);
                 const recipeId = recipeItem?.id;
                 const recipeName = recipeItem?.title || recipeId || 'Unknown';
+                const processed = processedBeforeNative + i;
 
                 progressUI.updateProgress(
-                    Math.floor((i / total) * 100),
+                    Math.floor((processed / total) * 100),
                     recipeName,
-                    `Re-importing recipe ${Math.min(i + 1, total)}/${total}...`
+                    `Re-importing recipe ${Math.min(processed + 1, total)}/${total}...`
                 );
 
                 if (!recipeId) {
@@ -910,76 +983,6 @@ export class BulkManager {
         }
     }
 
-    async repairSelectedRecipes() {
-        if (state.selectedModels.size === 0) {
-            showToast('toast.recipes.noRecipesSelected', {}, 'warning');
-            return;
-        }
-
-        if (state.currentPageType !== 'recipes') {
-            showToast('This operation is only available for recipes', {}, 'warning');
-            return;
-        }
-
-        try {
-            const apiClient = this.getActiveApiClient();
-            const filePaths = Array.from(state.selectedModels);
-
-            if (typeof apiClient.repairBulkModels !== 'function') {
-                showToast('Bulk repair is not supported for this model type', {}, 'error');
-                return;
-            }
-
-            state.loadingManager.showSimpleLoading('Repairing recipe metadata...');
-
-            const result = await apiClient.repairBulkModels(filePaths);
-
-            if (result.success) {
-                const total = result.total || filePaths.length;
-                const repaired = result.repaired || 0;
-                const skipped = result.skipped || 0;
-
-                const recipes = result.recipes || [];
-                for (const recipe of recipes) {
-                    if (recipe.file_path) {
-                        state.virtualScroller.updateSingleItem(
-                            recipe.file_path,
-                            recipe
-                        );
-                    }
-                }
-
-                if (repaired > 0) {
-                    showToast(
-                        'toast.recipes.repairBulkComplete',
-                        { repaired, skipped, total },
-                        'success'
-                    );
-                } else {
-                    showToast(
-                        'toast.recipes.repairBulkSkipped',
-                        { total },
-                        'info'
-                    );
-                }
-
-                if (state.bulkMode) this.toggleBulkMode();
-            } else {
-                throw new Error(result.error || 'Bulk repair failed');
-            }
-        } catch (error) {
-            console.error('Error during bulk recipe repair:', error);
-            showToast('toast.recipes.repairBulkFailed', { message: error.message }, 'error');
-        } finally {
-            if (state.loadingManager?.hide) {
-                state.loadingManager.hide();
-            }
-            if (typeof state.loadingManager?.restoreProgressBar === 'function') {
-                state.loadingManager.restoreProgressBar();
-            }
-        }
-    }
-
     async rematchSelectedRecipes() {
         if (state.selectedModels.size === 0) {
             showToast('toast.recipes.noRecipesSelected', {}, 'warning');
@@ -991,6 +994,15 @@ export class BulkManager {
             return;
         }
 
+        // Collect options (relaxed matching) before starting anything; the
+        // run only begins when the user confirms the dialog.
+        rematchModalManager.showOptionsModal({
+            recipeCount: state.selectedModels.size,
+            onConfirm: ({ relaxed }) => this._startRematchSelectedRecipes(relaxed),
+        });
+    }
+
+    async _startRematchSelectedRecipes(relaxed = false) {
         try {
             const apiClient = this.getActiveApiClient();
             const filePaths = Array.from(state.selectedModels);
@@ -1002,7 +1014,7 @@ export class BulkManager {
 
             state.loadingManager.showSimpleLoading('Rematching recipes to local models...');
 
-            const result = await apiClient.rematchBulkModels(filePaths);
+            const result = await apiClient.rematchBulkModels(filePaths, { relaxed: !!relaxed });
 
             if (result.success) {
                 const total = result.total || filePaths.length;
@@ -1028,38 +1040,29 @@ export class BulkManager {
                     }
                 }
 
-                if (matchedEntries > 0) {
-                    const hasFailures = failures > 0;
-                    const toastKey = hasFailures
-                        ? 'toast.recipes.rematchCompleteErrors'
-                        : 'toast.recipes.rematchComplete';
-                    showToast(
-                        toastKey,
-                        { rematched, skipped, total, entries: matchedEntries, recipes: matchedRecipes, failures },
-                        hasFailures ? 'warning' : 'success'
-                    );
-                } else if (failures > 0) {
-                    // Nothing matched and at least one recipe errored —
-                    // "no rematch needed" would be actively misleading here.
-                    showToast(
-                        'toast.recipes.rematchAllFailed',
-                        { total, failures },
-                        'error'
-                    );
-                } else if (unresolvedEntries > 0) {
-                    // Entries existed but have no local model — expected for
-                    // models deleted from Civitai; informational, not an error.
-                    showToast(
-                        'toast.recipes.rematchUnmatched',
-                        { entries: unresolvedEntries, recipes: unresolvedRecipes, total },
-                        'info'
-                    );
-                } else {
+                // Complete no-op (nothing matched, nothing unresolved, no
+                // errors) keeps the lightweight toast; anything else opens
+                // the post-run summary modal.
+                const l4Matches = Array.isArray(result.l4_matches) ? result.l4_matches : [];
+                const isNoop = matchedEntries === 0 && unresolvedEntries === 0 && failures === 0;
+                if (isNoop) {
                     showToast(
                         'toast.recipes.rematchSkipped',
                         { total },
                         'info'
                     );
+                } else {
+                    showRematchSummary({
+                        scope: 'bulk',
+                        total,
+                        matchedRecipes,
+                        matchedEntries,
+                        unresolvedRecipes,
+                        unresolvedEntries,
+                        skipped,
+                        errors: failures,
+                        l4Matches,
+                    });
                 }
 
                 if (state.bulkMode) this.toggleBulkMode();

@@ -1,6 +1,8 @@
 import { showToast, openCivitai, openHuggingFace, copyToClipboard, copyLoraSyntax, sendLoraToWorkflow, sendEmbeddingToWorkflow, openExampleImagesFolder, buildLoraSyntax, sendModelPathToWorkflow } from '../../utils/uiHelpers.js';
+import { getModelSourceInfo, getModelSourceGroupKey, getModelSourceViewTitle, openModelSource } from '../../utils/modelSourceHelpers.js';
 import { state, getCurrentPageState } from '../../state/index.js';
 import { showModelModal } from './ModelModal.js';
+import { hasCivitaiSource } from './utils.js';
 import { bulkManager } from '../../managers/BulkManager.js';
 import { modalManager } from '../../managers/ModalManager.js';
 import { NSFW_LEVELS, getBaseModelAbbreviation, getSubTypeAbbreviation, getMatureBlurThreshold, MODEL_SUBTYPE_DISPLAY_NAMES, MODEL_CARD_DRAG_MIME_TYPE } from '../../utils/constants.js';
@@ -63,10 +65,16 @@ function handleModelCardEvent_internal(event, modelType) {
 
     if (event.target.closest('.fa-globe')) {
         event.stopPropagation();
-        if (card.dataset.from_civitai === 'true') {
+        // CivitAI wins when the model actually has CivitAI data; otherwise fall
+        // back to the linked external source. Relying on `from_civitai` here
+        // made the two sources mutually exclusive whenever one of them was
+        // (re)linked (#1094).
+        if (card.dataset.has_civitai === 'true') {
             openCivitai(card.dataset.filepath);
-        } else if (card.dataset.hf_url) {
+        } else if (card.dataset.source_platform === 'huggingface' && card.dataset.hf_url) {
             openHuggingFace(card.dataset.hf_url);
+        } else if (card.dataset.source_url) {
+            openModelSource(card.dataset.source_url);
         }
         return true; // Stop propagation
     }
@@ -250,6 +258,11 @@ function handleCopyAction(card, modelType) {
         const embeddingCode = folder ? `embedding:${folder}/${name}` : `embedding:${name}`;
         const message = translate('modelCard.actions.embeddingNameCopied', {}, 'Embedding syntax copied');
         copyToClipboard(embeddingCode, message);
+    } else {
+        // Other model types (VAE, upscalers, ...) - copy the file name
+        const fileName = card.dataset.file_name;
+        const message = translate('modelCard.actions.modelNameCopied', {}, 'Model name copied');
+        copyToClipboard(fileName, message);
     }
 }
 
@@ -328,6 +341,8 @@ async function showModelModalFromCard(card, modelType) {
         modified: card.dataset.modified,
         file_size: parseInt(card.dataset.file_size || '0'),
         from_civitai: card.dataset.from_civitai === 'true',
+        source_platform: card.dataset.source_platform || '',
+        source_url: card.dataset.source_url || '',
         hf_url: card.dataset.hf_url || '',
         base_model: card.dataset.base_model,
         notes: card.dataset.notes || '',
@@ -419,6 +434,8 @@ function showExampleAccessModal(card, modelType) {
                 modified: card.dataset.modified,
                 file_size: card.dataset.file_size,
                 from_civitai: card.dataset.from_civitai === 'true',
+                source_platform: card.dataset.source_platform || '',
+                source_url: card.dataset.source_url || '',
                 hf_url: card.dataset.hf_url || '',
                 base_model: card.dataset.base_model,
                 notes: card.dataset.notes,
@@ -473,12 +490,19 @@ export function createModelCard(model, modelType) {
     card.dataset.modified = model.modified;
     card.dataset.file_size = model.file_size;
     card.dataset.from_civitai = model.from_civitai;
+    // Independent of `from_civitai`: a model can have both CivitAI data and an
+    // HF link, and the card globe must keep pointing at CivitAI when it does.
+    card.dataset.has_civitai = hasCivitaiSource(model.civitai) ? 'true' : 'false';
     card.dataset.usage_count = String(model.usage_count);
     card.dataset.notes = model.notes || '';
     card.dataset.base_model = model.base_model || 'Unknown';
     card.dataset.favorite = model.favorite ? 'true' : 'false';
     card.dataset.exclude = model.exclude ? 'true' : 'false';
-    card.dataset.hf_url = model.hf_url || '';
+    const modelSourceInfo = getModelSourceInfo(model);
+    card.dataset.source_url = modelSourceInfo?.url || '';
+    card.dataset.source_platform = modelSourceInfo?.platform || '';
+    // Legacy alias: only Hugging Face models expose `hf_url`.
+    card.dataset.hf_url = modelSourceInfo?.platform === 'huggingface' ? modelSourceInfo.url : '';
     const hasUpdateAvailable = Boolean(model.update_available);
     card.dataset.update_available = hasUpdateAvailable ? 'true' : 'false';
     card.dataset.skip_metadata_refresh = model.skip_metadata_refresh ? 'true' : 'false';
@@ -496,11 +520,12 @@ export function createModelCard(model, modelType) {
     const modelId = civitaiData?.modelId ?? civitaiData?.model_id;
     if (modelId !== undefined && modelId !== null && modelId !== '') {
         card.dataset.modelId = modelId;
-    } else if (model.hf_url) {
-        // For HF-only models, derive a group key from hf_url for version grouping
-        const match = model.hf_url.match(/https?:\/\/huggingface\.co\/([^/]+\/[^/]+)/);
-        if (match) {
-            card.dataset.modelId = 'hf:' + match[1];
+    } else {
+        // For externally-sourced models, derive a group key from the source
+        // URL for version grouping (hf:user/repo, ms:user/repo, ta:<id>).
+        const sourceGroupKey = getModelSourceGroupKey(model);
+        if (sourceGroupKey) {
+            card.dataset.modelId = sourceGroupKey;
         }
     }
 
@@ -595,21 +620,24 @@ export function createModelCard(model, modelType) {
     const favoriteTitle = isFavorite ?
         translate('modelCard.actions.removeFromFavorites', {}, 'Remove from favorites') :
         translate('modelCard.actions.addToFavorites', {}, 'Add to favorites');
-    const globeTitle = model.from_civitai ?
+    const hasCivitai = hasCivitaiSource(model.civitai);
+    const globeTitle = hasCivitai ?
         translate('modelCard.actions.viewOnCivitai', {}, 'View on Civitai') :
-        model.hf_url ?
-            translate('modelCard.actions.viewOnHuggingFace', {}, 'View on Hugging Face') :
+        modelSourceInfo ?
+            getModelSourceViewTitle(modelSourceInfo) :
             translate('modelCard.actions.notAvailableFromCivitai', {}, 'Not available from Civitai');
-    const globeEnabled = model.from_civitai || !!model.hf_url;
+    const globeEnabled = hasCivitai || !!modelSourceInfo;
     let sendTitle;
     let copyTitle;
     if (modelType === MODEL_TYPES.LORA) {
         sendTitle = translate('modelCard.actions.sendToWorkflow', {}, 'Send to ComfyUI (Click: Append, Shift+Click: Replace)');
         copyTitle = translate('modelCard.actions.copyLoRASyntax', {}, 'Copy LoRA Syntax');
     } else if (modelType === MODEL_TYPES.CHECKPOINT) {
+        // Checkpoint send sets the widget value directly; no append/replace modes.
         sendTitle = translate('modelCard.actions.sendCheckpointToWorkflow', {}, 'Send to ComfyUI');
         copyTitle = translate('modelCard.actions.copyCheckpointName', {}, 'Copy checkpoint name');
     } else if (modelType === MODEL_TYPES.EMBEDDING) {
+        // Embedding send always appends to the prompt; no replace mode.
         sendTitle = translate('modelCard.actions.sendEmbeddingToWorkflow', {}, 'Send to ComfyUI');
         copyTitle = translate('modelCard.actions.copyEmbeddingName', {}, 'Copy embedding name');
     } else {

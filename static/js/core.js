@@ -7,6 +7,7 @@ import { HeaderManager } from './components/Header.js';
 import { settingsManager } from './managers/SettingsManager.js';
 import { moveManager } from './managers/MoveManager.js';
 import { bulkManager } from './managers/BulkManager.js';
+import { rematchModalManager } from './managers/RematchModalManager.js';
 import { ExampleImagesManager } from './managers/ExampleImagesManager.js';
 import { helpManager } from './managers/HelpManager.js';
 import { doctorManager } from './managers/DoctorManager.js';
@@ -68,6 +69,7 @@ export class AppCore {
         window.doctorManager = doctorManager;
         window.moveManager = moveManager;
         window.bulkManager = bulkManager;
+        window.rematchModalManager = rematchModalManager;
         
         // Initialize UI components
         window.headerManager = new HeaderManager();
@@ -114,7 +116,7 @@ export class AppCore {
     initializePageFeatures() {
         const pageType = this.getPageType();
         
-        if (['loras', 'recipes', 'checkpoints', 'embeddings'].includes(pageType)) {
+        if (['loras', 'recipes', 'checkpoints', 'embeddings', 'other'].includes(pageType)) {
             this.initializeContextMenus(pageType);
             initializeInfiniteScroll(pageType);
         }

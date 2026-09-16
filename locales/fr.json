@@ -2,6 +2,11 @@
     "common": {
         "cancel": "Annuler",
         "confirm": "Confirmer",
+        "reorder": {
+            "dragHandle": "Glisser pour réordonner (Alt + ↑/↓)",
+            "ariaLabel": "Réordonner {item}, position {position} sur {total}",
+            "announcement": "Déplacé en position {position} sur {total}"
+        },
         "actions": {
             "save": "Enregistrer",
             "cancel": "Annuler",
@@ -50,6 +55,27 @@
             "mb": "Mo",
             "gb": "Go",
             "tb": "To"
+        },
+        "scanProgress": {
+            "refreshing": "Actualisation des {type}...",
+            "fullRebuilding": "Reconstruction complète des {type}...",
+            "actionRefresh": "Actualisation",
+            "actionFullRebuild": "Reconstruction complète",
+            "actionRefreshLower": "l’actualisation",
+            "actionRebuildLower": "la reconstruction",
+            "stages": {
+                "scan_folders": "Scan des dossiers...",
+                "count_models": "{total} fichiers trouvés",
+                "process_models": "Traitement des modèles",
+                "reconcile_scan": "Vérification des modifications...",
+                "process_new": "Traitement des nouveaux modèles",
+                "finalizing": "Finalisation..."
+            },
+            "eta": {
+                "lessThanMinute": "Moins d’une minute restante",
+                "minutes": "~{minutes} min restantes",
+                "hours": "~{hours} h {minutes} min restantes"
+            }
         }
     },
     "onboarding": {
@@ -75,7 +101,7 @@
             },
             "bulk": {
                 "title": "Opérations groupées",
-                "content": "Activez le mode groupé en cliquant sur ce bouton ou en appuyant sur <span class=\"onboarding-shortcut\">B</span>. Sélectionnez plusieurs modèles et effectuez des opérations groupées. Utilisez <span class=\"onboarding-shortcut\">Ctrl+A</span> pour sélectionner tous les modèles visibles."
+                "content": "Activez le mode groupé en cliquant sur ce bouton ou en appuyant sur <span class=\"onboarding-shortcut\">B</span> pour sélectionner plusieurs modèles et effectuer des opérations groupées.<br>• <span class=\"onboarding-shortcut\">Ctrl/Cmd+A</span> sélectionne tous les modèles visibles, <span class=\"onboarding-shortcut\">Shift+Click</span> sélectionne une plage.<br>• <span class=\"onboarding-shortcut\">Esc</span> ou un clic sur une zone vide quitte le mode groupé."
             },
             "searchOptions": {
                 "title": "Options de recherche",
@@ -95,7 +121,19 @@
             },
             "contextMenu": {
                 "title": "Menu contextuel",
-                "content": "<strong>Clic droit</strong> sur une carte de modèle pour accéder à un menu contextuel avec des actions supplémentaires."
+                "content": "<strong>Clic droit</strong> sur n'importe quelle carte de modèle pour ouvrir un menu contextuel avec des actions sur la carte comme déplacer, supprimer ou modifier les métadonnées."
+            },
+            "marqueeSelect": {
+                "title": "Glisser pour sélectionner",
+                "content": "Maintenez le <strong>bouton gauche de la souris</strong> enfoncé sur une zone vide de la grille et glissez pour tracer un rectangle de sélection qui sélectionne plusieurs cartes à la fois."
+            },
+            "dragToSidebar": {
+                "title": "Organiser par glisser-déposer",
+                "content": "Glissez une carte de modèle sur un dossier de la barre latérale pour y déplacer le fichier. Cela fonctionne aussi avec plusieurs cartes sélectionnées en mode groupé."
+            },
+            "contextMenus": {
+                "title": "Plus de menus contextuels",
+                "content": "En mode groupé, <strong>faites un clic droit sur une carte sélectionnée</strong> pour accéder aux actions groupées. <strong>Faites un clic droit sur une zone vide</strong> de la page pour accéder aux actions globales comme la vérification des mises à jour et la gestion des modèles exclus."
             }
         }
     },
@@ -106,6 +144,7 @@
             "viewOnCivitai": "Voir sur CivitAI",
             "notAvailableFromCivitai": "Non disponible sur CivitAI",
             "viewOnHuggingFace": "Voir sur Hugging Face",
+            "viewOnSource": "Voir sur {source}",
             "sendToWorkflow": "Envoyer vers ComfyUI (Clic: Ajouter, Maj+Clic: Remplacer)",
             "copyLoRASyntax": "Copier la syntaxe LoRA",
             "checkpointNameCopied": "Nom du checkpoint copié",
@@ -116,6 +155,7 @@
             "copyCheckpointName": "Copier le nom du checkpoint",
             "copyEmbeddingName": "Copier le nom de l'embedding",
             "embeddingNameCopied": "Syntaxe dembedding copiée",
+            "modelNameCopied": "Nom du modèle copié",
             "sendCheckpointToWorkflow": "Envoyer vers ComfyUI",
             "sendEmbeddingToWorkflow": "Envoyer vers ComfyUI"
         },
@@ -179,20 +219,10 @@
             "none": "Tous les {typePlural} possèdent déjà des métadonnées de licence",
             "error": "Échec de l'actualisation des métadonnées de licence pour les {typePlural} : {message}"
         },
-        "repairRecipes": {
-            "label": "Réparer les données de Recipes",
-            "loading": "Réparation des données de Recipes...",
-            "success": "{count} Recipes réparées avec succès.",
-            "cancelled": "Réparation annulée. {count} Recipes ont été réparées.",
-            "error": "Échec de la réparation des Recipes : {message}"
-        },
         "rematchRecipes": {
             "label": "Réassocier les Recipes aux modèles locaux",
             "loading": "Réassociation des Recipes aux modèles locaux...",
             "success": "{entries} entrées associées dans {recipes} Recipes",
-            "successErrors": "{entries} entrées associées dans {recipes} Recipes, {failures} échecs",
-            "allFailed": "Échec de la réassociation de {failures} Recipes sur {total}",
-            "noMatch": "Aucune correspondance locale trouvée pour {entries} entrées dans {recipes} Recipes",
             "cancelled": "Réassociation annulée. {recipes} Recipes mises à jour ({entries} entrées)",
             "error": "Échec de la réassociation des Recipes : {message}"
         },
@@ -210,6 +240,7 @@
             "recipes": "Recipes",
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
+            "other": "Autres",
             "statistics": "Statistiques"
         },
         "search": {
@@ -451,6 +482,8 @@
         "layoutSettings": {
             "groupByModel": "Grouper par modèle",
             "groupByModelHelp": "Lorsque activé, seule la version la plus récente de chaque modèle CivitAI s'affiche sous forme de carte unique. Les versions plus anciennes sont masquées.",
+            "stickyControls": "Garder la barre d'actions visible",
+            "stickyControlsHelp": "Lorsque activé, la barre d'actions (Actualiser, Télécharger, etc.) reste épinglée en haut lors du défilement, avec la navigation par fil d'Ariane.",
             "displayDensity": "Densité d'affichage",
             "displayDensityOptions": {
                 "default": "Par défaut",
@@ -508,6 +541,25 @@
             "defaultUnetRootHelp": "Définir le répertoire racine Diffusion Model (UNET) par défaut pour les téléchargements, imports et déplacements",
             "defaultEmbeddingRoot": "Racine Embedding",
             "defaultEmbeddingRootHelp": "Définir le répertoire racine embedding par défaut pour les téléchargements, imports et déplacements",
+            "defaultVaeRoot": "Racine VAE",
+            "defaultVaeRootHelp": "Définir le répertoire racine VAE par défaut pour les téléchargements, imports et déplacements",
+            "defaultUpscalerRoot": "Racine Upscaler",
+            "defaultUpscalerRootHelp": "Définir le répertoire racine Upscaler par défaut pour les téléchargements, imports et déplacements",
+            "defaultTextEncoderRoot": "Racine Text Encoder",
+            "defaultTextEncoderRootHelp": "Définir le répertoire racine Text Encoder par défaut pour les téléchargements, imports et déplacements",
+            "defaultClipVisionRoot": "Racine CLIP Vision",
+            "defaultClipVisionRootHelp": "Définir le répertoire racine CLIP Vision par défaut pour les téléchargements, imports et déplacements",
+            "defaultControlnetRoot": "Racine ControlNet",
+            "defaultControlnetRootHelp": "Définir le répertoire racine ControlNet par défaut pour les téléchargements, imports et déplacements",
+            "enableOtherModels": "Gestion des autres modèles",
+            "enableOtherModelsHelp": "Lorsque cette option est désactivée, les dossiers VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet ne sont pas analysés, la page Autres modèles reste désactivée et ces types de modèles ne peuvent pas être téléchargés.",
+            "otherSubTypes": "Types de modèles gérés",
+            "otherSubTypesHelp": "Choisissez les catégories d’autres modèles analysées et affichées sur la page Autres modèles.",
+            "subTypeVae": "VAE",
+            "subTypeUpscaler": "Upscaler",
+            "subTypeTextEncoder": "Text Encoder",
+            "subTypeClipVision": "CLIP Vision",
+            "subTypeControlnet": "ControlNet",
             "recipesPath": "Chemin de stockage des Recipes",
             "recipesPathHelp": "Dossier personnalisé facultatif pour les Recipes enregistrées. Laissez vide pour utiliser le dossier recipes de la première racine LoRA.",
             "recipesPathPlaceholder": "/path/to/recipes",
@@ -786,7 +838,6 @@
             "setContentRating": "Définir la classification du contenu pour tous",
             "copyAll": "Copier toute la syntaxe",
             "refreshAll": "Actualiser toutes les métadonnées",
-            "repairMetadata": "Réparer les métadonnées de la sélection",
             "rematchMetadata": "Réassocier la sélection aux modèles locaux",
             "reimportMetadata": "Ré-importer depuis la source",
             "checkUpdates": "Vérifier les mises à jour pour la sélection",
@@ -822,14 +873,14 @@
                 "complete": "Auto-organisation terminée",
                 "error": "Erreur : {error}"
             },
-            "enrichHfAgent": "Enrichir les métadonnées HF (IA)"
+            "enrichHfAgent": "Enrichir les métadonnées avec l'IA"
         },
         "contextMenu": {
             "refreshMetadata": "Actualiser les données CivitAI",
             "checkUpdates": "Vérifier les mises à jour",
             "linkModel": "Lier le modèle",
             "linkCivitai": "Relier à nouveau à CivitAI",
-            "linkHuggingFace": "Lier à HuggingFace",
+            "linkModelSource": "Lier à une source de modèle",
             "copySyntax": "Copier la syntaxe LoRA",
             "copyFilename": "Copier le nom de fichier du modèle",
             "copyRecipeSyntax": "Copier la syntaxe de la recipe",
@@ -842,7 +893,6 @@
             "replacePreview": "Remplacer l'aperçu",
             "setContentRating": "Définir la classification du contenu",
             "moveToFolder": "Déplacer vers un dossier",
-            "repairMetadata": "Réparer les métadonnées",
             "rematchMetadata": "Réassocier aux modèles locaux",
             "reimportMetadata": "Ré-importer depuis la source",
             "excludeModel": "Exclure le modèle",
@@ -852,7 +902,7 @@
             "viewAllLoras": "Voir tous les LoRAs",
             "downloadMissingLoras": "Télécharger les LoRAs manquants",
             "deleteRecipe": "Supprimer la recipe",
-            "enrichHfAgent": "Enrichir les métadonnées HF (IA)"
+            "enrichHfAgent": "Enrichir les métadonnées avec l'IA"
         }
     },
     "recipes": {
@@ -1095,13 +1145,6 @@
                 "getInfoFailed": "Échec de l'obtention des informations pour les LoRAs manquants",
                 "prepareError": "Erreur lors de la préparation des LoRAs pour le téléchargement : {message}"
             },
-            "repair": {
-                "starting": "Réparation des métadonnées de la Recipe...",
-                "success": "Métadonnées de la Recipe réparées avec succès",
-                "skipped": "Recette déjà à la version la plus récente, aucune réparation nécessaire",
-                "failed": "Échec de la réparation de la Recipe : {message}",
-                "missingId": "Impossible de réparer la Recipe : ID de Recipe manquant"
-            },
             "reimport": {
                 "starting": "Ré-import de la Recipe depuis la source...",
                 "success": "Recette ré-importée avec succès",
@@ -1185,31 +1228,86 @@
     "embeddings": {
         "title": "Modèles Embedding"
     },
+    "other": {
+        "title": "Autres modèles",
+        "disabled": {
+            "title": "La gestion des autres modèles est désactivée",
+            "description": "Activez-la pour analyser et gérer les fichiers VAE, Upscaler, Text Encoder, CLIP Vision et ControlNet, et pour les télécharger depuis CivitAI.",
+            "enableButton": "Activer les autres modèles",
+            "hint": "Vous pourrez modifier les types de modèles gérés plus tard dans Paramètres > Bibliothèque.",
+            "enableFailed": "Échec de l’activation des autres modèles",
+            "downloadBlocked": "La gestion des autres modèles est désactivée pour ce type de modèle. Activez-la dans Paramètres > Bibliothèque pour télécharger ce fichier.",
+            "enableAction": "Activer les autres modèles"
+        },
+        "noPaths": {
+            "title": "Aucun dossier d’autres modèles trouvé",
+            "descriptionStandalone": "La gestion des autres modèles est activée, mais aucun des dossiers de modèles configurés n’existe sur le disque. Ajoutez les chemins de dossiers ci-dessous à settings.json, puis redémarrez LoRA Manager.",
+            "hintStandalone": "Seules les clés de dossiers listées ci-dessus sont analysées ; les clés inutiles peuvent être omises.",
+            "descriptionComfyUI": "La gestion des autres modèles est activée, mais aucun des dossiers de modèles configurés n’existe sur le disque. Ajoutez les dossiers de modèles correspondants à vos chemins de modèles ComfyUI, puis rechargez cette page.",
+            "hintComfyUI": "Les autres modèles sont lus depuis les dossiers vae, upscale_models, text_encoders, clip_vision et controlnet de ComfyUI.",
+            "openSettings": "Ouvrir les paramètres"
+        }
+    },
     "sidebar": {
         "modelRoot": "Racine",
         "collapseAll": "Réduire tous les dossiers",
+        "collapseAllDisabled": "Non disponible en vue liste",
         "hideOnThisPage": "Masquer la barre latérale sur cette page",
         "showSidebar": "Afficher la barre latérale",
         "sidebarHiddenNotification": "Barre latérale masquée sur la page {page}",
-        "switchToListView": "Passer en vue liste",
-        "switchToTreeView": "Passer en vue arborescence",
+        "viewOptions": "Options d’affichage",
+        "treeView": "Vue arborescente",
+        "listView": "Vue liste",
         "recursiveOn": "Inclure les sous-dossiers",
-        "recursiveOff": "Dossier actuel uniquement",
-        "recursiveUnavailable": "La recherche récursive n'est disponible qu'en vue arborescente",
-        "collapseAllDisabled": "Non disponible en vue liste",
+        "createFolder": "Nouveau dossier",
+        "newSubfolder": "Nouveau sous-dossier",
+        "showEmptyFolders": "Afficher les dossiers vides",
+        "createFolderResult": {
+            "success": "Dossier \"{name}\" créé",
+            "failed": "Échec de la création du dossier : {message}",
+            "unsupported": "La création de dossiers n’est pas prise en charge sur cette page",
+            "noRoot": "Aucune racine de modèle n’est configurée"
+        },
+        "deleteFolder": "Supprimer le dossier",
+        "deleteFolderModal": {
+            "title": "Supprimer le dossier ?",
+            "message": "Le dossier et tout son contenu seront définitivement supprimés du disque.",
+            "folderLabel": "Dossier",
+            "emptyNote": "Ce dossier ne contient aucun modèle. Les autres fichiers qu’il contient seront également supprimés.",
+            "notEmptyTitle": "Le dossier n’est pas vide",
+            "notEmptyMessage": "Ce dossier contient encore des modèles. Supprimez-les ou déplacez-les d’abord — la suppression d’un dossier n’entraîne jamais celle des fichiers de modèles.",
+            "confirm": "Supprimer le dossier"
+        },
+        "deleteFolderResult": {
+            "success": "Dossier \"{name}\" supprimé",
+            "successWithFiles": "Dossier \"{name}\" supprimé, ainsi que {count} autre(s) élément(s)",
+            "restored": "Dossier restauré",
+            "failed": "Échec de la suppression du dossier : {message}",
+            "notEmpty": "Ce dossier contient encore des modèles. Actualisez la barre latérale et réessayez.",
+            "busy": "Une suppression est encore en attente dans ce dossier. Attendez la fin de la fenêtre d’annulation.",
+            "unsupported": "La suppression de dossiers n’est pas prise en charge sur cette page",
+            "noRoot": "Aucune racine de modèle n’est configurée"
+        },
+        "renameFolder": "Renommer le dossier",
+        "renameFolderResult": {
+            "success": "Dossier renommé en \"{name}\"",
+            "failed": "Échec du renommage du dossier : {message}",
+            "targetExists": "Un dossier portant ce nom existe déjà ici",
+            "busy": "Une suppression est encore en attente dans ce dossier. Attendez la fin de la fenêtre d’annulation.",
+            "unsupported": "Le renommage de dossiers n’est pas pris en charge sur cette page",
+            "noRoot": "Aucune racine de modèle n’est configurée"
+        },
         "dragDrop": {
             "unableToResolveRoot": "Impossible de déterminer le chemin de destination pour le déplacement.",
             "moveUnsupported": "Le déplacement n'est pas pris en charge pour cet élément.",
-            "createFolderHint": "Relâcher pour créer un nouveau dossier",
             "newFolderName": "Nom du nouveau dossier",
-            "folderNameHint": "Appuyez sur Entrée pour confirmer, Échap pour annuler",
             "emptyFolderName": "Veuillez saisir un nom de dossier",
             "invalidFolderName": "Le nom du dossier contient des caractères invalides",
             "noDragState": "Aucune opération de glissement en attente trouvée"
         },
         "empty": {
             "noFolders": "Aucun dossier trouvé",
-            "dragHint": "Faites glisser des éléments ici pour créer des dossiers"
+            "createHint": "Cliquez sur le bouton Nouveau dossier ci-dessus pour créer des dossiers"
         },
         "folderUpdateCheck": {
             "label": "Vérifier les mises à jour dans ce dossier",
@@ -1337,9 +1435,9 @@
         "download": {
             "title": "Télécharger un modèle depuis une URL",
             "titleWithType": "Télécharger {type} depuis une URL",
-            "civitaiUrl": "URL CivitAI :",
+            "civitaiUrl": "URL du modèle :",
             "placeholder": "https://civitai.com/models/...",
-            "urlHint": "Entrez une URL CivitAI, CivArchive ou Hugging Face par ligne. Prend en charge plusieurs URL pour le téléchargement par lot.",
+            "urlHint": "Entrez une URL CivitAI, CivArchive, Hugging Face ou ModelScope par ligne. Prend en charge plusieurs URL pour le téléchargement par lot.",
             "selectHfFiles": "Sélectionnez le(s) fichier(s) à télécharger depuis ce dépôt :",
             "selectAll": "Tout sélectionner",
             "fetchingRepoFiles": "Récupération des fichiers du dépôt...",
@@ -1372,9 +1470,9 @@
                 "inLibrary": "Dans la bibliothèque"
             },
             "errors": {
-                "invalidUrl": "Format d'URL CivitAI invalide",
+                "invalidUrl": "Format d'URL de modèle invalide",
                 "noVersions": "Aucune version disponible pour ce modèle",
-                "mixedSources": "Impossible de mélanger les URL CivitAI et Hugging Face dans le même lot.",
+                "mixedSources": "Impossible de mélanger les URL CivitAI et Hugging Face / ModelScope dans le même lot.",
                 "noModelFiles": "Aucun fichier de modèle trouvé dans ce dépôt."
             },
             "status": {
@@ -1482,6 +1580,41 @@
             "note": "Les fichiers seront téléchargés en utilisant les modèles de chemins par défaut. Cela peut prendre un certain temps selon le nombre de LoRAs.",
             "downloadButton": "Télécharger {count} LoRA(s)"
         },
+        "rematchOptions": {
+            "title": "Réassocier les Recipes",
+            "messageGlobal": "Toutes les Recipes seront analysées par rapport à votre bibliothèque de modèles locale.",
+            "messageSingle": "Cette Recipe sera analysée par rapport à votre bibliothèque de modèles locale.",
+            "messageBulk": "{count} Recipes sélectionnées seront analysées par rapport à votre bibliothèque de modèles locale.",
+            "relaxedLabel": "Reconnecter aussi les modèles manquants par nom de fichier",
+            "relaxedDescription": "Ces modèles peuvent aussi être corrigés par téléchargement — le téléchargement est plus précis. Les correspondances peuvent associer une version différente ; elles seront listées pour vérification et peuvent être annulées.",
+            "confirmButton": "Réassocier"
+        },
+        "rematchResults": {
+            "undo": "Annuler",
+            "undone": "Annulé",
+            "undoFailed": "Échec de l'annulation de la réassociation : {message}"
+        },
+        "rematchSummary": {
+            "title": "Résumé de la réassociation",
+            "successMessage": "{entries} entrées associées",
+            "failed": "Échec de la réassociation",
+            "completedWithWarnings": "Réassociation terminée — vérification recommandée",
+            "cancelledNote": "Exécution annulée avant la fin — les décomptes sont partiels.",
+            "statMatched": "Entrées associées",
+            "statReview": "À vérifier",
+            "statUnresolved": "Sans correspondance",
+            "statErrors": "Erreurs",
+            "reviewSection": "Correspondances par nom de fichier à vérifier ({count})",
+            "columnRecipe": "Recipe",
+            "columnEntry": "Entrée",
+            "columnFile": "Fichier correspondant",
+            "columnUndo": "Annuler",
+            "copyReport": "Copier le rapport",
+            "close": "Fermer",
+            "scope_global": "Toutes les Recipes",
+            "scope_bulk": "Recipes sélectionnées",
+            "scope_single": "Une seule Recipe"
+        },
         "exampleAccess": {
             "title": "Images d'exemple locales",
             "message": "Aucune image d'exemple locale trouvée pour ce modèle. Options d'affichage :",
@@ -1504,12 +1637,16 @@
             "pathPlaceholder": "Tapez le chemin du dossier ou sélectionnez dans l'arbre ci-dessous...",
             "root": "Racine"
         },
-        "linkHuggingFace": {
-            "title": "Lier à HuggingFace",
-            "infoText": "Collez l'URL du dépôt HuggingFace pour associer ce modèle à sa source. Cela permet l'enrichissement des métadonnées par IA.",
-            "urlLabel": "URL du dépôt HuggingFace :",
+        "linkModelSource": {
+            "title": "Lier à une source de modèle",
+            "infoText": "Collez l'URL de la page du modèle pour associer ce modèle à sa source. La liaison permet l'enrichissement des métadonnées par IA pour les modèles Hugging Face et ModelScope.",
+            "urlLabel": "URL de la page du modèle :",
             "urlPlaceholder": "https://huggingface.co/user/repo",
-            "helpText": "Entrez l'URL complète du dépôt HuggingFace.",
+            "helpText": "Entrez l'URL complète de la page du modèle. Sites pris en charge :",
+            "enrichNote": "L'enrichissement par IA nécessite une fiche de modèle lisible. Les sites qui n'en exposent pas (actuellement TensorArt) ne peuvent être que liés.",
+            "urlRequired": "Veuillez saisir l'URL de la page du modèle.",
+            "invalidUrl": "URL non prise en charge. Sites pris en charge : Hugging Face, ModelScope, TensorArt.",
+            "linking": "Liaison de la source du modèle...",
             "confirmAction": "Enregistrer & lier"
         },
         "relinkCivitai": {
@@ -1593,7 +1730,11 @@
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "Valeur",
                 "add": "Ajouter",
-                "invalidRange": "Format de plage invalide. Utilisez x.x-y.y"
+                "invalidRange": "Format de plage invalide. Utilisez x.x-y.y",
+                "invalidValue": "Veuillez saisir un nombre valide",
+                "saveFailed": "Échec de l'enregistrement du paramètre préréglé",
+                "added": "Paramètre préréglé ajouté",
+                "updated": "Paramètre préréglé mis à jour"
             },
             "triggerWords": {
                 "label": "Mots-clés",
@@ -1604,7 +1745,7 @@
                 "addPlaceholder": "Tapez pour ajouter ou cliquez sur les suggestions ci-dessous",
                 "editWord": "Modifier le mot-clé",
                 "editPlaceholder": "Modifier le mot-clé",
-                "copyWord": "Copier le mot-clé",
+                "copyOrEditWord": "Cliquez pour copier, double-cliquez pour modifier",
                 "deleteWord": "Supprimer le mot-clé",
                 "suggestions": {
                     "noSuggestions": "Aucune suggestion disponible",
@@ -1751,7 +1892,7 @@
                 "empty": "Aucun historique de versions n'est disponible pour ce modèle pour le moment.",
                 "error": "Échec du chargement des versions.",
                 "missingModelId": "Ce modèle ne possède pas d'identifiant de modèle CivitAI.",
-                "hfGroupInfo": "Ceci est un groupe de modèles HuggingFace. Ouvrez la bibliothèque pour voir toutes les versions dans la grille.",
+                "sourceGroupInfo": "Ceci est un groupe de modèles {source}. Ouvrez la bibliothèque pour voir toutes les versions dans la grille.",
                 "confirm": {
                     "delete": "Supprimer cette version de votre bibliothèque ?"
                 },
@@ -1822,6 +1963,10 @@
         "embeddings": {
             "title": "Initialisation du gestionnaire Embedding",
             "message": "Scan et construction du cache embedding. Cela peut prendre quelques minutes..."
+        },
+        "other": {
+            "title": "Initialisation du gestionnaire Autres modèles",
+            "message": "Analyse et construction du cache de modèles. Cela peut prendre quelques minutes..."
         },
         "recipes": {
             "title": "Initialisation du gestionnaire de recipes",
@@ -1929,10 +2074,52 @@
         "tabs": {
             "gettingStarted": "Commencer",
             "updateVlogs": "Vlogs de mise à jour",
-            "documentation": "Documentation"
+            "documentation": "Documentation",
+            "shortcuts": "Raccourcis"
         },
         "gettingStarted": {
-            "title": "Premiers pas avec le Gestionnaire LoRA"
+            "title": "Premiers pas avec le Gestionnaire LoRA",
+            "replayTutorial": "Rejouer le tutoriel"
+        },
+        "shortcuts": {
+            "title": "Raccourcis clavier et souris",
+            "groups": {
+                "general": "Général",
+                "actions": "Actions",
+                "selection": "Sélection et mode groupé",
+                "navigation": "Navigation",
+                "modelModal": "Modale Modèle / Recipe",
+                "mediaViewer": "Visionneuse de médias / Galerie d'exemples"
+            },
+            "keys": {
+                "click": "Clic",
+                "drag": "Glisser",
+                "rightClick": "Clic droit",
+                "letter": "Lettre",
+                "swipe": "Balayage"
+            },
+            "entries": {
+                "focusSearch": "Donner le focus au champ de recherche",
+                "closeModal": "Fermer la fenêtre modale / le panneau",
+                "openShortcuts": "Ouvrir ce panneau de raccourcis",
+                "refresh": "Actualiser la liste des modèles",
+                "fetchMetadata": "Récupérer les métadonnées depuis CivitAI (pages de modèles uniquement)",
+                "downloadModel": "Télécharger un modèle (pages de modèles uniquement)",
+                "toggleBulkMode": "Activer/désactiver le mode groupé",
+                "selectAll": "Sélectionner tous les modèles visibles",
+                "rangeSelect": "Sélection d'une plage",
+                "marqueeSelect": "Sélection par glisser-déposer des cartes (sur une zone vide de la grille)",
+                "exitBulkMode": "Quitter le mode groupé",
+                "bulkActions": "Sur une carte sélectionnée : menu des actions groupées",
+                "globalActions": "Sur une zone vide de la page : menu des actions globales (vérification des mises à jour, gestion des modèles exclus)",
+                "scrollPages": "Faire défiler les pages",
+                "jumpAlphabet": "Sauter via la barre alphabétique",
+                "prevNext": "Modèle précédent / suivant",
+                "deleteEntry": "Supprimer",
+                "cycleMedia": "Parcourir les médias ([ / ] dans la galerie d'exemples)",
+                "swipeTouch": "Parcourir les médias sur les appareils tactiles",
+                "closeViewer": "Fermer la visionneuse"
+            }
         },
         "updateVlogs": {
             "title": "Dernières mises à jour",
@@ -1949,7 +2136,8 @@
             "settings": "Paramètres & Configuration",
             "extensions": "Extensions",
             "newBadge": "NOUVEAU"
-        }
+        },
+        "newContentBadge": "NOUVEAU"
     },
     "update": {
         "title": "Vérifier les mises à jour",
@@ -2102,6 +2290,7 @@
             "createMissingData": "Données requises manquantes pour créer le Recipe",
             "created": "Recipe créé avec succès",
             "noMissingLoras": "Aucun LoRA manquant à télécharger",
+            "unresolvableMarkedForReconnect": "{count} entrées irrésolubles marquées — elles peuvent maintenant être reconnectées à un LoRA local.",
             "noPreviousRecipe": "Aucune Recipe précédente",
             "noNextRecipe": "Aucune Recipe suivante",
             "missingLorasInfoFailed": "Échec de l'obtention des informations pour les LoRAs manquants",
@@ -2156,16 +2345,10 @@
             "batchImportBrowseFailed": "Échec de la navigation dans le dossier : {message}",
             "batchImportDirectorySelected": "Dossier sélectionné : {path}",
             "noRecipesSelected": "Aucune Recipe sélectionnée",
-            "repairBulkComplete": "Réparation terminée : {repaired} réparée(s), {skipped} ignorée(s) (sur {total})",
-            "repairBulkSkipped": "Aucune réparation nécessaire parmi les {total} Recipes sélectionnées",
-            "repairBulkFailed": "Échec de la réparation des Recipes sélectionnées : {message}",
-            "rematchComplete": "{entries} entrées associées dans {recipes} Recipes",
-            "rematchCompleteErrors": "{entries} entrées associées dans {recipes} Recipes, {failures} échecs",
-            "rematchAllFailed": "Échec de la réassociation de {failures} Recipes sélectionnées sur {total}",
-            "rematchUnmatched": "Aucune correspondance locale trouvée pour {entries} entrées dans {recipes} Recipes",
             "rematchSkipped": "Aucune des {total} Recipes sélectionnées ne nécessite de réassociation",
             "rematchFailed": "Échec de la réassociation des Recipes sélectionnées : {message}",
             "reimporting": "Ré-import de la Recipe depuis la source...",
+            "reimportingViaExtension": "Ré-import de la Recipe {current}/{total} via l’extension du navigateur...",
             "reimportSuccess": "Recette ré-importée avec succès",
             "reimportBulkComplete": "Ré-import terminé : {completed} ré-importé(s), {failed} échec(s) (sur {total})",
             "reimportBulkFailed": "Échec du ré-import de certaines Recipes",
@@ -2240,6 +2423,7 @@
             "checkpointRootsFailed": "Échec du chargement des racines checkpoint : {message}",
             "unetRootsFailed": "Échec du chargement des racines Diffusion Model : {message}",
             "embeddingRootsFailed": "Échec du chargement des racines embedding : {message}",
+            "otherRootsFailed": "Échec du chargement des racines des autres modèles : {message}",
             "mappingsUpdated": "Mappages de chemin de modèle de base mis à jour ({count} mappage{plural})",
             "mappingsCleared": "Mappages de chemin de modèle de base effacés",
             "mappingSaveFailed": "Échec de la sauvegarde des mappages de modèle de base : {message}",
@@ -2344,7 +2528,9 @@
             "linkCivArchSuccess": "Modèle relié via CivitArchive avec succès",
             "fetchMetadataFirst": "Veuillez d'abord récupérer les métadonnées depuis CivitAI",
             "noCivitaiInfo": "Aucune information CivitAI disponible",
-            "missingHash": "Hash du modèle non disponible"
+            "missingHash": "Hash du modèle non disponible",
+            "enrichNeedsSource": "Liez d'abord ce modèle à une source de modèle (Lier le modèle → Lier à une source de modèle)",
+            "enrichUnsupportedSource": "L'enrichissement par IA n'est pas disponible pour les modèles {source}"
         },
         "exampleImages": {
             "pathUpdated": "Chemin des images d'exemple mis à jour avec succès",
@@ -2502,6 +2688,12 @@
             "rebuilding": "Reconstruction du cache...",
             "rebuildFailed": "Échec de la reconstruction du cache : {error}",
             "retry": "Réessayer"
+        },
+        "otherModels": {
+            "title": "La gestion des autres modèles est disponible",
+            "content": "Analysez et gérez les fichiers VAE, Upscaler, Text Encoder, CLIP Vision et ControlNet, et téléchargez-les depuis CivitAI, le tout depuis une page dédiée.",
+            "enable": "Activer les autres modèles",
+            "openSettings": "Ouvrir les paramètres"
         }
     }
 }

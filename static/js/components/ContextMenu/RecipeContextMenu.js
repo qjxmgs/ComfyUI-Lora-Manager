@@ -6,6 +6,9 @@ import { setSessionItem, removeSessionItem } from '../../utils/storageHelpers.js
 import { updateRecipeMetadata } from '../../api/recipeApi.js';
 import { state } from '../../state/index.js';
 import { moveManager } from '../../managers/MoveManager.js';
+import { rematchModalManager } from '../../managers/RematchModalManager.js';
+import { showRematchSummary } from '../RematchSummaryModal.js';
+import { probeExtension, delegateReimport, getCivitaiImageInfo } from '../../utils/extensionReimportBridge.js';
 
 export class RecipeContextMenu extends BaseContextMenu {
     constructor() {
@@ -92,10 +95,6 @@ export class RecipeContextMenu extends BaseContextMenu {
             case 'download-missing':
                 // Download missing LoRAs
                 this.downloadMissingLoRAs(recipeId);
-                break;
-            case 'repair':
-                // Repair recipe metadata
-                this.repairRecipe(recipeId);
                 break;
             case 'rematch':
                 // Rematch recipe resources to local models
@@ -297,44 +296,6 @@ export class RecipeContextMenu extends BaseContextMenu {
         }
     }
 
-    // Repair recipe metadata
-    async repairRecipe(recipeId) {
-        if (!recipeId) {
-            showToast('recipes.contextMenu.repair.missingId', {}, 'error');
-            return;
-        }
-
-        try {
-            showToast('recipes.contextMenu.repair.starting', {}, 'info');
-
-            const response = await fetch(`/api/lm/recipe/${recipeId}/repair`, {
-                method: 'POST'
-            });
-            const result = await response.json();
-
-            if (result.success) {
-                if (result.repaired > 0) {
-                    showToast('recipes.contextMenu.repair.success', {}, 'success');
-                    const detailResponse = await fetch(`/api/lm/recipe/${recipeId}`);
-                    if (detailResponse.ok) {
-                        const updatedRecipe = await detailResponse.json();
-                        const filePath = this.currentCard?.dataset?.filepath;
-                        if (filePath && state.virtualScroller) {
-                            state.virtualScroller.updateSingleItem(filePath, updatedRecipe);
-                        }
-                    }
-                } else {
-                    showToast('recipes.contextMenu.repair.skipped', {}, 'info');
-                }
-            } else {
-                throw new Error(result.error || 'Repair failed');
-            }
-        } catch (error) {
-            console.error('Error repairing recipe:', error);
-            showToast('recipes.contextMenu.repair.failed', { message: error.message }, 'error');
-        }
-    }
-
     async rematchRecipe(recipeId) {
         if (!recipeId) {
             showToast('toast.recipes.rematchFailed', { message: 'Missing recipe ID' }, 'error');
@@ -344,26 +305,36 @@ export class RecipeContextMenu extends BaseContextMenu {
         // Capture before any await: the menu's click handler nulls currentCard
         const filePath = this.currentCard?.dataset?.filepath;
 
+        // Collect options (relaxed matching) before starting anything; the
+        // run only begins when the user confirms the dialog.
+        rematchModalManager.showOptionsModal({
+            scope: 'single',
+            onConfirm: ({ relaxed }) => this._startRematchRecipe(recipeId, filePath, relaxed),
+        });
+    }
+
+    async _startRematchRecipe(recipeId, filePath, relaxed = false) {
         try {
             showToast('Rematching recipe to local models...', {}, 'info');
 
             const response = await fetch(`/api/lm/recipe/${recipeId}/rematch`, {
-                method: 'POST'
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ relaxed: !!relaxed }),
             });
             const result = await response.json();
 
             if (result.success) {
                 const matchedEntries = result.matched_entries || result.rematched || 0;
                 const failures = result.errors || 0;
+                const unresolvedEntries = result.unresolved_entries || 0;
+                const l4Matches = Array.isArray(result.l4_matches) ? result.l4_matches : [];
+                // Complete no-op (nothing matched, nothing unresolved, no
+                // errors) keeps the lightweight toast; anything else opens
+                // the post-run summary modal.
+                const isNoop = matchedEntries === 0 && unresolvedEntries === 0 && failures === 0;
+
                 if (matchedEntries > 0) {
-                    const toastKey = failures > 0
-                        ? 'toast.recipes.rematchCompleteErrors'
-                        : 'toast.recipes.rematchComplete';
-                    showToast(
-                        toastKey,
-                        { rematched: matchedEntries, skipped: result.skipped || 0, total: 1, entries: matchedEntries, recipes: 1, failures },
-                        failures > 0 ? 'warning' : 'success'
-                    );
                     const detailResponse = await fetch(`/api/lm/recipe/${recipeId}`);
                     if (detailResponse.ok) {
                         const updatedRecipe = await detailResponse.json();
@@ -371,16 +342,22 @@ export class RecipeContextMenu extends BaseContextMenu {
                             state.virtualScroller.updateSingleItem(filePath, updatedRecipe);
                         }
                     }
-                } else if (result.unresolved_entries > 0) {
-                    // Entries existed but have no local model — expected for
-                    // models deleted from Civitai; informational, not an error.
-                    showToast(
-                        'toast.recipes.rematchUnmatched',
-                        { entries: result.unresolved_entries, recipes: 1, total: 1 },
-                        'info'
-                    );
-                } else {
+                }
+
+                if (isNoop) {
                     showToast('toast.recipes.rematchSkipped', { total: 1 }, 'info');
+                } else {
+                    showRematchSummary({
+                        scope: 'single',
+                        total: 1,
+                        matchedRecipes: result.matched_recipes || (matchedEntries > 0 ? 1 : 0),
+                        matchedEntries,
+                        unresolvedRecipes: result.unresolved_recipes || 0,
+                        unresolvedEntries,
+                        skipped: result.skipped || 0,
+                        errors: failures,
+                        l4Matches,
+                    });
                 }
             } else {
                 throw new Error(result.error || 'Rematch failed');
@@ -395,6 +372,24 @@ export class RecipeContextMenu extends BaseContextMenu {
         if (!recipeId) {
             showToast('recipes.contextMenu.reimport.missingId', {}, 'error');
             return;
+        }
+
+        // Recipes imported from a CivitAI image page can carry incomplete
+        // metadata (0 LoRAs); the companion browser extension can re-import
+        // them with the full page data. Fall back to the native path whenever
+        // the extension is absent, unlicensed, or the delegation fails.
+        const recipeItem = state.virtualScroller?.items?.find(item => item?.id === recipeId);
+        const civitaiImage = getCivitaiImageInfo(recipeItem?.source_path);
+        if (civitaiImage) {
+            try {
+                const probe = await probeExtension();
+                if (probe?.supported && probe?.licenseValid) {
+                    await this.reimportViaExtension(recipeId, civitaiImage, recipeItem?.title || '');
+                    return;
+                }
+            } catch (error) {
+                console.warn('Extension re-import unavailable, using native path:', error);
+            }
         }
 
         state.loadingManager.showSimpleLoading('Re-importing recipe from source...');
@@ -417,6 +412,34 @@ export class RecipeContextMenu extends BaseContextMenu {
             console.error('Error reimporting recipe:', error);
             state.loadingManager.hide();
             showToast('recipes.contextMenu.reimport.failed', { message: error.message }, 'error');
+        }
+    }
+
+    // Re-import a single CivitAI-image recipe through the companion browser
+    // extension. Throws on delegation failure so the caller can fall back to
+    // the native path.
+    async reimportViaExtension(recipeId, civitaiImage, title) {
+        state.loadingManager.showSimpleLoading('Re-importing recipe via browser extension...');
+
+        try {
+            const { failed } = await delegateReimport([{
+                recipeId,
+                imageId: civitaiImage.imageId,
+                imageUrl: civitaiImage.imageUrl,
+                title,
+            }]);
+
+            state.loadingManager.hide();
+            if (failed > 0) {
+                showToast('recipes.contextMenu.reimport.failed', { message: 'Extension re-import failed' }, 'error');
+            } else {
+                showToast('toast.recipes.reimportSuccess', {}, 'success');
+            }
+            const { resetAndReload } = await import('../../api/recipeApi.js');
+            resetAndReload(false, { preserveScroll: false });
+        } catch (error) {
+            state.loadingManager.hide();
+            throw error;
         }
     }
 }
