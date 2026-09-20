@@ -3,9 +3,7 @@
         "cancel": "취소",
         "confirm": "확인",
         "reorder": {
-            "dragHandle": "드래그하여 순서 변경 (Alt + ↑/↓)",
-            "ariaLabel": "{item} 순서 변경, 총 {total}개 중 {position}번째",
-            "announcement": "총 {total}개 중 {position}번째로 이동했습니다"
+            "dragHandle": "드래그하여 순서 변경"
         },
         "actions": {
             "save": "저장",
@@ -384,7 +382,9 @@
         "nav": {
             "general": "일반",
             "interface": "인터페이스",
-            "library": "라이브러리"
+            "library": "라이브러리",
+            "organization": "정리",
+            "modelPaths": "모델 경로"
         },
         "search": {
             "placeholder": "설정 검색...",
@@ -585,6 +585,46 @@
                 "checkpointUnetOverlapInline": "이 경로는 다른 모델 유형에 이미 사용 중입니다. checkpoints와 diffusion models에 별도의 폴더를 사용하세요."
             }
         },
+        "modelPaths": {
+            "title": "모델 라이브러리 경로",
+            "description": "LoRA Manager가 모델을 스캔하는 루트 폴더입니다. 독립 실행 모드에서는 settings.json에서 읽어오는 기본 모델 위치입니다.",
+            "restartRequired": "변경 사항을 적용하려면 재시작이 필요합니다",
+            "coreTypes": "핵심 모델 유형",
+            "otherTypes": "기타 모델 유형",
+            "otherTypesDisabledHint": "활성화된 기타 모델 유형이 없습니다. 위에서 필요한 유형을 켜면 해당 폴더를 구성할 수 있습니다.",
+            "saveSuccessRestart": "모델 라이브러리 경로가 업데이트되었습니다. 변경 사항을 적용하려면 재시작이 필요합니다.",
+            "pendingRestartNotice": "경로 변경 사항이 저장되었습니다. 적용하려면 LoRA Manager를 재시작하세요.",
+            "pendingRestartBannerTitle": "경로 변경 사항을 적용하려면 재시작이 필요합니다",
+            "pendingRestartBannerMessage": "모델 라이브러리 경로가 업데이트되었습니다. 새 폴더를 스캔하려면 LoRA Manager 서버를 재시작하세요.",
+            "folderKeys": {
+                "loras": "LoRA 경로",
+                "checkpoints": "Checkpoint 경로",
+                "unet": "Diffusion Model 경로",
+                "embeddings": "Embedding 경로",
+                "vae": "VAE 경로",
+                "upscale_models": "Upscaler 경로",
+                "text_encoders": "Text Encoder 경로",
+                "clip": "CLIP 경로 (레거시)",
+                "clip_vision": "CLIP Vision 경로",
+                "controlnet": "ControlNet 경로"
+            }
+        },
+        "directoryPicker": {
+            "title": "폴더 찾아보기",
+            "selectFolder": "이 폴더 선택",
+            "goUp": "위로",
+            "pathPlaceholder": "경로 입력...",
+            "go": "이동",
+            "emptyFolder": "하위 폴더 없음",
+            "loadError": "디렉터리를 불러오지 못했습니다"
+        },
+        "pathValidation": {
+            "valid": "유효한 경로입니다",
+            "pathNotFound": "경로가 존재하지 않습니다",
+            "notADirectory": "디렉터리가 아닙니다",
+            "notReadable": "경로를 읽을 수 없습니다",
+            "notWritable": "경로에 쓸 수 없습니다"
+        },
         "priorityTags": {
             "title": "우선순위 태그",
             "description": "모델 유형별 태그 우선순위를 사용자 지정합니다(예: character, concept, style(toon|toon_style)).",
@@ -637,6 +677,22 @@
                 "invalidChars": "잘못된 문자가 감지됨",
                 "doubleSlashes": "이중 슬래시는 허용되지 않습니다",
                 "leadingTrailingSlash": "슬래시로 시작하거나 끝날 수 없습니다",
+                "invalidPlaceholder": "잘못된 플레이스홀더: {placeholder}",
+                "validTemplate": "유효한 템플릿"
+            }
+        },
+        "filenameTemplates": {
+            "title": "파일명 템플릿",
+            "help": "모델 유형별로 다운로드되는 모델의 파일명을 구성합니다. 비워 두면 다운로드 시 원본 파일명을 유지하고, 빈 템플릿을 적용하면 이전에 이름이 변경된 모델의 기록된 원본 파일명이 복원됩니다. 원본 파일명은 항상 모델의 메타데이터에 보존됩니다.",
+            "availablePlaceholders": "사용 가능한 플레이스홀더:",
+            "templatePlaceholder": "파일명 템플릿 입력 (예: {base_model}-{model_name}-{version_name})",
+            "applyButton": "지금 라이브러리에 적용",
+            "applyHelp": "이 모델 유형의 기존 파일을 모두 템플릿에 따라 이름 변경합니다. 빈 템플릿이면 기록된 원본 파일명을 대신 복원합니다. 경고: 이름을 변경하면 ComfyUI 로더에서 보이는 상대 경로가 바뀌므로 이전 파일명을 참조하는 기존 워크플로를 업데이트해야 할 수 있습니다. 원본 파일명은 각 모델의 메타데이터에 보존됩니다.",
+            "confirmApply": "이 모델 유형의 기존 파일을 모두 파일명 템플릿에 따라 이름 변경하시겠습니까? ComfyUI 로더에서 보이는 상대 경로가 변경됩니다. 원본 파일명은 각 모델의 메타데이터에 보존됩니다.",
+            "confirmRevert": "이 모델 유형에서 이전에 이름이 변경된 모든 파일의 기록된 원본 파일명을 복원하시겠습니까? ComfyUI 로더에서 보이는 상대 경로가 변경됩니다. 기록된 원본 파일명이 없는 파일은 건너뜁니다.",
+            "validation": {
+                "restoreOriginal": "유효함 (빈 템플릿은 원본 파일명을 복원합니다)",
+                "invalidChars": "잘못된 문자가 감지됨 (파일명에는 / \\ < > : \" | ? * 문자를 사용할 수 없습니다)",
                 "invalidPlaceholder": "잘못된 플레이스홀더: {placeholder}",
                 "validTemplate": "유효한 템플릿"
             }
@@ -873,6 +929,14 @@
                 "complete": "자동 정리 완료",
                 "error": "오류: {error}"
             },
+            "filenameTemplateProgress": {
+                "initializing": "파일명 템플릿 적용 초기화 중...",
+                "starting": "{type}에 파일명 템플릿 적용 중...",
+                "processing": "처리 중 ({processed}/{total}) - {success}개 이름 변경, {skipped}개 건너뜀, {failures}개 실패",
+                "completed": "완료: {success}개 이름 변경, {skipped}개 건너뜀, {failures}개 실패",
+                "complete": "파일명 템플릿 적용 완료",
+                "error": "오류: {error}"
+            },
             "enrichHfAgent": "AI로 메타데이터 보강"
         },
         "contextMenu": {
@@ -920,7 +984,9 @@
         },
         "modal": {
             "metadata": {
-                "id": "ID"
+                "id": "ID",
+                "baseModel": "베이스 모델",
+                "unknown": "알 수 없음"
             },
             "actions": {
                 "openFileLocation": "파일 위치 열기",
@@ -1241,11 +1307,13 @@
         },
         "noPaths": {
             "title": "기타 모델 폴더를 찾을 수 없습니다",
-            "descriptionStandalone": "기타 모델 관리가 켜져 있지만, 설정된 모델 폴더가 디스크에 존재하지 않습니다. 아래 폴더 경로를 settings.json에 추가한 뒤 LoRA Manager를 재시작하세요.",
-            "hintStandalone": "위에 나열된 폴더 키만 스캔됩니다. 필요 없는 키는 생략할 수 있습니다.",
+            "descriptionStandalone": "기타 모델 관리가 켜져 있지만, 기타 모델 폴더를 찾을 수 없습니다. 설정 → 모델 경로에서 모델 폴더를 추가한 뒤 LoRA Manager를 재시작하세요.",
+            "hintStandalone": "활성화된 모델 유형만 스캔됩니다. 라이브러리 → 기본 루트에서 필요한 유형을 활성화하세요.",
             "descriptionComfyUI": "기타 모델 관리가 켜져 있지만, 설정된 모델 폴더가 디스크에 존재하지 않습니다. 해당 모델 폴더를 ComfyUI 모델 경로에 추가한 뒤 이 페이지를 새로 고침하세요.",
             "hintComfyUI": "기타 모델은 ComfyUI의 vae, upscale_models, text_encoders, clip_vision, controlnet 폴더에서 읽어옵니다.",
-            "openSettings": "설정 열기"
+            "openSettings": "설정 열기",
+            "openModelPaths": "모델 폴더 구성",
+            "openSettingsFolder": "설정 폴더 열기"
         }
     },
     "sidebar": {
@@ -1486,6 +1554,10 @@
             "progress": {
                 "currentFile": "현재 파일:",
                 "downloading": "다운로드 중: {name}",
+                "metadata": "메타데이터: {name}",
+                "indexingFile": "모델 파일 읽는 중...",
+                "fetchingSourceMetadata": "{source}에서 메타데이터 가져오는 중...",
+                "fetchingMetadata": "메타데이터 가져오는 중...",
                 "transferred": "다운로드됨: {downloaded} / {total}",
                 "transferredSimple": "다운로드됨: {downloaded}",
                 "transferredUnknown": "다운로드됨: --",
@@ -1553,6 +1625,11 @@
             "message": "라이브러리에 있는 모든 {typePlural}의 업데이트를 확인합니다. 컬렉션이 클수록 시간이 조금 더 걸릴 수 있습니다.",
             "tip": "나눠서 진행하고 싶다면 일괄 모드로 전환해 필요한 모델만 선택한 뒤 \"선택 항목 업데이트 확인\"을 사용하세요.",
             "action": "전체 확인"
+        },
+        "filenameTemplateConfirm": {
+            "titleApply": "라이브러리에 파일명 템플릿을 적용하시겠습니까?",
+            "titleRevert": "원본 파일명을 복원하시겠습니까?",
+            "revertButton": "원본 파일명 복원"
         },
         "bulkAddTags": {
             "title": "여러 모델에 태그 추가",
@@ -2263,6 +2340,9 @@
             "autoOrganizeSuccess": "{count}개의 {type}에 대해 자동 정리가 성공적으로 완료되었습니다",
             "autoOrganizePartialSuccess": "자동 정리 완료: 전체 {total}개 중 {success}개 이동, {failures}개 실패",
             "autoOrganizeFailed": "자동 정리 실패: {error}",
+            "filenameTemplateSuccess": "{count}개의 {type}에 파일명 템플릿이 성공적으로 적용되었습니다",
+            "filenameTemplatePartialSuccess": "파일명 템플릿 적용 완료: 전체 {total}개 중 {success}개 이름 변경, {failures}개 실패",
+            "filenameTemplateFailed": "파일명 템플릿 적용 실패: {error}",
             "noModelsSelected": "선택된 모델이 없습니다"
         },
         "recipes": {
@@ -2429,6 +2509,8 @@
             "mappingSaveFailed": "베이스 모델 매핑 저장 실패: {message}",
             "downloadTemplatesUpdated": "다운로드 경로 템플릿이 업데이트되었습니다",
             "downloadTemplatesFailed": "다운로드 경로 템플릿 저장 실패: {message}",
+            "filenameTemplatesUpdated": "파일명 템플릿이 업데이트되었습니다",
+            "filenameTemplatesFailed": "파일명 템플릿 저장 실패: {message}",
             "recipesPathUpdated": "레시피 저장 경로가 업데이트되었습니다",
             "recipesPathSaveFailed": "레시피 저장 경로 업데이트 실패: {message}",
             "settingsUpdated": "설정 업데이트됨: {setting}",
@@ -2694,6 +2776,11 @@
             "content": "전용 페이지에서 VAE, Upscaler, Text Encoder, CLIP Vision, ControlNet 파일을 스캔 및 관리하고 CivitAI에서 다운로드할 수 있습니다.",
             "enable": "기타 모델 활성화",
             "openSettings": "설정 열기"
+        },
+        "pager": {
+            "previous": "이전 알림",
+            "next": "다음 알림",
+            "position": "전체 {total}개 중 {current}번째 알림"
         }
     }
 }

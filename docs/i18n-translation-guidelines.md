@@ -51,12 +51,32 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > "Folder sidebar feature".
 >
 > **Status (2026-09, chip reordering):** model tags and trigger words now share one drag/`⠿`
-> grip reorder affordance with `Alt + ↑/↓` keyboard support, which added the 3
-> `common.reorder.*` keys. They live under `common` (not a feature namespace) because both
-> editors render them; all 9 locales are translated (renderings in §2, "Chip reordering").
-> `Alt` and the `↑/↓` glyphs stay Latin/verbatim in every locale, the same precedent as
-> `Shift+Enter` in `modals.model.metadata.notesHint`; zh-CN / zh-TW / ja use full-width
-> parentheses and ko keeps this file's ASCII style.
+> grip reorder affordance, which added the single `common.reorder.dragHandle` key (it lives
+> under `common` because both editors render it). All 9 locales are translated (renderings in
+> §2, "Chip reordering"). Reordering is pointer-only by design: an `Alt + Arrow` shortcut was
+> prototyped and removed because it collided with the browser's Alt + Arrow handling and the
+> modal's arrow-key navigation.
+
+> **Status (2026-09, standalone no-paths guidance):** the standalone branch of the
+> `other.noPaths` empty state now shows the real `settings.json` path plus an
+> `other.noPaths.openSettingsFolder` button (each locale reuses its
+> `settings.openSettingsFileLocation.label` rendering), and `descriptionStandalone` was
+> reworded in `en.json` — from "none of the configured folders exist on disk" to "no
+> other-model folders were found; add the folder keys you need to the `folder_paths`
+> section" — and re-translated in all 9 locales. The `on disk` phrase now survives only in
+> the ComfyUI variant (`descriptionComfyUI`).
+
+> **Status (2026-09, settings Organization tab):** the settings modal split its overloaded
+> Library tab, adding the single `settings.nav.organization` key (renderings in §2,
+> "Settings Organization tab"). All 9 locales are translated, so the "no remaining
+> placeholders" claim holds again.
+
+> **Status (2026-09, filename templates):** the Filename Templates feature (per-model-type
+> download filename templates + bulk "Apply to Library Now" rename, with an empty template
+> restoring recorded original filenames) added 26 keys across `settings.filenameTemplates.*`,
+> `loras.bulkOperations.filenameTemplateProgress.*`, `modals.filenameTemplateConfirm.*` and
+> the `toast.loras.filenameTemplate*` / `toast.settings.filenameTemplates*` toasts. All 9
+> locales are translated (terminology in §2, "Filename Templates feature").
 
 ---
 
@@ -363,27 +383,63 @@ clause (and its `—`) when the copy is edited. The `{name}` / `{count}` / `{mes
 `sidebar.createFolderResult.*`, `sidebar.deleteFolderResult.*` and `sidebar.renameFolderResult.*`
 are verbatim §1-R2 placeholders; `successWithFiles` is the only key carrying `{count}`.
 
+### Settings Organization tab
+
+The settings modal's fourth nav tab groups everything about how files are arranged on
+disk: download path templates, priority tags, and auto-organize exclusions. The label is
+the **noun for arranging files**, matching each locale's existing
+`settings.sections.autoOrganize` rendering minus the "auto":
+
+| Locale | `settings.nav.organization` |
+|---|---|
+| fr | Organisation |
+| zh-CN | 整理 |
+| zh-TW | 整理 |
+| ja | 整理 |
+| ko | 정리 |
+| de | Organisation |
+| es | Organización |
+| ru | Организация |
+| he | ארגון |
+
+zh-CN/zh-TW use 整理 ("tidying/arranging"), not 组织/組織 (an organization as a group).
+
+### Filename Templates feature
+
+Per-model-type templates that name downloaded model files; "Apply to Library Now"
+bulk-renames existing files, and an **empty template restores the recorded original
+filenames** (recorded in each model's metadata at its first rename). "Template" follows
+each locale's existing download-path-template noun (zh-CN 模板 vs zh-TW 範本 — note the
+split); progress strings mirror `loras.bulkOperations.autoOrganizeProgress` verbatim with
+the locale's "moved" verb swapped for its "renamed" verb, and the toasts mirror the
+`autoOrganize*` / `downloadTemplates*` toast shapes.
+
+| Term | Rendering |
+|---|---|
+| filename template(s) | zh-CN 文件名模板 · zh-TW 檔案名稱範本 · ja ファイル名テンプレート · ko 파일명 템플릿 · fr modèle(s) de nom de fichier · de Dateinamen-Vorlage(n) · es plantilla(s) de nombres de archivo · ru шаблон(ы) имён файлов · he תבנית שם קובץ / תבניות שמות קבצים |
+| Apply to Library Now (button) | zh-CN 立即应用到库 · zh-TW 立即套用至模型庫 · ja ライブラリに今すぐ適用 · ko 지금 라이브러리에 적용 · fr Appliquer à la bibliothèque maintenant · de Jetzt auf Bibliothek anwenden · es Aplicar a la biblioteca ahora · ru Применить к библиотеке сейчас · he החל על הספרייה כעת |
+| Restore original filenames (modal title / button) | zh-CN 恢复原始文件名？/ 恢复原始文件名 · zh-TW 要還原原始檔案名稱嗎？/ 還原原始檔案名稱 · ja 元のファイル名を復元しますか？/ 元のファイル名を復元 · ko 원본 파일명을 복원하시겠습니까? / 원본 파일명 복원 · fr Restaurer les noms de fichier d'origine ? / Restaurer les noms de fichier d'origine · de Ursprüngliche Dateinamen wiederherstellen? / Ursprüngliche Dateinamen wiederherstellen · es ¿Restaurar los nombres de archivo originales? / Restaurar nombres de archivo originales · ru Восстановить исходные имена файлов? / Восстановить исходные имена файлов · he לשחזר שמות קבצים מקוריים? / שחזר שמות קבצים מקוריים |
+| "renamed" (progress/toast counter) | zh-CN 已重命名 · zh-TW 已重新命名 · ja リネーム · ko 이름 변경 · fr renommés · de umbenannt · es renombrados · ru переименовано · he שונו שמותם |
+
 ### Chip reordering (model tags / trigger words)
 
-Model tags and trigger-word chips share a single reorder affordance (drag the chip or its
-`⠿` grip, or move it with `Alt + ↑/↓`), so the copy sits in `common.reorder.*` instead of a
-feature namespace. `dragHandle` is both the grip tooltip and the hint shown in the edit
-controls row; `ariaLabel` is the per-grip screen-reader label (`{item}` is the tag/word text);
-`announcement` is the aria-live message after a keyboard move and deliberately has no
-`{item}`. Keep `{item}` / `{position}` / `{total}` verbatim (§1-R2) — the caller supplies
-exactly those.
+Model tags and trigger-word chips share a single reorder affordance (drag the chip, or its
+`⠿` grip where the chip body is click-to-edit), so the copy sits in `common.reorder.dragHandle`
+instead of a feature namespace. It is used twice per editor: as the grip tooltip and as the
+hint shown in the edit controls row. There is deliberately **no keyboard shortcut** — an
+`Alt + Arrow` binding fought the browser's own Alt + Arrow handling and the modal's arrow-key
+navigation, so reordering is pointer-only and the grip is a decorative, non-focusable
+affordance. Do not reintroduce a shortcut or a "position X of Y" screen-reader string without
+re-adding the corresponding keys.
 
-`Alt` and the `↑/↓` glyphs stay Latin/verbatim in every locale (same precedent as
-`Shift+Enter`), and `position X of Y` reuses each locale's established ordering phrasing
-(ja `{total} 件中 … 番目`, ko `총 {total}개 중 …번째`, fr `sur {total}`, ru `из {total}`, …).
+`dragHandle` is a fragment, not a sentence: it labels both the grip and the hint, so keep it
+short and imperative and do not append a keyboard hint in any locale.
 
 | Term | Rendering |
 |---|---|
 | drag to reorder | zh-CN 拖拽以调整顺序 · zh-TW 拖曳以調整順序 · ja ドラッグして並べ替え · ko 드래그하여 순서 변경 · fr Glisser pour réordonner · de Zum Neuordnen ziehen · es Arrastra para reordenar · ru Перетащите, чтобы изменить порядок · he גרור כדי לשנות סדר |
-| position {position} of {total} | zh-CN 第 {position} 个，共 {total} 个 · zh-TW 第 {position} 個，共 {total} 個 · ja {total} 件中 {position} 番目 · ko 총 {total}개 중 {position}번째 · fr position {position} sur {total} · de Position {position} von {total} · es posición {position} de {total} · ru позиция {position} из {total} · he מיקום {position} מתוך {total} |
 
-The grip/handle noun itself is never translated (it is an icon); the hint carries the whole
-instruction, so no locale needs a separate "grip" term.
+The grip itself is an icon and is never translated.
 
 ---
 

@@ -3,9 +3,7 @@
         "cancel": "取消",
         "confirm": "确认",
         "reorder": {
-            "dragHandle": "拖拽以调整顺序（Alt + ↑/↓）",
-            "ariaLabel": "调整 {item} 的顺序，第 {position} 个，共 {total} 个",
-            "announcement": "已移动到第 {position} 个，共 {total} 个"
+            "dragHandle": "拖拽以调整顺序"
         },
         "actions": {
             "save": "保存",
@@ -384,7 +382,9 @@
         "nav": {
             "general": "通用",
             "interface": "界面",
-            "library": "库"
+            "library": "库",
+            "organization": "整理",
+            "modelPaths": "模型路径"
         },
         "search": {
             "placeholder": "搜索设置...",
@@ -585,6 +585,46 @@
                 "checkpointUnetOverlapInline": "此路径已被用于另一种模型类型。请为 checkpoints 和 diffusion models 使用不同的文件夹。"
             }
         },
+        "modelPaths": {
+            "title": "模型库路径",
+            "description": "LoRA Manager 扫描模型所用的根文件夹。独立模式下，这些是从 settings.json 读取的主要模型位置。",
+            "restartRequired": "需要重启才能生效",
+            "coreTypes": "核心模型类型",
+            "otherTypes": "其他模型类型",
+            "otherTypesDisabledHint": "未启用任何其他模型类型。请在上方启用你需要的类型，然后为其配置文件夹。",
+            "saveSuccessRestart": "模型库路径已更新，需要重启才能生效。",
+            "pendingRestartNotice": "路径更改已保存。重启 LoRA Manager 后生效。",
+            "pendingRestartBannerTitle": "需要重启以应用路径更改",
+            "pendingRestartBannerMessage": "模型库路径已更新。请重启 LoRA Manager 服务器以扫描新文件夹。",
+            "folderKeys": {
+                "loras": "LoRA 路径",
+                "checkpoints": "Checkpoint 路径",
+                "unet": "Diffusion 模型路径",
+                "embeddings": "Embedding 路径",
+                "vae": "VAE 路径",
+                "upscale_models": "Upscaler 路径",
+                "text_encoders": "Text Encoder 路径",
+                "clip": "CLIP 路径（旧版）",
+                "clip_vision": "CLIP Vision 路径",
+                "controlnet": "ControlNet 路径"
+            }
+        },
+        "directoryPicker": {
+            "title": "浏览文件夹",
+            "selectFolder": "选择此文件夹",
+            "goUp": "上级目录",
+            "pathPlaceholder": "输入路径...",
+            "go": "跳转",
+            "emptyFolder": "没有子文件夹",
+            "loadError": "目录加载失败"
+        },
+        "pathValidation": {
+            "valid": "路径有效",
+            "pathNotFound": "路径不存在",
+            "notADirectory": "不是一个目录",
+            "notReadable": "路径不可读",
+            "notWritable": "路径不可写"
+        },
         "priorityTags": {
             "title": "优先标签",
             "description": "为每种模型类型自定义标签优先级顺序 (例如: character, concept, style(toon|toon_style))",
@@ -637,6 +677,22 @@
                 "invalidChars": "检测到无效字符",
                 "doubleSlashes": "不允许双斜杠",
                 "leadingTrailingSlash": "不能以斜杠开始或结束",
+                "invalidPlaceholder": "无效占位符：{placeholder}",
+                "validTemplate": "有效模板"
+            }
+        },
+        "filenameTemplates": {
+            "title": "文件名模板",
+            "help": "按模型类型配置下载模型的文件名。留空则下载时保留原始文件名；应用空模板会恢复此前被重命名模型所记录的原始文件名。原始文件名始终保留在模型的元数据中。",
+            "availablePlaceholders": "可用占位符：",
+            "templatePlaceholder": "输入文件名模板（如：{base_model}-{model_name}-{version_name}）",
+            "applyButton": "立即应用到库",
+            "applyHelp": "根据模板重命名此模型类型的所有现有文件；模板为空时则恢复已记录的原始文件名。警告：重命名会改变 ComfyUI 加载器所见的相对路径，因此引用旧文件名的现有工作流可能需要更新。原始文件名保留在每个模型的元数据中。",
+            "confirmApply": "要根据文件名模板重命名此模型类型的所有现有文件吗？这会改变 ComfyUI 加载器所见的相对路径。原始文件名保留在每个模型的元数据中。",
+            "confirmRevert": "要恢复此模型类型中所有此前被重命名文件所记录的原始文件名吗？这会改变 ComfyUI 加载器所见的相对路径。未记录原始文件名的文件将被跳过。",
+            "validation": {
+                "restoreOriginal": "有效（空模板将恢复原始文件名）",
+                "invalidChars": "检测到无效字符（文件名不能包含 / \\ < > : \" | ? *）",
                 "invalidPlaceholder": "无效占位符：{placeholder}",
                 "validTemplate": "有效模板"
             }
@@ -873,6 +929,14 @@
                 "complete": "自动整理已完成",
                 "error": "错误：{error}"
             },
+            "filenameTemplateProgress": {
+                "initializing": "正在初始化应用文件名模板...",
+                "starting": "正在为 {type} 应用文件名模板...",
+                "processing": "处理中（{processed}/{total}）- 已重命名 {success} 个，跳过 {skipped} 个，失败 {failures} 个",
+                "completed": "完成：已重命名 {success} 个，跳过 {skipped} 个，失败 {failures} 个",
+                "complete": "文件名模板应用完成",
+                "error": "错误：{error}"
+            },
             "enrichHfAgent": "AI 元数据增强"
         },
         "contextMenu": {
@@ -920,7 +984,9 @@
         },
         "modal": {
             "metadata": {
-                "id": "ID"
+                "id": "ID",
+                "baseModel": "基础模型",
+                "unknown": "未知"
             },
             "actions": {
                 "openFileLocation": "打开文件位置",
@@ -1241,11 +1307,13 @@
         },
         "noPaths": {
             "title": "未找到其他模型文件夹",
-            "descriptionStandalone": "其他模型管理已开启，但配置的模型文件夹在磁盘上都不存在。请将下面的文件夹路径添加到 settings.json，然后重启 LoRA Manager。",
-            "hintStandalone": "只会扫描上面列出的文件夹键；不需要的键可以省略。",
+            "descriptionStandalone": "其他模型管理已开启，但未找到其他模型文件夹。请在“设置 → 模型路径”中添加你的模型文件夹，然后重启 LoRA Manager。",
+            "hintStandalone": "仅扫描已启用的模型类型；请在“库 → 默认根目录”中启用你需要的类型。",
             "descriptionComfyUI": "其他模型管理已开启，但配置的模型文件夹在磁盘上都不存在。请将对应的模型文件夹添加到 ComfyUI 的模型路径，然后重新加载此页面。",
             "hintComfyUI": "其他模型从 ComfyUI 的 vae、upscale_models、text_encoders、clip_vision 和 controlnet 文件夹中读取。",
-            "openSettings": "打开设置"
+            "openSettings": "打开设置",
+            "openModelPaths": "配置模型文件夹",
+            "openSettingsFolder": "打开设置文件夹"
         }
     },
     "sidebar": {
@@ -1486,6 +1554,10 @@
             "progress": {
                 "currentFile": "当前文件：",
                 "downloading": "下载中：{name}",
+                "metadata": "元数据：{name}",
+                "indexingFile": "正在读取模型文件...",
+                "fetchingSourceMetadata": "正在从 {source} 获取元数据...",
+                "fetchingMetadata": "正在获取元数据...",
                 "transferred": "已下载：{downloaded} / {total}",
                 "transferredSimple": "已下载：{downloaded}",
                 "transferredUnknown": "已下载：--",
@@ -1553,6 +1625,11 @@
             "message": "这会检查库中的每个 {typePlural} 的更新，大型集合可能需要一些时间。",
             "tip": "想分批进行？切换到批量模式，选中需要的模型，然后使用“检查所选更新”。",
             "action": "检查全部"
+        },
+        "filenameTemplateConfirm": {
+            "titleApply": "将文件名模板应用到库？",
+            "titleRevert": "恢复原始文件名？",
+            "revertButton": "恢复原始文件名"
         },
         "bulkAddTags": {
             "title": "批量添加标签",
@@ -2263,6 +2340,9 @@
             "autoOrganizeSuccess": "自动整理已成功完成，共 {count} 个 {type}",
             "autoOrganizePartialSuccess": "自动整理完成：已移动 {success} 个，{failures} 个失败，共 {total} 个模型",
             "autoOrganizeFailed": "自动整理失败：{error}",
+            "filenameTemplateSuccess": "文件名模板已成功应用，共 {count} 个 {type}",
+            "filenameTemplatePartialSuccess": "文件名模板应用完成：已重命名 {success} 个，{failures} 个失败，共 {total} 个模型",
+            "filenameTemplateFailed": "应用文件名模板失败：{error}",
             "noModelsSelected": "未选中模型"
         },
         "recipes": {
@@ -2429,6 +2509,8 @@
             "mappingSaveFailed": "保存基础模型映射失败：{message}",
             "downloadTemplatesUpdated": "下载路径模板已更新",
             "downloadTemplatesFailed": "保存下载路径模板失败：{message}",
+            "filenameTemplatesUpdated": "文件名模板已更新",
+            "filenameTemplatesFailed": "保存文件名模板失败：{message}",
             "recipesPathUpdated": "配方存储路径已更新",
             "recipesPathSaveFailed": "更新配方存储路径失败：{message}",
             "settingsUpdated": "设置已更新：{setting}",
@@ -2694,6 +2776,11 @@
             "content": "在一个专属页面中扫描和管理 VAE、Upscaler、Text Encoder、CLIP Vision 和 ControlNet 文件，并从 CivitAI 下载。",
             "enable": "启用其他模型",
             "openSettings": "打开设置"
+        },
+        "pager": {
+            "previous": "上一条通知",
+            "next": "下一条通知",
+            "position": "第 {current} 条通知，共 {total} 条"
         }
     }
 }

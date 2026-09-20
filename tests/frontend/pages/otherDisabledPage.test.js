@@ -25,6 +25,8 @@ describe('Other Models disabled page', () => {
         document.body.innerHTML = [
             '<button id="enableOtherModelsBtn"></button>',
             '<button id="openOtherModelsSettingsBtn"></button>',
+            '<button id="openModelPathsSettingsBtn"></button>',
+            '<button id="openSettingsFolderBtn"></button>',
         ].join('');
 
         Object.defineProperty(window, 'location', {
@@ -62,6 +64,73 @@ describe('Other Models disabled page', () => {
         );
 
         expect(showModal).toHaveBeenCalledWith('settingsModal');
+    });
+
+    it('opens the Model Paths settings from the standalone no-folders state', async () => {
+        const showModal = vi.fn();
+        window.modalManager = { showModal };
+
+        const navItem = document.createElement('button');
+        navItem.className = 'settings-nav-item';
+        navItem.dataset.section = 'modelPaths';
+        const navClick = vi.fn();
+        navItem.addEventListener('click', navClick);
+        document.body.appendChild(navItem);
+
+        document.getElementById('openModelPathsSettingsBtn').dispatchEvent(
+            new MouseEvent('click', { bubbles: true }),
+        );
+
+        expect(showModal).toHaveBeenCalledWith('settingsModal');
+
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        expect(navClick).toHaveBeenCalledTimes(1);
+    });
+
+    it('reveals the settings.json location from the standalone no-folders state', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({ success: true, message: 'Opened settings folder' }),
+        });
+
+        const button = document.getElementById('openSettingsFolderBtn');
+        button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        await vi.waitFor(() => expect(showToastMock).toHaveBeenCalled());
+
+        expect(global.fetch).toHaveBeenCalledWith(
+            '/api/lm/settings/open-location',
+            expect.objectContaining({ method: 'POST' }),
+        );
+        expect(showToastMock).toHaveBeenCalledWith(
+            'settings.openSettingsFileLocation.success',
+            {},
+            'success',
+        );
+        expect(button.disabled).toBe(false);
+    });
+
+    it('copies the settings path to the clipboard in Docker mode', async () => {
+        const writeText = vi.fn().mockResolvedValue(undefined);
+        Object.defineProperty(navigator, 'clipboard', {
+            value: { writeText },
+            configurable: true,
+        });
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({ success: true, mode: 'clipboard', path: '/data/settings.json' }),
+        });
+
+        document.getElementById('openSettingsFolderBtn').dispatchEvent(
+            new MouseEvent('click', { bubbles: true }),
+        );
+        await vi.waitFor(() => expect(showToastMock).toHaveBeenCalled());
+
+        expect(writeText).toHaveBeenCalledWith('/data/settings.json');
+        expect(showToastMock).toHaveBeenCalledWith(
+            'settings.openSettingsFileLocation.copied',
+            { path: '/data/settings.json' },
+            'success',
+        );
     });
 
     it('enables Other Models through the settings API and reloads', async () => {

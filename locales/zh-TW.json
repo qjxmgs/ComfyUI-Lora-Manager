@@ -3,9 +3,7 @@
         "cancel": "取消",
         "confirm": "確認",
         "reorder": {
-            "dragHandle": "拖曳以調整順序（Alt + ↑/↓）",
-            "ariaLabel": "調整 {item} 的順序，第 {position} 個，共 {total} 個",
-            "announcement": "已移動到第 {position} 個，共 {total} 個"
+            "dragHandle": "拖曳以調整順序"
         },
         "actions": {
             "save": "儲存",
@@ -384,7 +382,9 @@
         "nav": {
             "general": "通用",
             "interface": "介面",
-            "library": "模型庫"
+            "library": "模型庫",
+            "organization": "整理",
+            "modelPaths": "模型路徑"
         },
         "search": {
             "placeholder": "搜尋設定...",
@@ -585,6 +585,46 @@
                 "checkpointUnetOverlapInline": "此路徑已被用於另一種模型類型。請為 checkpoints 和 diffusion models 使用不同的資料夾。"
             }
         },
+        "modelPaths": {
+            "title": "模型庫路徑",
+            "description": "LoRA Manager 掃描您模型的根目錄資料夾。這些是獨立模式下從 settings.json 讀取的主要模型位置。",
+            "restartRequired": "需要重新啟動才能生效",
+            "coreTypes": "核心模型類型",
+            "otherTypes": "其他模型類型",
+            "otherTypesDisabledHint": "尚未啟用任何其他模型類型。請在上方開啟您需要的類型，以設定其資料夾。",
+            "saveSuccessRestart": "模型庫路徑已更新，需要重新啟動才能生效。",
+            "pendingRestartNotice": "路徑變更已儲存。請重新啟動 LoRA Manager 以使其生效。",
+            "pendingRestartBannerTitle": "需要重新啟動才能套用路徑變更",
+            "pendingRestartBannerMessage": "模型庫路徑已更新。請重新啟動 LoRA Manager 伺服器以掃描新的資料夾。",
+            "folderKeys": {
+                "loras": "LoRA 路徑",
+                "checkpoints": "Checkpoint 路徑",
+                "unet": "Diffusion 模型路徑",
+                "embeddings": "Embedding 路徑",
+                "vae": "VAE 路徑",
+                "upscale_models": "Upscaler 路徑",
+                "text_encoders": "Text Encoder 路徑",
+                "clip": "CLIP 路徑（舊版）",
+                "clip_vision": "CLIP Vision 路徑",
+                "controlnet": "ControlNet 路徑"
+            }
+        },
+        "directoryPicker": {
+            "title": "瀏覽資料夾",
+            "selectFolder": "選擇此資料夾",
+            "goUp": "上一層",
+            "pathPlaceholder": "輸入路徑...",
+            "go": "前往",
+            "emptyFolder": "沒有子資料夾",
+            "loadError": "目錄載入失敗"
+        },
+        "pathValidation": {
+            "valid": "路徑有效",
+            "pathNotFound": "路徑不存在",
+            "notADirectory": "不是目錄",
+            "notReadable": "路徑無法讀取",
+            "notWritable": "路徑無法寫入"
+        },
         "priorityTags": {
             "title": "優先標籤",
             "description": "為每種模型類型自訂標籤的優先順序 (例如: character, concept, style(toon|toon_style))",
@@ -637,6 +677,22 @@
                 "invalidChars": "偵測到無效字元",
                 "doubleSlashes": "不允許連續斜線",
                 "leadingTrailingSlash": "不能以斜線開始或結束",
+                "invalidPlaceholder": "無效佔位符：{placeholder}",
+                "validTemplate": "範本有效"
+            }
+        },
+        "filenameTemplates": {
+            "title": "檔案名稱範本",
+            "help": "依模型類型設定已下載模型的檔案名稱。留空則下載時保留原始檔案名稱；套用空範本會還原先前已重新命名模型所記錄的原始檔案名稱。原始檔案名稱一律會保存在模型的中繼資料中。",
+            "availablePlaceholders": "可用佔位符：",
+            "templatePlaceholder": "輸入檔案名稱範本（例如：{base_model}-{model_name}-{version_name}）",
+            "applyButton": "立即套用至模型庫",
+            "applyHelp": "依範本重新命名此模型類型的所有現有檔案；若範本為空，則改為還原已記錄的原始檔案名稱。警告：重新命名會變更 ComfyUI 載入器所見的相對路徑，因此參照舊檔案名稱的現有工作流可能需要更新。原始檔案名稱會保存在每個模型的中繼資料中。",
+            "confirmApply": "要依檔案名稱範本重新命名此模型類型的所有現有檔案嗎？這會變更 ComfyUI 載入器所見的相對路徑。原始檔案名稱會保存在每個模型的中繼資料中。",
+            "confirmRevert": "要將此模型類型所有先前已重新命名的檔案還原為已記錄的原始檔案名稱嗎？這會變更 ComfyUI 載入器所見的相對路徑。沒有記錄原始檔案名稱的檔案將被略過。",
+            "validation": {
+                "restoreOriginal": "有效（空範本會還原原始檔案名稱）",
+                "invalidChars": "偵測到無效字元（檔案名稱不能包含 / \\ < > : \" | ? *）",
                 "invalidPlaceholder": "無效佔位符：{placeholder}",
                 "validTemplate": "範本有效"
             }
@@ -873,6 +929,14 @@
                 "complete": "自動整理完成",
                 "error": "錯誤：{error}"
             },
+            "filenameTemplateProgress": {
+                "initializing": "正在初始化檔案名稱範本套用...",
+                "starting": "正在將檔案名稱範本套用至 {type}...",
+                "processing": "處理中（{processed}/{total}）- 已重新命名 {success}，已略過 {skipped}，失敗 {failures}",
+                "completed": "完成：已重新命名 {success}，已略過 {skipped}，失敗 {failures}",
+                "complete": "檔案名稱範本套用完成",
+                "error": "錯誤：{error}"
+            },
             "enrichHfAgent": "AI 中繼資料增強"
         },
         "contextMenu": {
@@ -920,7 +984,9 @@
         },
         "modal": {
             "metadata": {
-                "id": "ID"
+                "id": "ID",
+                "baseModel": "基礎模型",
+                "unknown": "未知"
             },
             "actions": {
                 "openFileLocation": "開啟檔案位置",
@@ -1241,11 +1307,13 @@
         },
         "noPaths": {
             "title": "找不到其他模型資料夾",
-            "descriptionStandalone": "其他模型管理已開啟，但設定的模型資料夾在磁碟上都不存在。請將下方的資料夾路徑加入 settings.json，然後重新啟動 LoRA Manager。",
-            "hintStandalone": "只會掃描上方列出的資料夾鍵；不需要的鍵可以省略。",
+            "descriptionStandalone": "其他模型管理已開啟，但找不到其他模型的資料夾。請在「設定 > 模型路徑」中加入您的模型資料夾，然後重新啟動 LoRA Manager。",
+            "hintStandalone": "僅會掃描已啟用的模型類型；請在「模型庫 > 預設根目錄」中啟用您需要的類型。",
             "descriptionComfyUI": "其他模型管理已開啟，但設定的模型資料夾在磁碟上都不存在。請將對應的模型資料夾加入 ComfyUI 的模型路徑，然後重新載入此頁面。",
             "hintComfyUI": "其他模型會從 ComfyUI 的 vae、upscale_models、text_encoders、clip_vision 和 controlnet 資料夾讀取。",
-            "openSettings": "開啟設定"
+            "openSettings": "開啟設定",
+            "openModelPaths": "設定模型資料夾",
+            "openSettingsFolder": "開啟設定資料夾"
         }
     },
     "sidebar": {
@@ -1486,6 +1554,10 @@
             "progress": {
                 "currentFile": "目前檔案：",
                 "downloading": "下載中：{name}",
+                "metadata": "中繼資料：{name}",
+                "indexingFile": "正在讀取模型檔案...",
+                "fetchingSourceMetadata": "正在從 {source} 取得中繼資料...",
+                "fetchingMetadata": "正在取得中繼資料...",
                 "transferred": "已下載：{downloaded} / {total}",
                 "transferredSimple": "已下載：{downloaded}",
                 "transferredUnknown": "已下載：--",
@@ -1553,6 +1625,11 @@
             "message": "這會檢查資料庫中的每個 {typePlural} 的更新，大型收藏可能會花上一些時間。",
             "tip": "想分批處理？切換到批次模式，選擇需要的模型，然後使用「檢查所選更新」。",
             "action": "全部檢查"
+        },
+        "filenameTemplateConfirm": {
+            "titleApply": "要將檔案名稱範本套用至模型庫嗎？",
+            "titleRevert": "要還原原始檔案名稱嗎？",
+            "revertButton": "還原原始檔案名稱"
         },
         "bulkAddTags": {
             "title": "新增標籤到多個模型",
@@ -2263,6 +2340,9 @@
             "autoOrganizeSuccess": "自動整理已成功完成，共 {count} 個 {type} 已整理",
             "autoOrganizePartialSuccess": "自動整理完成：已移動 {success} 個，{failures} 個失敗，共 {total} 個模型",
             "autoOrganizeFailed": "自動整理失敗：{error}",
+            "filenameTemplateSuccess": "已成功為 {count} 個 {type} 套用檔案名稱範本",
+            "filenameTemplatePartialSuccess": "檔案名稱範本套用完成：已重新命名 {success} 個，{failures} 個失敗，共 {total} 個模型",
+            "filenameTemplateFailed": "套用檔案名稱範本失敗：{error}",
             "noModelsSelected": "未選擇任何模型"
         },
         "recipes": {
@@ -2429,6 +2509,8 @@
             "mappingSaveFailed": "儲存基礎模型對應失敗：{message}",
             "downloadTemplatesUpdated": "下載路徑範本已更新",
             "downloadTemplatesFailed": "儲存下載路徑範本失敗：{message}",
+            "filenameTemplatesUpdated": "檔案名稱範本已更新",
+            "filenameTemplatesFailed": "儲存檔案名稱範本失敗：{message}",
             "recipesPathUpdated": "配方儲存路徑已更新",
             "recipesPathSaveFailed": "更新配方儲存路徑失敗：{message}",
             "settingsUpdated": "設定已更新：{setting}",
@@ -2694,6 +2776,11 @@
             "content": "在專屬頁面中掃描和管理 VAE、Upscaler、Text Encoder、CLIP Vision 和 ControlNet 檔案，並從 CivitAI 下載。",
             "enable": "啟用其他模型",
             "openSettings": "開啟設定"
+        },
+        "pager": {
+            "previous": "上一則通知",
+            "next": "下一則通知",
+            "position": "第 {current} 則通知，共 {total} 則"
         }
     }
 }

@@ -3,9 +3,7 @@
         "cancel": "ביטול",
         "confirm": "אישור",
         "reorder": {
-            "dragHandle": "גרור כדי לשנות סדר (Alt + ↑/↓)",
-            "ariaLabel": "סדר מחדש את {item}, מיקום {position} מתוך {total}",
-            "announcement": "הועבר למיקום {position} מתוך {total}"
+            "dragHandle": "גרור כדי לשנות סדר"
         },
         "actions": {
             "save": "שמירה",
@@ -384,7 +382,9 @@
         "nav": {
             "general": "כללי",
             "interface": "ממשק",
-            "library": "ספרייה"
+            "library": "ספרייה",
+            "organization": "ארגון",
+            "modelPaths": "נתיבי מודלים"
         },
         "search": {
             "placeholder": "חיפוש בהגדרות...",
@@ -585,6 +585,46 @@
                 "checkpointUnetOverlapInline": "הנתיב הזה כבר נמצא בשימוש עבור סוג מודל אחר. יש להשתמש בתיקיות נפרדות עבור checkpoints ומודלי דיפוזיה."
             }
         },
+        "modelPaths": {
+            "title": "נתיבי ספריית המודלים",
+            "description": "תיקיות שורש ש-LoRA Manager סורק לאיתור המודלים שלך. אלו מיקומי המודלים הראשיים הנקראים מ-settings.json במצב עצמאי.",
+            "restartRequired": "נדרש אתחול כדי שהשינוי ייכנס לתוקף",
+            "coreTypes": "סוגי מודלים מרכזיים",
+            "otherTypes": "סוגי מודלים אחרים",
+            "otherTypesDisabledHint": "לא מופעלים סוגי מודלים אחרים. הפעל למעלה את הסוגים הדרושים לך כדי להגדיר את התיקיות שלהם.",
+            "saveSuccessRestart": "נתיבי ספריית המודלים עודכנו. נדרשת הפעלה מחדש כדי להחיל את השינויים.",
+            "pendingRestartNotice": "שינויי הנתיבים נשמרו. הפעל מחדש את LoRA Manager כדי שייכנסו לתוקף.",
+            "pendingRestartBannerTitle": "נדרשת הפעלה מחדש כדי להחיל את שינויי הנתיבים",
+            "pendingRestartBannerMessage": "נתיבי ספריית המודלים עודכנו. הפעל מחדש את שרת LoRA Manager כדי לסרוק את התיקיות החדשות.",
+            "folderKeys": {
+                "loras": "נתיבי LoRA",
+                "checkpoints": "נתיבי Checkpoint",
+                "unet": "נתיבי מודל דיפוזיה",
+                "embeddings": "נתיבי Embedding",
+                "vae": "נתיבי VAE",
+                "upscale_models": "נתיבי Upscaler",
+                "text_encoders": "נתיבי Text Encoder",
+                "clip": "נתיבי CLIP (ישן)",
+                "clip_vision": "נתיבי CLIP Vision",
+                "controlnet": "נתיבי ControlNet"
+            }
+        },
+        "directoryPicker": {
+            "title": "עיון בתיקיות",
+            "selectFolder": "בחר תיקייה זו",
+            "goUp": "למעלה",
+            "pathPlaceholder": "הזן נתיב...",
+            "go": "עבור",
+            "emptyFolder": "אין תתי-תיקיות",
+            "loadError": "טעינת התיקייה נכשלה"
+        },
+        "pathValidation": {
+            "valid": "הנתיב תקין",
+            "pathNotFound": "הנתיב לא קיים",
+            "notADirectory": "לא תיקייה",
+            "notReadable": "הנתיב לא ניתן לקריאה",
+            "notWritable": "הנתיב לא ניתן לכתיבה"
+        },
         "priorityTags": {
             "title": "תגיות עדיפות",
             "description": "התאם את סדר העדיפות של התגיות עבור כל סוג מודל (לדוגמה: character, concept, style(toon|toon_style))",
@@ -637,6 +677,22 @@
                 "invalidChars": "זוהו תווים לא חוקיים",
                 "doubleSlashes": "קווים נטויים כפולים אינם מותרים",
                 "leadingTrailingSlash": "לא ניתן להתחיל או לסיים בקו נטוי",
+                "invalidPlaceholder": "מציין מקום לא חוקי: {placeholder}",
+                "validTemplate": "תבנית תקינה"
+            }
+        },
+        "filenameTemplates": {
+            "title": "תבניות שמות קבצים",
+            "help": "הגדר שמות קבצים למודלים שהורדו לפי סוג מודל. השאר ריק כדי לשמור על שמות הקבצים המקוריים בעת ההורדה; החלת תבנית ריקה משחזרת את שמות הקבצים המקוריים המתועדים של מודלים ששונה שמם בעבר. שם הקובץ המקורי תמיד נשמר במטא-נתונים של המודל.",
+            "availablePlaceholders": "מצייני מקום זמינים:",
+            "templatePlaceholder": "הזן תבנית שם קובץ (למשל, {base_model}-{model_name}-{version_name})",
+            "applyButton": "החל על הספרייה כעת",
+            "applyHelp": "משנה את שמות כל הקבצים הקיימים מסוג מודל זה בהתאם לתבנית; עם תבנית ריקה, משחזר במקום זאת את שמות הקבצים המקוריים המתועדים. אזהרה: שינוי שם משנה את הנתיב היחסי שרואים הטוענים של ComfyUI, ולכן workflows קיימים המפנים לשם הקובץ הישן עשויים לדרוש עדכון. שם הקובץ המקורי נשמר במטא-נתונים של כל מודל.",
+            "confirmApply": "לשנות את שמות כל הקבצים הקיימים מסוג מודל זה בהתאם לתבנית שם הקובץ? פעולה זו משנה את הנתיב היחסי שרואים הטוענים של ComfyUI. שם הקובץ המקורי נשמר במטא-נתונים של כל מודל.",
+            "confirmRevert": "לשחזר את שמות הקבצים המקוריים המתועדים של כל הקבצים ששונה שמם בעבר מסוג מודל זה? פעולה זו משנה את הנתיב היחסי שרואים הטוענים של ComfyUI. קבצים ללא שם קובץ מקורי מתועד ידולגו.",
+            "validation": {
+                "restoreOriginal": "תקין (תבנית ריקה משחזרת שמות קבצים מקוריים)",
+                "invalidChars": "זוהו תווים לא חוקיים (שם קובץ אינו יכול להכיל / \\ < > : \" | ? *)",
                 "invalidPlaceholder": "מציין מקום לא חוקי: {placeholder}",
                 "validTemplate": "תבנית תקינה"
             }
@@ -873,6 +929,14 @@
                 "complete": "ארגון אוטומטי הושלם",
                 "error": "שגיאה: {error}"
             },
+            "filenameTemplateProgress": {
+                "initializing": "מאתחל החלת תבנית שם קובץ...",
+                "starting": "מחיל תבנית שם קובץ על {type}...",
+                "processing": "מעבד ({processed}/{total}) - {success} שונו שמותם, {skipped} דולגו, {failures} נכשלו",
+                "completed": "הושלם: {success} שונו שמותם, {skipped} דולגו, {failures} נכשלו",
+                "complete": "החלת תבנית שם הקובץ הושלמה",
+                "error": "שגיאה: {error}"
+            },
             "enrichHfAgent": "העשרת מטא-נתונים ב-AI"
         },
         "contextMenu": {
@@ -920,7 +984,9 @@
         },
         "modal": {
             "metadata": {
-                "id": "ID"
+                "id": "ID",
+                "baseModel": "מודל בסיס",
+                "unknown": "לא ידוע"
             },
             "actions": {
                 "openFileLocation": "פתח מיקום קובץ",
@@ -1241,11 +1307,13 @@
         },
         "noPaths": {
             "title": "לא נמצאו תיקיות של מודלים אחרים",
-            "descriptionStandalone": "ניהול המודלים האחרים פועל, אך אף אחת מתיקיות המודלים המוגדרות אינה קיימת בדיסק. הוסף את נתיבי התיקיות שלמטה ל-settings.json והפעל מחדש את LoRA Manager.",
-            "hintStandalone": "רק מפתחות התיקיות המפורטים למעלה נסרקים; ניתן להשמיט מפתחות שאינך צריך.",
+            "descriptionStandalone": "ניהול המודלים האחרים פועל, אך לא נמצאו תיקיות של מודלים אחרים. הוסף את תיקיות המודלים שלך תחת הגדרות > נתיבי מודלים, ולאחר מכן הפעל מחדש את LoRA Manager.",
+            "hintStandalone": "נסרקים רק סוגי מודלים מופעלים; הפעל את הסוגים הדרושים לך תחת ספרייה > תיקיות ברירת מחדל.",
             "descriptionComfyUI": "ניהול המודלים האחרים פועל, אך אף אחת מתיקיות המודלים המוגדרות אינה קיימת בדיסק. הוסף את תיקיות המודלים המתאימות לנתיבי המודלים של ComfyUI וטען מחדש עמוד זה.",
             "hintComfyUI": "מודלים אחרים נקראים מתיקיות vae, upscale_models, text_encoders, clip_vision ו-controlnet של ComfyUI.",
-            "openSettings": "פתח הגדרות"
+            "openSettings": "פתח הגדרות",
+            "openModelPaths": "הגדר תיקיות מודלים",
+            "openSettingsFolder": "פתח תיקיית הגדרות"
         }
     },
     "sidebar": {
@@ -1486,6 +1554,10 @@
             "progress": {
                 "currentFile": "הקובץ הנוכחי:",
                 "downloading": "מוריד: {name}",
+                "metadata": "מטא-נתונים: {name}",
+                "indexingFile": "קורא קובץ מודל...",
+                "fetchingSourceMetadata": "מביא מטא-נתונים מ-{source}...",
+                "fetchingMetadata": "מביא מטא-נתונים...",
                 "transferred": "הורד: {downloaded} / {total}",
                 "transferredSimple": "הורד: {downloaded}",
                 "transferredUnknown": "הורד: --",
@@ -1553,6 +1625,11 @@
             "message": "הפעולה תבדוק עדכונים עבור כל ה-{typePlural} בספרייה שלך. באוספים גדולים זה עלול לקחת מעט יותר זמן.",
             "tip": "רוצים לחלק למנות קטנות? עברו למצב בכמות גדולה, בחרו את המודלים הדרושים ואז השתמשו ב\"בדוק עדכונים לנבחרים\".",
             "action": "בדוק הכל"
+        },
+        "filenameTemplateConfirm": {
+            "titleApply": "להחיל תבנית שם קובץ על הספרייה?",
+            "titleRevert": "לשחזר שמות קבצים מקוריים?",
+            "revertButton": "שחזר שמות קבצים מקוריים"
         },
         "bulkAddTags": {
             "title": "הוסף תגיות למספר מודלים",
@@ -2263,6 +2340,9 @@
             "autoOrganizeSuccess": "הארגון האוטומטי הושלם בהצלחה עבור {count} {type}",
             "autoOrganizePartialSuccess": "הארגון האוטומטי הושלם עם {success} שהועברו, {failures} שנכשלו מתוך {total} מודלים",
             "autoOrganizeFailed": "הארגון האוטומטי נכשל: {error}",
+            "filenameTemplateSuccess": "תבנית שם הקובץ הוחלה בהצלחה עבור {count} {type}",
+            "filenameTemplatePartialSuccess": "החלת תבנית שם הקובץ הושלמה עם {success} ששונה שמם, {failures} שנכשלו מתוך {total} מודלים",
+            "filenameTemplateFailed": "החלת תבנית שם הקובץ נכשלה: {error}",
             "noModelsSelected": "לא נבחרו מודלים"
         },
         "recipes": {
@@ -2429,6 +2509,8 @@
             "mappingSaveFailed": "שמירת מיפויי מודל בסיס נכשלה: {message}",
             "downloadTemplatesUpdated": "תבניות נתיב הורדה עודכנו",
             "downloadTemplatesFailed": "שמירת תבניות נתיב הורדה נכשלה: {message}",
+            "filenameTemplatesUpdated": "תבניות שמות הקבצים עודכנו",
+            "filenameTemplatesFailed": "שמירת תבניות שמות הקבצים נכשלה: {message}",
             "recipesPathUpdated": "נתיב אחסון המתכונים עודכן",
             "recipesPathSaveFailed": "עדכון נתיב אחסון המתכונים נכשל: {message}",
             "settingsUpdated": "הגדרות עודכנו: {setting}",
@@ -2694,6 +2776,11 @@
             "content": "סרוק ונהל קבצי VAE, Upscaler, Text Encoder, CLIP Vision ו-ControlNet, והורד אותם מ-CivitAI — מהעמוד הייעודי.",
             "enable": "הפעל מודלים אחרים",
             "openSettings": "פתח הגדרות"
+        },
+        "pager": {
+            "previous": "הודעה קודמת",
+            "next": "הודעה הבאה",
+            "position": "הודעה {current} מתוך {total}"
         }
     }
 }

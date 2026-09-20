@@ -45,6 +45,8 @@ vi.mock(WIDGET_UTILS_MODULE, () => ({
   syncClipStrengthIfCollapsed: vi.fn(),
   getAvailableLoras: () => Promise.resolve(new Set()),
   getAvailableLorasSync: () => new Set(),
+  getLoraStrengthRange: () => null,
+  applyStrengthRangeCue: vi.fn(),
   isLoraNameAvailable: () => true,
   onLibraryChanged: () => () => {},
 }));

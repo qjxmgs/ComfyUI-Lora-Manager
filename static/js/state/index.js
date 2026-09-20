@@ -1,7 +1,7 @@
 // Create the new hierarchical state structure
 import { getStorageItem, getMapFromStorage } from '../utils/storageHelpers.js';
 import { MODEL_TYPES } from '../api/apiConfig.js';
-import { DEFAULT_PATH_TEMPLATES, DEFAULT_PRIORITY_TAG_CONFIG } from '../utils/constants.js';
+import { DEFAULT_PATH_TEMPLATES, DEFAULT_FILENAME_TEMPLATES, DEFAULT_PRIORITY_TAG_CONFIG } from '../utils/constants.js';
 
 const DEFAULT_SETTINGS_BASE = Object.freeze({
     civitai_api_key: '',
@@ -30,6 +30,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     recipes_path: '',
     base_model_path_mappings: {},
     download_path_templates: {},
+    download_filename_templates: {},
     example_images_path: '',
     example_images_open_mode: 'system',
     example_images_local_root: '',
@@ -74,9 +75,16 @@ export function createDefaultSettings() {
         ...DEFAULT_SETTINGS_BASE,
         base_model_path_mappings: {},
         download_path_templates: { ...DEFAULT_PATH_TEMPLATES },
+        download_filename_templates: { ...DEFAULT_FILENAME_TEMPLATES },
         priority_tags: { ...DEFAULT_PRIORITY_TAG_CONFIG },
         default_other_roots: {},
         enabled_other_sub_types: ['vae', 'upscaler', 'text_encoder'],
+        // Standalone-only fields populated by GET /api/lm/settings; in plugin
+        // mode the backend omits folder_paths/folder_path_schema and these
+        // defaults apply.
+        standalone_mode: false,
+        folder_paths: {},
+        folder_path_schema: [],
     };
 }
 

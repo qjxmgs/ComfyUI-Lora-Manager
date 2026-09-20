@@ -3,9 +3,7 @@
         "cancel": "キャンセル",
         "confirm": "確認",
         "reorder": {
-            "dragHandle": "ドラッグして並べ替え（Alt + ↑/↓）",
-            "ariaLabel": "{item} を並べ替え、{total} 件中 {position} 番目",
-            "announcement": "{total} 件中 {position} 番目に移動しました"
+            "dragHandle": "ドラッグして並べ替え"
         },
         "actions": {
             "save": "保存",
@@ -384,7 +382,9 @@
         "nav": {
             "general": "一般",
             "interface": "インターフェース",
-            "library": "ライブラリ"
+            "library": "ライブラリ",
+            "organization": "整理",
+            "modelPaths": "モデルパス"
         },
         "search": {
             "placeholder": "設定を検索...",
@@ -585,6 +585,46 @@
                 "checkpointUnetOverlapInline": "このパスは別のモデルタイプですでに使用されています。Checkpoints と diffusion models には別々のフォルダを使用してください。"
             }
         },
+        "modelPaths": {
+            "title": "モデルライブラリパス",
+            "description": "LoRA Managerがモデルをスキャンするルートフォルダーです。スタンドアロンモードでは settings.json から読み込まれる主要なモデルの場所になります。",
+            "restartRequired": "変更を有効にするには再起動が必要です",
+            "coreTypes": "コアモデルタイプ",
+            "otherTypes": "その他のモデルタイプ",
+            "otherTypesDisabledHint": "その他のモデルタイプが有効になっていません。フォルダーを設定するには、上で必要なタイプをオンにしてください。",
+            "saveSuccessRestart": "モデルライブラリパスを更新しました。変更を適用するには再起動が必要です。",
+            "pendingRestartNotice": "パスの変更を保存しました。変更を有効にするにはLoRA Managerを再起動してください。",
+            "pendingRestartBannerTitle": "パスの変更を適用するには再起動が必要です",
+            "pendingRestartBannerMessage": "モデルライブラリパスが更新されました。新しいフォルダーをスキャンするにはLoRA Managerサーバーを再起動してください。",
+            "folderKeys": {
+                "loras": "LoRAパス",
+                "checkpoints": "Checkpointパス",
+                "unet": "Diffusionモデルパス",
+                "embeddings": "Embeddingパス",
+                "vae": "VAEパス",
+                "upscale_models": "Upscalerパス",
+                "text_encoders": "Text Encoderパス",
+                "clip": "CLIPパス（レガシー）",
+                "clip_vision": "CLIP Visionパス",
+                "controlnet": "ControlNetパス"
+            }
+        },
+        "directoryPicker": {
+            "title": "フォルダを参照",
+            "selectFolder": "このフォルダを選択",
+            "goUp": "上へ",
+            "pathPlaceholder": "パスを入力...",
+            "go": "移動",
+            "emptyFolder": "サブフォルダがありません",
+            "loadError": "ディレクトリの読み込みに失敗しました"
+        },
+        "pathValidation": {
+            "valid": "パスは有効です",
+            "pathNotFound": "パスが存在しません",
+            "notADirectory": "ディレクトリではありません",
+            "notReadable": "パスは読み取れません",
+            "notWritable": "パスは書き込めません"
+        },
         "priorityTags": {
             "title": "優先タグ",
             "description": "各モデルタイプのタグ優先順位をカスタマイズします (例: character, concept, style(toon|toon_style))",
@@ -637,6 +677,22 @@
                 "invalidChars": "無効な文字が検出されました",
                 "doubleSlashes": "二重スラッシュは許可されていません",
                 "leadingTrailingSlash": "スラッシュで開始または終了することはできません",
+                "invalidPlaceholder": "無効なプレースホルダー：{placeholder}",
+                "validTemplate": "有効なテンプレート"
+            }
+        },
+        "filenameTemplates": {
+            "title": "ファイル名テンプレート",
+            "help": "ダウンロードしたモデルのファイル名をモデルタイプごとに設定します。空欄にするとダウンロード時は元のファイル名が保持され、空のテンプレートを適用すると以前にリネームされたモデルの記録済みの元のファイル名が復元されます。元のファイル名は常にモデルのメタデータに保持されます。",
+            "availablePlaceholders": "利用可能なプレースホルダー：",
+            "templatePlaceholder": "ファイル名テンプレートを入力（例：{base_model}-{model_name}-{version_name}）",
+            "applyButton": "ライブラリに今すぐ適用",
+            "applyHelp": "このモデルタイプの既存のすべてのファイルをテンプレートに従ってリネームします。空のテンプレートの場合は、代わりに記録済みの元のファイル名を復元します。警告：リネームするとComfyUIローダーから見える相対パスが変わるため、古いファイル名を参照する既存のワークフローは更新が必要になる場合があります。元のファイル名は各モデルのメタデータに保持されます。",
+            "confirmApply": "このモデルタイプの既存のすべてのファイルをファイル名テンプレートに従ってリネームしますか？ComfyUIローダーから見える相対パスが変わります。元のファイル名は各モデルのメタデータに保持されます。",
+            "confirmRevert": "このモデルタイプの以前にリネームされたすべてのファイルについて、記録済みの元のファイル名を復元しますか？ComfyUIローダーから見える相対パスが変わります。記録済みの元のファイル名がないファイルはスキップされます。",
+            "validation": {
+                "restoreOriginal": "有効（空のテンプレートは元のファイル名を復元）",
+                "invalidChars": "無効な文字が検出されました（ファイル名に / \\ < > : \" | ? * は使用できません）",
                 "invalidPlaceholder": "無効なプレースホルダー：{placeholder}",
                 "validTemplate": "有効なテンプレート"
             }
@@ -873,6 +929,14 @@
                 "complete": "自動整理が完了しました",
                 "error": "エラー：{error}"
             },
+            "filenameTemplateProgress": {
+                "initializing": "ファイル名テンプレートの適用を初期化中...",
+                "starting": "{type}にファイル名テンプレートを適用中...",
+                "processing": "処理中（{processed}/{total}）- {success} リネーム、{skipped} スキップ、{failures} 失敗",
+                "completed": "完了：{success} リネーム、{skipped} スキップ、{failures} 失敗",
+                "complete": "ファイル名テンプレートの適用が完了しました",
+                "error": "エラー：{error}"
+            },
             "enrichHfAgent": "メタデータをAIで補完"
         },
         "contextMenu": {
@@ -920,7 +984,9 @@
         },
         "modal": {
             "metadata": {
-                "id": "ID"
+                "id": "ID",
+                "baseModel": "ベースモデル",
+                "unknown": "不明"
             },
             "actions": {
                 "openFileLocation": "ファイルの場所を開く",
@@ -1241,11 +1307,13 @@
         },
         "noPaths": {
             "title": "その他のモデルのフォルダーが見つかりません",
-            "descriptionStandalone": "その他のモデル管理はオンですが、設定されたモデルフォルダーがディスク上に存在しません。以下のフォルダーパスをsettings.jsonに追加し、LoRA Managerを再起動してください。",
-            "hintStandalone": "スキャンされるのは上記のフォルダーキーのみです。不要なキーは省略できます。",
+            "descriptionStandalone": "その他のモデル管理はオンですが、その他のモデルフォルダーが見つかりませんでした。「設定 > モデルパス」でモデルフォルダーを追加し、LoRA Managerを再起動してください。",
+            "hintStandalone": "有効になっているモデルタイプのみがスキャンされます。必要なタイプは「ライブラリ > デフォルトルート」で有効にしてください。",
             "descriptionComfyUI": "その他のモデル管理はオンですが、設定されたモデルフォルダーがディスク上に存在しません。該当するモデルフォルダーをComfyUIのモデルパスに追加し、このページを再読み込みしてください。",
             "hintComfyUI": "その他のモデルは、ComfyUIのvae、upscale_models、text_encoders、clip_vision、controlnetフォルダーから読み込まれます。",
-            "openSettings": "設定を開く"
+            "openSettings": "設定を開く",
+            "openModelPaths": "モデルフォルダーを設定",
+            "openSettingsFolder": "設定フォルダーを開く"
         }
     },
     "sidebar": {
@@ -1486,6 +1554,10 @@
             "progress": {
                 "currentFile": "現在のファイル:",
                 "downloading": "ダウンロード中: {name}",
+                "metadata": "メタデータ: {name}",
+                "indexingFile": "モデルファイルを読み込み中...",
+                "fetchingSourceMetadata": "{source} からメタデータを取得中...",
+                "fetchingMetadata": "メタデータを取得中...",
                 "transferred": "ダウンロード済み: {downloaded} / {total}",
                 "transferredSimple": "ダウンロード済み: {downloaded}",
                 "transferredUnknown": "ダウンロード済み: --",
@@ -1553,6 +1625,11 @@
             "message": "ライブラリ内のすべての{typePlural}で更新を確認します。コレクションが大きい場合は時間がかかることがあります。",
             "tip": "少しずつ確認したい場合は一括モードに切り替え、必要なモデルを選んで「選択項目の更新を確認」を使ってください。",
             "action": "すべて確認"
+        },
+        "filenameTemplateConfirm": {
+            "titleApply": "ファイル名テンプレートをライブラリに適用しますか？",
+            "titleRevert": "元のファイル名を復元しますか？",
+            "revertButton": "元のファイル名を復元"
         },
         "bulkAddTags": {
             "title": "複数モデルにタグを追加",
@@ -2263,6 +2340,9 @@
             "autoOrganizeSuccess": "{count} {type} の自動整理が正常に完了しました",
             "autoOrganizePartialSuccess": "自動整理が完了しました：{total} モデル中 {success} 移動、{failures} 失敗",
             "autoOrganizeFailed": "自動整理に失敗しました：{error}",
+            "filenameTemplateSuccess": "{count} 件の{type}にファイル名テンプレートを正常に適用しました",
+            "filenameTemplatePartialSuccess": "ファイル名テンプレートを適用しました：{total} 件中 {success} 件をリネーム、{failures} 件失敗",
+            "filenameTemplateFailed": "ファイル名テンプレートの適用に失敗しました：{error}",
             "noModelsSelected": "モデルが選択されていません"
         },
         "recipes": {
@@ -2429,6 +2509,8 @@
             "mappingSaveFailed": "ベースモデルマッピングの保存に失敗しました：{message}",
             "downloadTemplatesUpdated": "ダウンロードパステンプレートが更新されました",
             "downloadTemplatesFailed": "ダウンロードパステンプレートの保存に失敗しました：{message}",
+            "filenameTemplatesUpdated": "ファイル名テンプレートを更新しました",
+            "filenameTemplatesFailed": "ファイル名テンプレートの保存に失敗しました：{message}",
             "recipesPathUpdated": "レシピ保存先を更新しました",
             "recipesPathSaveFailed": "レシピ保存先の更新に失敗しました: {message}",
             "settingsUpdated": "設定が更新されました：{setting}",
@@ -2694,6 +2776,11 @@
             "content": "専用ページで VAE、Upscaler、Text Encoder、CLIP Vision、ControlNet の各ファイルをスキャン・管理し、CivitAI からダウンロードできます。",
             "enable": "その他のモデルを有効にする",
             "openSettings": "設定を開く"
+        },
+        "pager": {
+            "previous": "前の通知",
+            "next": "次の通知",
+            "position": "{total} 件中 {current} 件目の通知"
         }
     }
 }
