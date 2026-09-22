@@ -7,6 +7,7 @@ const {
   TRIGGER_TOGGLE_MODULE,
   TAGS_WIDGET_MODULE,
   STYLES_MODULE,
+  appCanvas,
 } = vi.hoisted(() => ({
   APP_MODULE: new URL("../../../scripts/app.js", import.meta.url).pathname,
   API_MODULE: new URL("../../../scripts/api.js", import.meta.url).pathname,
@@ -14,6 +15,10 @@ const {
   TRIGGER_TOGGLE_MODULE: new URL("../../../web/comfyui/trigger_word_toggle.js", import.meta.url).pathname,
   TAGS_WIDGET_MODULE: new URL("../../../web/comfyui/tags_widget.js", import.meta.url).pathname,
   STYLES_MODULE: new URL("../../../web/comfyui/lm_styles_loader.js", import.meta.url).pathname,
+  appCanvas: {
+    emitBeforeChange: vi.fn(),
+    emitAfterChange: vi.fn(),
+  },
 }));
 
 const extensionState = { current: null };
@@ -24,7 +29,7 @@ vi.mock(APP_MODULE, () => ({
     registerExtension: vi.fn((extension) => {
       extensionState.current = extension;
     }),
-    canvas: {},
+    canvas: appCanvas,
   },
 }));
 
@@ -77,6 +82,8 @@ function createLifecycleNodeType() {
       this.graph = {
         beforeChange: vi.fn(),
         afterChange: vi.fn(),
+        incrementVersion: vi.fn(),
+        change: vi.fn(),
         setDirtyCanvas: vi.fn(),
       };
       this.onWidgetChanged = vi.fn();
@@ -357,8 +364,12 @@ describe("TriggerWord Toggle state preservation", () => {
     ];
     node.graph.beforeChange.mockClear();
     node.graph.afterChange.mockClear();
+    node.graph.incrementVersion.mockClear();
+    node.graph.change.mockClear();
     node.onWidgetChanged.mockClear();
     node.setDirtyCanvas.mockClear();
+    appCanvas.emitBeforeChange.mockClear();
+    appCanvas.emitAfterChange.mockClear();
 
     node.tagContainer.querySelector(".comfy-tag").click();
     expect(node.tagWidget.value[0].active).toBe(false);
@@ -386,6 +397,10 @@ describe("TriggerWord Toggle state preservation", () => {
 
     expect(node.graph.beforeChange).toHaveBeenCalledTimes(4);
     expect(node.graph.afterChange).toHaveBeenCalledTimes(4);
+    expect(node.graph.incrementVersion).toHaveBeenCalledTimes(4);
+    expect(node.graph.change).toHaveBeenCalledTimes(4);
+    expect(appCanvas.emitBeforeChange).toHaveBeenCalledTimes(4);
+    expect(appCanvas.emitAfterChange).toHaveBeenCalledTimes(4);
     expect(node.onWidgetChanged).toHaveBeenCalledTimes(4);
     expect(node.setDirtyCanvas).toHaveBeenCalledTimes(4);
     expect(node.onWidgetChanged).toHaveBeenLastCalledWith(
@@ -413,7 +428,7 @@ describe("TriggerWord Toggle state preservation", () => {
       "alpha, beta",
       detail(1, groups)
     );
-    node.tagWidget.value[0].active = false;
+    node.tagContainer.querySelector(".comfy-tag").click();
     node.tagWidget.value[0].items[1].active = false;
     node.tagWidget.value[0].strength = 0.65;
 
@@ -495,6 +510,10 @@ describe("TriggerWord Toggle state preservation", () => {
 
     expect(node.graph.beforeChange).not.toHaveBeenCalled();
     expect(node.graph.afterChange).not.toHaveBeenCalled();
+    expect(node.graph.incrementVersion).not.toHaveBeenCalled();
+    expect(node.graph.change).not.toHaveBeenCalled();
+    expect(appCanvas.emitBeforeChange).not.toHaveBeenCalled();
+    expect(appCanvas.emitAfterChange).not.toHaveBeenCalled();
     expect(node.onWidgetChanged).not.toHaveBeenCalled();
   });
 

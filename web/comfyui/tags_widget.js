@@ -250,15 +250,24 @@ function updateWidgetValue(widget, updater) {
   const nextValue = updater(previousValue.map(cloneTagData));
   const node = widget.__lmOwnerNode;
   const graph = node?.graph;
+  const canvas = app.canvas;
 
+  canvas?.emitBeforeChange?.();
   graph?.beforeChange?.(node);
   try {
     widget.value = nextValue;
     node?.onWidgetChanged?.(widget.name, nextValue, previousValue, widget);
+    if (typeof graph?.incrementVersion === "function") {
+      graph.incrementVersion();
+    } else if (typeof graph?._version === "number") {
+      graph._version += 1;
+    }
   } finally {
     graph?.afterChange?.(node);
+    canvas?.emitAfterChange?.();
   }
 
+  graph?.change?.();
   if (node?.setDirtyCanvas) {
     node.setDirtyCanvas(true, true);
   } else {
