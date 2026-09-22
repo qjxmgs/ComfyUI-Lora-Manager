@@ -246,8 +246,24 @@ function attachGroupEditorCloseHandlers(widget) {
 }
 
 function updateWidgetValue(widget, updater) {
-  const nextValue = updater((widget.value || []).map(cloneTagData));
-  widget.value = nextValue;
+  const previousValue = (widget.value || []).map(cloneTagData);
+  const nextValue = updater(previousValue.map(cloneTagData));
+  const node = widget.__lmOwnerNode;
+  const graph = node?.graph;
+
+  graph?.beforeChange?.(node);
+  try {
+    widget.value = nextValue;
+    node?.onWidgetChanged?.(widget.name, nextValue, previousValue, widget);
+  } finally {
+    graph?.afterChange?.(node);
+  }
+
+  if (node?.setDirtyCanvas) {
+    node.setDirtyCanvas(true, true);
+  } else {
+    graph?.setDirtyCanvas?.(true, true);
+  }
 }
 
 function createTagElement({
@@ -973,7 +989,9 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
     selectOn: ["click", "focus"],
   });
 
+  widget.name = name;
   widget.value = initialTagsData;
+  widget.__lmOwnerNode = node;
   widget.callback = callback;
   widget.serializeValue = () => widgetValue;
   widget.splitTopLevelCommas = splitTopLevelCommas;

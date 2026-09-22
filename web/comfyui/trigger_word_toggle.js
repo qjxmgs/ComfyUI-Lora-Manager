@@ -1,8 +1,197 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
-import { CONVERTED_TYPE, getNodeFromGraph } from "./utils.js";
+import { CONVERTED_TYPE, getNodeFromGraph, getWidgetByName } from "./utils.js";
 import { addTagsWidget } from "./tags_widget.js";
 import { getWheelSensitivity } from "./settings.js";
+
+const TRIGGER_WORD_WIDGET_IDS_PROPERTY = "__lm_trigger_word_widget_ids";
+const TRIGGER_WORD_WIDGET_NAMES = [
+  "group_mode",
+  "default_active",
+  "allow_strength_adjustment",
+  "toggle_trigger_words",
+  "orinalMessage",
+];
+
+function normalizeSavedTag(tag, defaultActive) {
+  if (typeof tag === "string") {
+    return {
+      text: tag,
+      active: defaultActive,
+      highlighted: false,
+      strength: null,
+    };
+  }
+
+  if (!tag || typeof tag !== "object") {
+    return null;
+  }
+
+  const normalized = {
+    ...tag,
+    active: typeof tag.active === "boolean" ? tag.active : defaultActive,
+  };
+  if (Array.isArray(tag.items)) {
+    normalized.items = tag.items
+      .map((item) => {
+        if (typeof item === "string") {
+          return {
+            text: item,
+            active: true,
+            highlighted: false,
+            strength: null,
+          };
+        }
+        if (!item || typeof item !== "object") {
+          return null;
+        }
+        return {
+          ...item,
+          active: typeof item.active === "boolean" ? item.active : true,
+        };
+      })
+      .filter(Boolean);
+  }
+  return normalized;
+}
+
+function cloneSavedTags(tags, defaultActive) {
+  if (!Array.isArray(tags)) {
+    return [];
+  }
+  return tags
+    .map((tag) => normalizeSavedTag(tag, defaultActive))
+    .filter(Boolean);
+}
+
+function getNamedSavedValue(values, widgetIds, name) {
+  if (!Array.isArray(widgetIds)) {
+    return undefined;
+  }
+  const index = widgetIds.lastIndexOf(name);
+  return index >= 0 ? values[index] : undefined;
+}
+
+function normalizeTriggerWordWidgetValues(values, widgetIds = undefined) {
+  const savedValues = Array.isArray(values) ? values : [];
+  let tagIndex = -1;
+  let messageIndex = -1;
+  savedValues.forEach((value, index) => {
+    if (Array.isArray(value)) {
+      tagIndex = index;
+    } else if (typeof value === "string") {
+      messageIndex = index;
+    }
+  });
+
+  const namedGroupMode = getNamedSavedValue(savedValues, widgetIds, "group_mode");
+  const namedDefaultActive = getNamedSavedValue(savedValues, widgetIds, "default_active");
+  const namedStrengthAdjustment = getNamedSavedValue(
+    savedValues,
+    widgetIds,
+    "allow_strength_adjustment"
+  );
+  const namedTags = getNamedSavedValue(savedValues, widgetIds, "toggle_trigger_words");
+  const namedOriginalMessage = getNamedSavedValue(savedValues, widgetIds, "orinalMessage");
+  const hasCompleteNamedMapping = typeof namedGroupMode === "boolean" &&
+    typeof namedDefaultActive === "boolean" &&
+    typeof namedStrengthAdjustment === "boolean" &&
+    Array.isArray(namedTags) &&
+    typeof namedOriginalMessage === "string";
+
+  const valuesBeforeTags = tagIndex >= 0 ? savedValues.slice(0, tagIndex) : savedValues;
+  const firstBoolean = valuesBeforeTags.find((value) => typeof value === "boolean");
+  let inferredDefaultActive = true;
+  let inferredStrengthAdjustment = false;
+
+  const hasUnexpectedValueBeforeTags = valuesBeforeTags.some(
+    (value, index) => index > 0 && typeof value !== "boolean"
+  );
+  if (!hasUnexpectedValueBeforeTags) {
+    if (typeof valuesBeforeTags[1] === "boolean") {
+      inferredDefaultActive = valuesBeforeTags[1];
+    }
+    if (typeof valuesBeforeTags[2] === "boolean") {
+      inferredStrengthAdjustment = valuesBeforeTags[2];
+    }
+  } else {
+    const lastUnexpectedIndex = valuesBeforeTags.reduce(
+      (lastIndex, value, index) => (typeof value === "boolean" ? lastIndex : index),
+      -1
+    );
+    let trailingBoolean;
+    for (let index = valuesBeforeTags.length - 1; index > lastUnexpectedIndex; index -= 1) {
+      if (typeof valuesBeforeTags[index] === "boolean") {
+        trailingBoolean = valuesBeforeTags[index];
+        break;
+      }
+    }
+    if (typeof trailingBoolean === "boolean") {
+      inferredStrengthAdjustment = trailingBoolean;
+    }
+  }
+
+  const groupMode = typeof namedGroupMode === "boolean"
+    ? namedGroupMode
+    : (typeof firstBoolean === "boolean" ? firstBoolean : true);
+  const defaultActive = typeof namedDefaultActive === "boolean"
+    ? namedDefaultActive
+    : inferredDefaultActive;
+  const allowStrengthAdjustment = typeof namedStrengthAdjustment === "boolean"
+    ? namedStrengthAdjustment
+    : inferredStrengthAdjustment;
+  const savedTags = hasCompleteNamedMapping
+    ? namedTags
+    : (tagIndex >= 0 ? savedValues[tagIndex] : []);
+  const tags = cloneSavedTags(savedTags, defaultActive);
+  const originalMessage = hasCompleteNamedMapping
+    ? namedOriginalMessage
+    : (messageIndex >= 0 ? savedValues[messageIndex] : "");
+
+  return [
+    groupMode,
+    defaultActive,
+    allowStrengthAdjustment,
+    tags,
+    originalMessage,
+  ];
+}
+
+function getSerializedTagValue(widget) {
+  if (!widget) {
+    return [];
+  }
+  const serialized = widget.serializeValue?.();
+  return Array.isArray(serialized) ? serialized : (Array.isArray(widget.value) ? widget.value : []);
+}
+
+function buildCanonicalWidgetValues(node, serializedValues = undefined) {
+  const fallback = normalizeTriggerWordWidgetValues(
+    serializedValues ?? node.widgets_values,
+    node.properties?.[TRIGGER_WORD_WIDGET_IDS_PROPERTY]
+  );
+  const groupModeWidget = getWidgetByName(node, "group_mode");
+  const defaultActiveWidget = getWidgetByName(node, "default_active");
+  const strengthAdjustmentWidget = getWidgetByName(node, "allow_strength_adjustment");
+  const tagWidget = node.tagWidget || getWidgetByName(node, "toggle_trigger_words");
+  const originalMessageWidget = node.originalMessageWidget || getWidgetByName(node, "orinalMessage");
+  const pendingRestore = node.__lmPendingTriggerWordRestore;
+
+  return [
+    typeof groupModeWidget?.value === "boolean" ? groupModeWidget.value : fallback[0],
+    typeof defaultActiveWidget?.value === "boolean" ? defaultActiveWidget.value : fallback[1],
+    typeof strengthAdjustmentWidget?.value === "boolean"
+      ? strengthAdjustmentWidget.value
+      : fallback[2],
+    cloneSavedTags(
+      tagWidget ? getSerializedTagValue(tagWidget) : (pendingRestore?.tags ?? fallback[3]),
+      typeof defaultActiveWidget?.value === "boolean" ? defaultActiveWidget.value : fallback[1]
+    ),
+    typeof originalMessageWidget?.value === "string"
+      ? originalMessageWidget.value
+      : (pendingRestore?.originalMessage ?? fallback[4]),
+  ];
+}
 
 function normalizeTagText(text) {
   return typeof text === "string" ? text.trim().toLowerCase() : "";
@@ -340,6 +529,63 @@ app.registerExtension({
     });
   },
 
+  beforeRegisterNodeDef(nodeType, nodeData) {
+    if (nodeData?.name !== "TriggerWord Toggle (LoraManager)") {
+      return;
+    }
+
+    const originalConfigure = nodeType.prototype.configure;
+    nodeType.prototype.configure = function(info, ...args) {
+      const widgetIds = info?.properties?.[TRIGGER_WORD_WIDGET_IDS_PROPERTY];
+      const canonicalValues = normalizeTriggerWordWidgetValues(info?.widgets_values, widgetIds);
+      const normalizedInfo = {
+        ...info,
+        properties: {
+          ...(info?.properties || {}),
+          [TRIGGER_WORD_WIDGET_IDS_PROPERTY]: [...TRIGGER_WORD_WIDGET_NAMES],
+        },
+        widgets_values: canonicalValues,
+      };
+
+      this.__lmPendingTriggerWordRestore = {
+        tags: cloneSavedTags(canonicalValues[3], canonicalValues[1]),
+        originalMessage: canonicalValues[4],
+      };
+
+      const result = originalConfigure?.call(this, normalizedInfo, ...args);
+      this.widgets_values = canonicalValues;
+      this.properties = {
+        ...(this.properties || {}),
+        [TRIGGER_WORD_WIDGET_IDS_PROPERTY]: [...TRIGGER_WORD_WIDGET_NAMES],
+      };
+
+      const nativeWidgetNames = TRIGGER_WORD_WIDGET_NAMES.slice(0, 3);
+      nativeWidgetNames.forEach((name, index) => {
+        const widget = getWidgetByName(this, name);
+        if (widget) {
+          widget.value = canonicalValues[index];
+        }
+      });
+      return result;
+    };
+
+    const originalOnSerialize = nodeType.prototype.onSerialize;
+    nodeType.prototype.onSerialize = function(serialized, ...args) {
+      const result = originalOnSerialize?.call(this, serialized, ...args);
+      serialized.properties = {
+        ...(serialized.properties || {}),
+        [TRIGGER_WORD_WIDGET_IDS_PROPERTY]: [...TRIGGER_WORD_WIDGET_NAMES],
+      };
+      serialized.widgets_values = buildCanonicalWidgetValues(this, serialized.widgets_values);
+      this.properties = {
+        ...(this.properties || {}),
+        [TRIGGER_WORD_WIDGET_IDS_PROPERTY]: [...TRIGGER_WORD_WIDGET_NAMES],
+      };
+      this.widgets_values = serialized.widgets_values;
+      return result;
+    };
+  },
+
   async nodeCreated(node) {
     if (node.comfyClass !== "TriggerWord Toggle (LoraManager)") {
       return;
@@ -363,9 +609,9 @@ app.registerExtension({
 
     requestAnimationFrame(async () => {
       const wheelSensitivity = getWheelSensitivity();
-      const groupModeWidget = node.widgets[0];
-      const defaultActiveWidget = node.widgets[1];
-      const strengthAdjustmentWidget = node.widgets[2];
+      const groupModeWidget = getWidgetByName(node, "group_mode");
+      const defaultActiveWidget = getWidgetByName(node, "default_active");
+      const strengthAdjustmentWidget = getWidgetByName(node, "allow_strength_adjustment");
       const initialStrengthAdjustment = Boolean(strengthAdjustmentWidget?.value);
 
       const result = addTagsWidget(node, "toggle_trigger_words", {
@@ -433,21 +679,28 @@ app.registerExtension({
       hiddenWidget.computeSize = () => [0, -4];
       node.originalMessageWidget = hiddenWidget;
 
-      const tagWidgetIndex = node.widgets.indexOf(result.widget);
-      const originalMessageWidgetIndex = node.widgets.indexOf(hiddenWidget);
-      if (node.widgets_values && node.widgets_values.length > 0) {
-        if (tagWidgetIndex >= 0) {
-          const savedValue = node.widgets_values[tagWidgetIndex];
-          if (savedValue) {
-            result.widget.value = Array.isArray(savedValue) ? savedValue : [];
-          }
-        }
-        if (originalMessageWidgetIndex >= 0) {
-          const originalMessage = node.widgets_values[originalMessageWidgetIndex];
-          if (originalMessage) {
-            hiddenWidget.value = originalMessage;
-          }
-        }
+      const normalizedValues = normalizeTriggerWordWidgetValues(
+        node.widgets_values,
+        node.properties?.[TRIGGER_WORD_WIDGET_IDS_PROPERTY]
+      );
+      const pendingRestore = node.__lmPendingTriggerWordRestore;
+      const restoredTags = pendingRestore?.tags ?? normalizedValues[3];
+      const restoredMessage = pendingRestore?.originalMessage ?? normalizedValues[4];
+      result.widget.value = cloneSavedTags(restoredTags, defaultActiveWidget?.value ?? true);
+      hiddenWidget.value = typeof restoredMessage === "string" ? restoredMessage : "";
+      delete node.__lmPendingTriggerWordRestore;
+
+      const pendingUpdate = node.__lmPendingTriggerWordUpdate;
+      if (pendingUpdate) {
+        delete node.__lmPendingTriggerWordUpdate;
+        hiddenWidget.value = pendingUpdate.message;
+        this.updateTagsBasedOnMode(
+          node,
+          pendingUpdate.message,
+          groupModeWidget?.value ?? false,
+          Boolean(strengthAdjustmentWidget?.value),
+          pendingUpdate.triggerGroups
+        );
       }
 
       requestAnimationFrame(() => node.applyTriggerHighlightState?.());
@@ -549,6 +802,8 @@ app.registerExtension({
   clearTriggerWordState(node) {
     node.__lmTriggerGroups = [];
     node.__lmTriggerWordRevisions = new Map();
+    delete node.__lmPendingTriggerWordRestore;
+    delete node.__lmPendingTriggerWordUpdate;
     if (node.originalMessageWidget) {
       node.originalMessageWidget.value = "";
     }
@@ -586,8 +841,10 @@ app.registerExtension({
     }
 
     if (node.tagWidget) {
-      const groupMode = node.widgets[0] ? node.widgets[0].value : false;
-      const allowStrengthAdjustment = Boolean(node.widgets[2]?.value);
+      const groupMode = getWidgetByName(node, "group_mode")?.value ?? false;
+      const allowStrengthAdjustment = Boolean(
+        getWidgetByName(node, "allow_strength_adjustment")?.value
+      );
       node.tagWidget.allowStrengthAdjustment = allowStrengthAdjustment;
       this.updateTagsBasedOnMode(
         node,
@@ -596,6 +853,13 @@ app.registerExtension({
         allowStrengthAdjustment,
         node.__lmTriggerGroups
       );
+    } else {
+      node.__lmPendingTriggerWordUpdate = {
+        message: typeof message === "string" ? message : "",
+        triggerGroups: Array.isArray(node.__lmTriggerGroups)
+          ? node.__lmTriggerGroups.map((group) => ({ ...group }))
+          : undefined,
+      };
     }
   },
 
@@ -613,7 +877,7 @@ app.registerExtension({
     node.tagWidget.allowStrengthAdjustment = allowStrengthAdjustment;
 
     const existingTags = (node.tagWidget.value || []).map(cloneTag);
-    const defaultActive = node.widgets[1] ? node.widgets[1].value : true;
+    const defaultActive = getWidgetByName(node, "default_active")?.value ?? true;
     let tagArray = [];
 
     if (Array.isArray(triggerGroups)) {
