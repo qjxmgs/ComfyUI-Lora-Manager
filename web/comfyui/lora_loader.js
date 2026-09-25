@@ -9,6 +9,7 @@ import {
   showToast,
   refreshConnectedTriggerWords,
   chainCallback,
+  interceptModeChange,
   mergeLoras,
   getAllGraphNodes,
   getNodeFromGraph,
@@ -230,24 +231,17 @@ app.registerExtension({
         let isUpdating = false;
         let isSyncingInput = false;
 
-        // Mechanism: Property descriptor to listen for mode changes
+        // Mechanism: Observe mode changes without shadowing the frontend's
+        // own `mode` accessor (frontend >= 1.53 serializes from shell state,
+        // so redefining `mode` here would silently revert bypass/mute).
         const self = this;
-        let _mode = this.mode;
-        Object.defineProperty(this, 'mode', {
-          get() {
-            return _mode;
-          },
-          set(value) {
-            const oldValue = _mode;
-            _mode = value;
-
-            // Trigger mode change handler
-            if (self.onModeChange) {
-              self.onModeChange(value, oldValue);
-            }
-
-            console.log(`[Lora Loader] Node mode changed from ${oldValue} to ${value}`);
+        interceptModeChange(this, (newMode, oldMode) => {
+          // Trigger mode change handler
+          if (self.onModeChange) {
+            self.onModeChange(newMode, oldMode);
           }
+
+          console.log(`[Lora Loader] Node mode changed from ${oldMode} to ${newMode}`);
         });
 
         // Define the mode change handler

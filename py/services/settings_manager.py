@@ -47,6 +47,8 @@ from ..utils.settings_paths import (
 from ..utils.tag_priorities import (
     PriorityTagEntry,
     collect_canonical_tags,
+    is_civitai_meta_tag,
+    is_usable_path_tag,
     parse_priority_tag_string,
     resolve_priority_tag,
 )
@@ -1569,9 +1571,15 @@ class SettingsManager:
         if resolved:
             return resolved
 
+        # Fall back to the first tag that is usable as a folder name. The raw
+        # tag list can contain keyword dumps that would become unusable folders
+        # and break path length limits, and Civitai mixes in structural labels
+        # like "base model" that mean nothing as a folder, so skip both (#1119).
         for tag in tags:
-            if isinstance(tag, str) and tag:
-                return tag
+            if is_civitai_meta_tag(tag):
+                continue
+            if is_usable_path_tag(tag):
+                return tag.strip()
         return ""
 
     def get_priority_tag_suggestions(self) -> Dict[str, List[str]]:
