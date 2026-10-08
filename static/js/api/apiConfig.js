@@ -86,6 +86,10 @@ export function getApiEndpoints(modelType) {
         createFolder: `/api/lm/${modelType}/create-folder`,
         deleteFolder: `/api/lm/${modelType}/delete-folder`,
         renameFolder: `/api/lm/${modelType}/rename-folder`,
+        // Resolves a tree-relative folder onto the root(s) that hold it: the
+        // unified folder tree merges every root, so a node does not carry its
+        // own absolute path.
+        resolveFolder: `/api/lm/${modelType}/resolve-folder`,
 
         // CivitAI integration
         fetchCivitai: `/api/lm/${modelType}/fetch-civitai`,
@@ -98,6 +102,9 @@ export function getApiEndpoints(modelType) {
         modelUpdateVersions: `/api/lm/${modelType}/updates/versions`,
         ignoreModelUpdate: `/api/lm/${modelType}/updates/ignore`,
         ignoreVersionUpdate: `/api/lm/${modelType}/updates/ignore-version`,
+
+        // Price alerts are app-wide (all model types in one query), so they are
+        // not part of this per-type endpoint map; see UpdateService.js.
 
         // Preview management
         replacePreview: `/api/lm/${modelType}/replace-preview`,

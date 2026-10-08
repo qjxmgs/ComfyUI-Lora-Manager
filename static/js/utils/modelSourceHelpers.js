@@ -1,13 +1,12 @@
 /**
- * External model source helpers (Hugging Face / ModelScope / TensorArt).
+ * External model source helpers (Hugging Face / ModelScope / TensorArt / OpenModelDB).
  *
  * Mirrors `py/services/model_sources/registry.py` so the frontend and the
  * backend agree on URL recognition, version-group keys, and which sites
  * support AI metadata enrichment.
  *
  * Models loaded from an older cache may only carry the legacy `hf_url`
- * field; every helper here falls back to it, and to the legacy
- * `hf:user/repo` group key shape.
+ * field; every helper here falls back to it.
  */
 
 import { translate } from './i18nHelpers.js';
@@ -17,6 +16,9 @@ export const MODEL_SOURCES = [
     platform: 'huggingface',
     label: 'Hugging Face',
     groupPrefix: 'hf',
+    // A repository hosts many unrelated models and the site exposes no
+    // model-level identity, so HF models never auto-group.
+    groupKey: 'none',
     supportsEnrichment: true,
     supportsDownload: true,
     defaultRevision: 'main',
@@ -36,6 +38,9 @@ export const MODEL_SOURCES = [
     platform: 'modelscope',
     label: 'ModelScope',
     groupPrefix: 'ms',
+    // Group by the site-native published-model id (`source_model_id`),
+    // recorded by enrichment — the repo id is not a model identity.
+    groupKey: 'modelId',
     supportsEnrichment: true,
     supportsDownload: true,
     defaultRevision: 'master',
@@ -56,6 +61,7 @@ export const MODEL_SOURCES = [
     platform: 'modelscope-ai',
     label: 'ModelScope (International)',
     groupPrefix: 'msai',
+    groupKey: 'modelId',
     supportsEnrichment: true,
     supportsDownload: true,
     defaultRevision: 'master',
@@ -73,6 +79,8 @@ export const MODEL_SOURCES = [
     platform: 'tensorart',
     label: 'TensorArt',
     groupPrefix: 'ta',
+    // The numeric id in a TensorArt URL already identifies a single model.
+    groupKey: 'repo',
     supportsEnrichment: false,
     supportsDownload: false,
     defaultRevision: '',
@@ -82,6 +90,26 @@ export const MODEL_SOURCES = [
     pattern: /^https?:\/\/(?:www\.)?(?:tensor\.art|tusi\.cn)\/models\/(\d+)/i,
     filePattern: null,
     canonical: (id) => `https://tensor.art/models/${id}`,
+    filePage: null,
+  },
+  {
+    // Flat catalogue of upscalers: the id IS the published-model identity
+    // (no owner/repo split, no revisions, no per-file page).
+    platform: 'openmodeldb',
+    label: 'OpenModelDB',
+    groupPrefix: 'omdb',
+    groupKey: 'repo',
+    supportsEnrichment: true,
+    supportsDownload: true,
+    defaultRevision: '',
+    defaultSubdir: 'openmodeldb',
+    exampleUrl: 'https://openmodeldb.info/models/4x-UltraSharp',
+    placeholder: 'https://openmodeldb.info/models/4x-UltraSharp',
+    pattern: /^https?:\/\/(?:www\.)?openmodeldb\.info\/models\/([A-Za-z0-9_][A-Za-z0-9_.-]*)/i,
+    filePattern: null,
+    // Flat model ids (no owner/name split).
+    flatId: true,
+    canonical: (id) => `https://openmodeldb.info/models/${id}`,
     filePage: null,
   },
 ];
@@ -152,11 +180,21 @@ export function getModelSourceInfo(model) {
 
 /**
  * Version-group key for a model, matching the backend's `_extract_group_key`.
- * Returns `''` when the model has no external source.
+ * Returns `''` when the model has no external source, or when its source has
+ * no reliable model identity (Hugging Face, or a ModelScope model that has
+ * not been enriched with the site-native `source_model_id` yet).
  */
 export function getModelSourceGroupKey(model) {
   const info = getModelSourceInfo(model);
-  if (!info || !info.sourceId) return '';
+  if (!info) return '';
+  const strategy = info.groupKey || 'repo';
+  if (strategy === 'none') return '';
+  if (strategy === 'modelId') {
+    const modelId =
+      model && typeof model.source_model_id === 'string' ? model.source_model_id.trim() : '';
+    return modelId ? `${info.groupPrefix}:${modelId}` : '';
+  }
+  if (!info.sourceId) return '';
   return `${info.groupPrefix}:${info.sourceId}`;
 }
 
@@ -237,6 +275,18 @@ export function isValidRepoId(repo) {
   return repo
     .split('/')
     .every((part) => part && part !== '.' && part !== '..' && /^[A-Za-z0-9_][\w.-]*$/.test(part));
+}
+
+/**
+ * Source-aware id validation, mirroring `ModelSource.is_valid_source_id`:
+ * `owner/name` for repository sites, a flat token for OpenModelDB.
+ */
+export function isValidSourceId(platform, repo) {
+  const source = getModelSource(platform);
+  if (source?.flatId) {
+    return typeof repo === 'string' && /^[A-Za-z0-9_][A-Za-z0-9_.-]*$/.test(repo);
+  }
+  return isValidRepoId(repo);
 }
 
 /**

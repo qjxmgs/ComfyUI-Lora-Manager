@@ -312,6 +312,7 @@ async def test_get_model_sources_lists_capabilities():
         "modelscope",
         "modelscope-ai",
         "tensorart",
+        "openmodeldb",
     }
     assert by_platform["huggingface"]["supports_enrichment"] is True
     assert by_platform["modelscope"]["supports_enrichment"] is True
@@ -327,6 +328,106 @@ async def test_get_model_sources_lists_capabilities():
         "https://www.modelscope.ai/"
     )
     assert all(s["example_url"] for s in sources)
+
+
+# ---------------------------------------------------------------------------
+# Root matching (linking must recognise every configured model category)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def isolated_config_roots(monkeypatch, tmp_path):
+    """Clear every configured root so root matching is fully test-controlled."""
+    from py.config import config
+
+    for attr in (
+        "loras_roots",
+        "extra_loras_roots",
+        "checkpoints_roots",
+        "extra_checkpoints_roots",
+        "unet_roots",
+        "extra_unet_roots",
+        "embeddings_roots",
+        "extra_embeddings_roots",
+        "other_roots",
+    ):
+        monkeypatch.setattr(config, attr, [])
+    return config
+
+
+@pytest.mark.asyncio
+async def test_set_hf_url_links_model_in_other_root(
+    isolated_config_roots, tmp_path, monkeypatch
+):
+    """"Other" category files live under config.other_roots; linking one to an
+    external source must not fail with 'not within any configured model
+    directory' and must update the Other scanner's cache, not the LoRA one."""
+    vae_root = tmp_path / "vae"
+    vae_root.mkdir()
+    isolated_config_roots.other_roots = [str(vae_root)]
+    model_path = vae_root / "some_vae.safetensors"
+    await _write_plain_model(model_path)
+
+    other_scanner = SimpleNamespace(update_single_model_cache=AsyncMock())
+    lora_scanner = SimpleNamespace(update_single_model_cache=AsyncMock())
+    monkeypatch.setattr(
+        ServiceRegistry, "get_other_scanner", AsyncMock(return_value=other_scanner)
+    )
+    monkeypatch.setattr(
+        ServiceRegistry, "get_lora_scanner", AsyncMock(return_value=lora_scanner)
+    )
+
+    response = await ModelSourceHandler().set_hf_url(
+        FakeRequest(
+            json_data={
+                "file_path": str(model_path),
+                "source_url": "https://huggingface.co/user/repo",
+            }
+        )
+    )
+
+    assert response.status == 200
+    payload = _json_payload(response)
+    assert payload["success"] is True
+    assert payload["source_platform"] == "huggingface"
+
+    saved = json.loads(open(_sidecar_path(model_path), encoding="utf-8").read())
+    assert saved["source_platform"] == "huggingface"
+    assert saved["hf_url"] == "https://huggingface.co/user/repo"
+
+    other_scanner.update_single_model_cache.assert_awaited_once()
+    lora_scanner.update_single_model_cache.assert_not_awaited()
+
+
+def test_find_matching_root_includes_other_roots(isolated_config_roots, tmp_path):
+    vae_root = tmp_path / "vae"
+    isolated_config_roots.other_roots = [str(vae_root)]
+
+    assert model_source_handlers._find_matching_root(str(vae_root / "sub")) == str(
+        vae_root
+    )
+
+
+def test_find_matching_root_respects_path_boundaries(isolated_config_roots, tmp_path):
+    """A root must not swallow a sibling that merely shares its name prefix."""
+    vae_root = tmp_path / "vae"
+    isolated_config_roots.other_roots = [str(vae_root)]
+
+    assert (
+        model_source_handlers._find_matching_root(str(tmp_path / "vae-old")) is None
+    )
+
+
+def test_infer_model_type_recognises_other_roots(isolated_config_roots, tmp_path):
+    from py.utils.models import OtherModelMetadata
+
+    vae_root = tmp_path / "vae"
+    isolated_config_roots.other_roots = [str(vae_root)]
+
+    assert model_source_handlers._infer_model_type(str(vae_root)) == (
+        OtherModelMetadata,
+        "get_other_scanner",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1027,6 +1128,8 @@ def _modelscope_card_payload() -> dict:
                         "modelVersion": {
                             "showName": "c1-st1000",
                             "triggerWords": '["kreaface","kreamodel"]',
+                            "id": 1002,
+                            "modelId": 555,
                         },
                         "coverImages": [
                             {"url": "https://resources.modelscope.cn/cover-images/b.png"},
@@ -1141,6 +1244,9 @@ async def test_download_hydrates_the_card_from_the_site(tmp_path, monkeypatch):
         '{"strength_min": 0.5, "strength_max": 1.2, "strength_range": "0.5-1.2"}'
     )
     assert saved["metadata_source"] == "source:modelscope"
+    # The site-native identity ids are persisted for version grouping.
+    assert saved["source_model_id"] == "555"
+    assert saved["source_version_id"] == "1002"
     # No provider answered, so claiming an AI enrichment would be a lie.
     assert "llm_enriched_at" not in saved
 
@@ -1148,3 +1254,177 @@ async def test_download_hydrates_the_card_from_the_site(tmp_path, monkeypatch):
     assert scanner.update_single_model_cache.await_count == 1
     cached = scanner.update_single_model_cache.await_args.args[2]
     assert cached["model_name"] == "Krea-2-LORA"
+    assert cached["source_model_id"] == "555"
+
+
+@pytest.mark.asyncio
+async def test_download_model_source_sends_hf_token_as_custom_headers(
+    tmp_path, monkeypatch
+):
+    """A gated/private HF repo needs the configured token on the download."""
+    captured = _stub_download_backend(monkeypatch)
+    monkeypatch.setattr(model_source_handlers, "_save_source_metadata", AsyncMock())
+    monkeypatch.setattr(
+        "py.services.model_sources.huggingface._hf_token", lambda: "hf_secret"
+    )
+
+    response = await ModelSourceHandler().download_model_source(
+        FakeRequest(
+            json_data={
+                "platform": "huggingface",
+                "repo": "user/repo",
+                "filename": "f.safetensors",
+                "model_root": str(tmp_path),
+            }
+        )
+    )
+
+    assert response.status == 200
+    assert captured["custom_headers"] == {"Authorization": "Bearer hf_secret"}
+
+
+@pytest.mark.asyncio
+async def test_download_model_source_sends_no_headers_without_hf_token(
+    tmp_path, monkeypatch
+):
+    captured = _stub_download_backend(monkeypatch)
+    monkeypatch.setattr(model_source_handlers, "_save_source_metadata", AsyncMock())
+    monkeypatch.setattr(
+        "py.services.model_sources.huggingface._hf_token", lambda: ""
+    )
+
+    response = await ModelSourceHandler().download_model_source(
+        FakeRequest(
+            json_data={
+                "platform": "huggingface",
+                "repo": "user/repo",
+                "filename": "f.safetensors",
+                "model_root": str(tmp_path),
+            }
+        )
+    )
+
+    assert response.status == 200
+    assert captured["custom_headers"] is None
+
+
+# ---------------------------------------------------------------------------
+# OpenModelDB downloads
+# ---------------------------------------------------------------------------
+
+
+def _seed_openmodeldb_client(tmp_path, monkeypatch) -> None:
+    """Install a catalogue-loaded OpenModelDB client as the singleton."""
+    from py.services.openmodeldb_client import OpenModelDBClient
+
+    client = OpenModelDBClient(cache_dir=str(tmp_path / "omdb-cache"))
+    client._install_payloads(
+        {
+            "models": {
+                "4x-UltraSharp": {
+                    "name": "4x UltraSharp",
+                    "resources": [
+                        {
+                            "platform": "pytorch",
+                            "type": "pth",
+                            "size": 67_000_000,
+                            "sha256": "a" * 64,
+                            "urls": ["https://files.example.com/4x-UltraSharp.pth"],
+                        }
+                    ],
+                }
+            },
+            "users": {},
+            "tags": {},
+            "architectures": {},
+        }
+    )
+    monkeypatch.setattr(
+        OpenModelDBClient, "get_instance", AsyncMock(return_value=client)
+    )
+
+
+@pytest.mark.asyncio
+async def test_download_model_source_openmodeldb_default_paths(tmp_path, monkeypatch):
+    captured = _stub_download_backend(monkeypatch)
+    saved = AsyncMock()
+    monkeypatch.setattr(model_source_handlers, "_save_source_metadata", saved)
+    _seed_openmodeldb_client(tmp_path, monkeypatch)
+
+    response = await ModelSourceHandler().download_model_source(
+        FakeRequest(
+            json_data={
+                "platform": "openmodeldb",
+                # Flat catalogue id — no owner/name split.
+                "repo": "4x-UltraSharp",
+                "filename": "4x-UltraSharp.pth",
+                "model_root": str(tmp_path),
+                "use_default_paths": True,
+            }
+        )
+    )
+
+    assert response.status == 200
+    assert captured["url"] == "https://files.example.com/4x-UltraSharp.pth"
+    # Flat layout: the site sub-directory only, no owner/repo namespaces.
+    assert captured["save_path"] == str(
+        tmp_path / "openmodeldb" / "4x-UltraSharp.pth"
+    )
+
+    ref = saved.await_args.args[1]
+    assert ref.platform == "openmodeldb"
+    assert ref.source_id == "4x-UltraSharp"
+    assert ref.url == "https://openmodeldb.info/models/4x-UltraSharp"
+
+
+@pytest.mark.asyncio
+async def test_download_model_source_openmodeldb_unknown_model_returns_404(
+    tmp_path, monkeypatch
+):
+    _stub_download_backend(monkeypatch)
+    _seed_openmodeldb_client(tmp_path, monkeypatch)
+
+    response = await ModelSourceHandler().download_model_source(
+        FakeRequest(
+            json_data={
+                "platform": "openmodeldb",
+                "repo": "nope",
+                "filename": "f.pth",
+                "model_root": str(tmp_path),
+            }
+        )
+    )
+
+    assert response.status == 404
+    assert "not found" in _json_payload(response)["error"]
+
+
+@pytest.mark.asyncio
+async def test_download_model_source_openmodeldb_rejects_repo_style_id(tmp_path):
+    response = await ModelSourceHandler().download_model_source(
+        FakeRequest(
+            json_data={
+                "platform": "openmodeldb",
+                "repo": "owner/name",
+                "filename": "f.pth",
+                "model_root": str(tmp_path),
+            }
+        )
+    )
+
+    assert response.status == 400
+    assert "Invalid repo format" in _json_payload(response)["error"]
+
+
+@pytest.mark.asyncio
+async def test_list_model_source_files_openmodeldb(tmp_path, monkeypatch):
+    _seed_openmodeldb_client(tmp_path, monkeypatch)
+
+    response = await ModelSourceHandler().list_model_source_files(
+        FakeRequest(query={"platform": "openmodeldb", "repo": "4x-UltraSharp"})
+    )
+
+    assert response.status == 200
+    assert _json_payload(response) == [
+        {"filename": "4x-UltraSharp.pth", "size": 67_000_000}
+    ]

@@ -26,6 +26,11 @@
 
         {{ sm.setting_select('defaultUnetRoot', 'default_unet_root', 'settings.folderSettings.defaultUnetRoot', [], 'settings.folderSettings.defaultUnetRootHelp') }}
 
+        {{ sm.setting_select('unknownBaseModelRouting', 'unknown_base_model_routing', 'settings.unknownBaseModelRouting.label', [
+            ('diffusion_model', 'settings.unknownBaseModelRouting.options.diffusionModel'),
+            ('checkpoint', 'settings.unknownBaseModelRouting.options.checkpoint'),
+        ], 'settings.unknownBaseModelRouting.help') }}
+
         {{ sm.setting_select('defaultEmbeddingRoot', 'default_embedding_root', 'settings.folderSettings.defaultEmbeddingRoot', [], 'settings.folderSettings.defaultEmbeddingRootHelp') }}
 
         {{ sm.setting_toggle('enableOtherModels', 'enable_other_models', 'settings.folderSettings.enableOtherModels', 'settings.folderSettings.enableOtherModelsHelp') }}
@@ -187,6 +192,35 @@
         {{ sm.setting_toggle('hidePaidUpdates', 'hide_paid_updates', 'settings.hidePaidUpdates.label', 'settings.hidePaidUpdates.help') }}
     </div>
 
+    <!-- Buzz Price Tracking -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.priceTracking') }}
+        <div class="settings-help-text subtle">{{ t('settings.priceTracking.help') }}</div>
+        {{ sm.setting_toggle('priceTrackingEnabled', 'price_tracking_enabled', 'settings.priceTracking.enabled', 'settings.priceTracking.enabledHelp') }}
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="priceCheckTtlHours">
+                        {{ t('settings.priceTracking.refreshHours') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.priceTracking.refreshHoursHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control">
+                    <div class="text-input-wrapper">
+                        <input
+                            type="number"
+                            id="priceCheckTtlHours"
+                            min="1"
+                            step="1"
+                            onblur="settingsManager.saveInputSetting('priceCheckTtlHours', 'price_check_ttl_hours')"
+                            onkeydown="if(event.key === 'Enter') { this.blur(); }"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Example Images -->
     <div class="settings-subsection">
         {{ sm.subsection_header('settings.sections.exampleImages') }}
@@ -287,6 +321,9 @@
         <!-- CivArchive API provider toggle -->
         {{ sm.setting_toggle('enableCivarchiveApi', 'enable_civarchive_api', 'settings.metadataArchive.enableCivarchiveApi', 'settings.metadataArchive.enableCivarchiveApiHelp') }}
 
+        <!-- OpenModelDB API provider toggle -->
+        {{ sm.setting_toggle('enableOpenmodeldbApi', 'enable_openmodeldb_api', 'settings.metadataArchive.enableOpenmodeldbApi', 'settings.metadataArchive.enableOpenmodeldbApiHelp') }}
+
         <!-- Metadata Archive DB -->
         {{ sm.setting_toggle('enableMetadataArchive', 'enable_metadata_archive_db', 'settings.metadataArchive.enableArchiveDb', 'settings.metadataArchive.enableArchiveDbHelp') }}
 
@@ -320,5 +357,78 @@
             ('civitai_archive_sqlite', 'settings.metadataArchive.providerOrderCivitaiArchiveSqlite'),
             ('civitai_sqlite_archive', 'settings.metadataArchive.providerOrderCivitaiSqliteArchive'),
         ], 'settings.metadataArchive.providerOrderHelp') }}
+    </div>
+
+    <!-- Sidecar Storage -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.sidecarStorage') }}
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="sidecarStorageMode">
+                        {{ t('settings.sidecarStorage.mode') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.sidecarStorage.modeHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control select-control">
+                    <select id="sidecarStorageMode" onchange="settingsManager.handleSidecarStorageModeChange()">
+                        <option value="alongside">{{ t('settings.sidecarStorage.modeOptions.alongside') }}</option>
+                        <option value="centralized">{{ t('settings.sidecarStorage.modeOptions.centralized') }}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item" id="sidecarStoragePathSetting" style="display: none;">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="sidecarStoragePath">
+                        {{ t('settings.sidecarStorage.path') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.sidecarStorage.pathHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control">
+                    <div class="text-input-wrapper">
+                        <input type="text" id="sidecarStoragePath"
+                               placeholder="{{ t('settings.sidecarStorage.pathPlaceholder') }}"
+                               onblur="settingsManager.handleSidecarStoragePathChange()"
+                               onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                    </div>
+                </div>
+            </div>
+            <div class="setting-row">
+                <div class="setting-info">
+                    <div class="input-help sidecar-storage-location">
+                        {{ t('settings.sidecarStorage.effectivePathLabel') }}
+                        <code id="sidecarStorageResolvedPath" class="backup-location-path"></code>
+                    </div>
+                    <div class="input-help sidecar-storage-repo-warning" id="sidecarStorageRepoWarning" style="display: none;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {{ t('settings.sidecarStorage.repoWarning') }}
+                    </div>
+                </div>
+                <div class="setting-control">
+                    <button type="button" class="secondary-btn" id="sidecarStorageOpenBtn" onclick="settingsManager.openSidecarStorageLocation()">
+                        {{ t('settings.sidecarStorage.openFolderButton') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>
+                        {{ t('settings.sidecarStorage.management') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.sidecarStorage.managementHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" id="migrateSidecarsBtn" class="primary-btn" onclick="settingsManager.confirmAndMigrateSidecars()">
+                        {{ t('settings.sidecarStorage.migrateButton') }}
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>

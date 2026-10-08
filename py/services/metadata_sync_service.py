@@ -12,11 +12,49 @@ from ..services.settings_manager import SettingsManager
 from ..utils.civitai_utils import resolve_license_payload
 from ..utils.model_utils import determine_base_model
 from ..utils.models import autov3_from_civitai_files
+from ..utils.sidecar_paths import get_metadata_path
 from .connectivity_guard import OFFLINE_FRIENDLY_MESSAGE, is_expected_offline_error
 from .errors import RateLimitError
-from .model_sources import has_external_source
+from .model_metadata_provider import _LOCAL_PROVIDER_LABELS
+from .model_sources import get_source_platform, has_external_source
 
 logger = logging.getLogger(__name__)
+
+
+# Providers restricted to specific model sub_types, keyed by their
+# registration label. Providers not listed apply to every model type.
+# OpenModelDB only indexes upscalers, so it is never consulted for other model
+# types — that keeps its one-time bulk-catalogue download from being paid by
+# users who manage no upscalers at all.
+_PROVIDER_SUB_TYPE_RESTRICTIONS: Dict[str, frozenset] = {
+    "openmodeldb_api": frozenset({"upscaler"}),
+}
+
+#: External-source platforms that have their own hash-lookup metadata
+#: provider. A model downloaded from one of these is refreshed against the
+#: source's own catalogue first (upgrading the download-time card to the full
+#: payload) before CivitAI is consulted at all.
+_EXTERNAL_SOURCE_METADATA_PROVIDERS: Dict[str, str] = {
+    "openmodeldb": "openmodeldb_api",
+}
+
+
+def _restricted_providers_for_sub_type(sub_type: Optional[str]) -> list:
+    """Return the restricted provider labels that apply to ``sub_type``."""
+    return [
+        name
+        for name, allowed in _PROVIDER_SUB_TYPE_RESTRICTIONS.items()
+        if sub_type in allowed
+    ]
+
+
+def _inapplicable_providers_for_sub_type(sub_type: Optional[str]) -> set:
+    """Return the restricted provider labels that do NOT apply to ``sub_type``."""
+    return {
+        name
+        for name, allowed in _PROVIDER_SUB_TYPE_RESTRICTIONS.items()
+        if sub_type not in allowed
+    }
 
 
 def _merge_ordered_unique(existing: Iterable[str], new: Iterable[str]) -> list[str]:
@@ -216,7 +254,7 @@ class MetadataSyncService:
             logger.error(error)
             return False, error
 
-        metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
+        metadata_path = get_metadata_path(file_path)
         enable_archive = self._settings.get("enable_metadata_archive_db", False)
         previous_source = model_data.get("metadata_source") or (model_data.get("civitai") or {}).get("source")
 
@@ -225,6 +263,18 @@ class MetadataSyncService:
             sqlite_attempted = False
 
             if model_data.get("civitai_deleted") is True:
+                # Sub_type-restricted providers (e.g. OpenModelDB for
+                # upscalers) stay reachable for deleted models: their
+                # catalogues grow independently of CivitAI, so a model deleted
+                # from CivitAI may still gain metadata there later.
+                for restricted_name in _restricted_providers_for_sub_type(
+                    model_data.get("sub_type")
+                ):
+                    try:
+                        provider_attempts.append((restricted_name, await self._get_provider(restricted_name)))
+                    except Exception as exc:  # pragma: no cover - provider resolution fault
+                        logger.debug("Unable to resolve %s provider: %s", restricted_name, exc)
+
                 if previous_source in (None, "civarchive"):
                     try:
                         provider_attempts.append(("civarchive_api", await self._get_provider("civarchive_api")))
@@ -249,19 +299,44 @@ class MetadataSyncService:
                 is_hf_source = has_external_source(model_data)
                 if is_hf_source:
                     # External-source model (Hugging Face / ModelScope /
-                    # TensorArt): only check CivitAI API directly.
-                    # CivArchive is almost guaranteed to have no record, and
-                    # hitting it wastes rate-limit budget.
+                    # TensorArt / OpenModelDB): a source with its own
+                    # hash-lookup provider (OpenModelDB) is consulted first,
+                    # then CivitAI API directly. CivArchive is almost
+                    # guaranteed to have no record, and hitting it wastes
+                    # rate-limit budget.
                     # Use a distinct provider name ("civitai_api" not None) so
                     # downstream code does NOT interpret a "Model not found"
                     # response as civitai_api_not_found — which would mark the
                     # model civitai_deleted=True when it was never on CivitAI.
-                    try:
-                        provider_attempts.append(("civitai_api", await self._get_provider("civitai_api")))
-                    except Exception as exc:  # pragma: no cover - provider resolution fault
-                        logger.debug("Unable to resolve civitai_api provider: %s", exc)
+                    source_provider = _EXTERNAL_SOURCE_METADATA_PROVIDERS.get(
+                        get_source_platform(model_data)
+                    )
+                    provider_names = (
+                        [source_provider, "civitai_api"]
+                        if source_provider
+                        else ["civitai_api"]
+                    )
+                    for provider_name in provider_names:
+                        try:
+                            provider_attempts.append(
+                                (provider_name, await self._get_provider(provider_name))
+                            )
+                        except Exception as exc:  # pragma: no cover - provider resolution fault
+                            logger.debug(
+                                "Unable to resolve %s provider: %s", provider_name, exc
+                            )
                 if not provider_attempts:
-                    provider_attempts.append((None, await self._get_default_provider()))
+                    default_provider = await self._get_default_provider()
+                    # Drop sub_type-restricted providers that cannot apply to
+                    # this model (e.g. OpenModelDB only indexes upscalers), so
+                    # their cold-start cost is never paid pointlessly.
+                    inapplicable = _inapplicable_providers_for_sub_type(
+                        model_data.get("sub_type")
+                    )
+                    excluding = getattr(default_provider, "excluding", None)
+                    if inapplicable and callable(excluding):
+                        default_provider = excluding(inapplicable)
+                    provider_attempts.append((None, default_provider))
 
             civitai_metadata: Optional[Dict[str, Any]] = None
             metadata_provider: Optional[MetadataProviderProtocol] = None
@@ -272,10 +347,11 @@ class MetadataSyncService:
 
             skip_network_providers = False
             for provider_name, provider in provider_attempts:
-                if skip_network_providers and provider_name != "sqlite":
+                if skip_network_providers and provider_name not in _LOCAL_PROVIDER_LABELS:
                     # A network provider was already rate-limited; failing
                     # over to another network provider just spreads the flood
-                    # (#1085). The local sqlite archive stays as last resort.
+                    # (#1085). Local lookups (sqlite archive, the cached
+                    # OpenModelDB index) stay available as a last resort.
                     continue
                 try:
                     civitai_metadata_candidate, error = await provider.get_model_by_hash(sha256)
@@ -385,6 +461,7 @@ class MetadataSyncService:
             readable_source = {
                 "civitai_api": "CivitAI API",
                 "civarchive": "CivArchive API",
+                "openmodeldb": "OpenModelDB",
                 "archive_db": "Archive Database",
             }.get(source, source)
 
@@ -485,7 +562,7 @@ class MetadataSyncService:
                 + (f" with version: {model_version_id}" if model_version_id else "")
             )
 
-        metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
+        metadata_path = get_metadata_path(file_path)
         await self.update_model_metadata(
             metadata_path,
             metadata,
@@ -505,7 +582,7 @@ class MetadataSyncService:
     ) -> Dict[str, Any]:
         """Apply metadata updates and persist to disk and cache."""
 
-        metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
+        metadata_path = get_metadata_path(file_path)
         metadata = await metadata_loader(metadata_path)
 
         for key, value in updates.items():
@@ -554,7 +631,7 @@ class MetadataSyncService:
         }
 
         expected_hash: Optional[str] = None
-        first_metadata_path = os.path.splitext(file_paths[0])[0] + ".metadata.json"
+        first_metadata_path = get_metadata_path(file_paths[0])
         first_metadata = await metadata_loader(first_metadata_path)
         if first_metadata and "sha256" in first_metadata:
             expected_hash = first_metadata["sha256"].lower()
@@ -565,7 +642,7 @@ class MetadataSyncService:
 
             try:
                 actual_hash = await hash_calculator(path)
-                metadata_path = os.path.splitext(path)[0] + ".metadata.json"
+                metadata_path = get_metadata_path(path)
                 metadata = await metadata_loader(metadata_path)
                 stored_hash = metadata.get("sha256", "").lower()
 

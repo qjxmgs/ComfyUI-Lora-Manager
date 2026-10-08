@@ -67,6 +67,7 @@ DEFAULT_KEYS_CLEANUP_THRESHOLD = 10
 
 DEFAULT_SETTINGS: Dict[str, Any] = {
     "civitai_api_key": "",
+    "huggingface_api_key": "",
     "civitai_host": "civitai.com",
     "download_backend": "python",
     "aria2c_path": "",
@@ -78,6 +79,9 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "dismissed_banners": [],
     "enable_metadata_archive_db": False,
     "enable_civarchive_api": True,
+    # OpenModelDB supplies read-only metadata for upscaler models (the "other"
+    # page's upscaler sub_type) via hash matching against its bulk catalogue.
+    "enable_openmodeldb_api": True,
     "metadata_provider_order": "civitai_archive_sqlite",
     "rate_limit_gate_enabled": True,
     "rate_limit_max_wait_seconds": 300,
@@ -98,6 +102,8 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "enable_other_models": False,
     "enabled_other_sub_types": list(DEFAULT_ENABLED_OTHER_SUB_TYPES),
     "recipes_path": "",
+    "sidecar_storage_mode": "alongside",
+    "sidecar_storage_path": "",
     "base_model_path_mappings": {},
     "download_path_templates": {},
     "download_filename_templates": {},
@@ -115,6 +121,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "display_density": "default",
     "recipes_layout": "grid",
     "card_info_display": "always",
+    "showcase_layout": "gallery",
     "include_trigger_words": False,
     "compact_mode": False,
     "priority_tags": DEFAULT_PRIORITY_TAG_CONFIG.copy(),
@@ -123,10 +130,19 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "model_card_footer_action": "replace_preview",
     "show_version_on_card": True,
     "version_grouping": "same_base",
+    # Buzz price tracking for paid/early-access versions. Opt-in because reading a
+    # price costs one extra (public) model-page request per gated model.
+    # Plumbing switch: reading a price costs one extra request per paid model, so
+    # it stays opt-in. Prices decorate the version list; nothing alerts on a number.
+    "price_tracking_enabled": False,
+    "price_check_ttl_hours": 24,
     "auto_organize_exclusions": [],
     "metadata_refresh_skip_paths": [],
     "skip_previously_downloaded_model_versions": False,
     "download_skip_base_models": [],
+    # Routing target for checkpoint downloads whose baseModel is neither a
+    # known diffusion model nor a known full checkpoint (CHECKPOINT_BASE_MODELS).
+    "unknown_base_model_routing": "diffusion_model",
     "backup_auto_enabled": True,
     "backup_retention_count": 5,
     "use_new_license_icons": True,
@@ -1124,6 +1140,15 @@ class SettingsManager:
             self.settings["civitai_api_key"] = env_api_key
             self._save_settings()
 
+        # Hugging Face accepts either of its conventional variable names
+        env_hf_token = os.environ.get("HF_TOKEN") or os.environ.get(
+            "HUGGING_FACE_HUB_TOKEN"
+        )
+        if env_hf_token:
+            logger.info("Found HF_TOKEN environment variable")
+            self.settings["huggingface_api_key"] = env_hf_token
+            self._save_settings()
+
         # LLM provider overrides
         llm_env_map = {
             "LLM_API_KEY": "llm_api_key",
@@ -1606,9 +1631,40 @@ class SettingsManager:
 
         return os.path.abspath(os.path.normpath(os.path.expanduser(stripped)))
 
+    @staticmethod
+    def _normalize_sidecar_storage_mode(value: Any) -> str:
+        """Return a valid sidecar storage mode, falling back to ``alongside``."""
+
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in ("alongside", "centralized"):
+                return normalized
+        return "alongside"
+
+    @staticmethod
+    def _normalize_unknown_base_model_routing(value: Any) -> str:
+        """Return a valid unknown-base-model routing target, falling back to ``diffusion_model``."""
+
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in ("diffusion_model", "checkpoint"):
+                return normalized
+        return "diffusion_model"
+
+    def _refresh_sidecar_storage_config(self) -> None:
+        """Rebuild dependent config state after sidecar storage settings change."""
+
+        try:
+            from ..config import config  # Local import to avoid circular dependency
+
+            config.refresh_preview_roots()
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.debug(
+                "Failed to refresh config after sidecar storage change: %s", exc
+            )
+
     def _get_effective_recipes_dir(self, recipes_path: Optional[str] = None) -> str:
         """Resolve the effective recipes directory for the active library."""
-
         normalized_custom = self._normalize_recipes_path_value(
             self.settings.get("recipes_path", "")
             if recipes_path is None
@@ -1805,6 +1861,12 @@ class SettingsManager:
             target_recipes_dir = self._get_effective_recipes_dir(value)
             self._validate_recipes_storage_path(target_recipes_dir)
             self._migrate_recipes_directory(current_recipes_dir, target_recipes_dir)
+        elif key == "sidecar_storage_mode":
+            value = self._normalize_sidecar_storage_mode(value)
+        elif key == "unknown_base_model_routing":
+            value = self._normalize_unknown_base_model_routing(value)
+        elif key == "sidecar_storage_path":
+            value = self._normalize_recipes_path_value(value)
         self.settings[key] = value
         portable_switch_pending = False
         if key == "use_portable_settings" and isinstance(value, bool):
@@ -1835,6 +1897,8 @@ class SettingsManager:
         self._save_settings()
         if key == "recipes_path":
             self._notify_library_change(self.get_active_library_name())
+        if key in ("sidecar_storage_mode", "sidecar_storage_path"):
+            self._refresh_sidecar_storage_config()
         if key in ("enable_other_models", "enabled_other_sub_types"):
             self._apply_other_model_settings_change()
         if portable_switch_pending:

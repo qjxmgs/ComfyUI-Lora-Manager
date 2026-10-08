@@ -153,8 +153,8 @@ describe('BaseModelApiClient.refreshModels scan progress', () => {
     };
   }
 
-  async function startRefresh(client, fullRebuild = false) {
-    const promise = client.refreshModels(fullRebuild);
+  async function startRefresh(client, fullRebuild = false, options = {}) {
+    const promise = client.refreshModels(fullRebuild, options);
     await vi.waitFor(() => {
       expect(FakeWebSocket.instances.length).toBe(1);
     });
@@ -302,6 +302,200 @@ describe('BaseModelApiClient.refreshModels scan progress', () => {
 
     fetchControl.resolveOk();
     await promise;
+  });
+
+  it('shows the walked roots and file count during the reconcile walk', async () => {
+    const fetchControl = mockFetchPending();
+    const client = await createClient();
+    const { promise, socket } = await startRefresh(client);
+
+    socket.emit({
+      type: 'scan_progress',
+      status: 'processing',
+      stage: 'reconcile_scan',
+      model_type: 'lora',
+      pageType: 'loras',
+      full_rebuild: false,
+      progress: 12,
+      processed: 1234,
+      total: 2000,
+      files_seen: 1234,
+      roots_total: 3,
+      roots_done: 0,
+      active_roots: ['G:', 'Y:'],
+      current_name: 'G:',
+    });
+
+    expect(setProgressMock).toHaveBeenCalledWith(12);
+    const walkStatus = setStatusMock.mock.calls.at(-1)[0];
+    expect(walkStatus).toContain('G:, Y:');
+    expect(walkStatus).toContain('1,234 files');
+    // No processed/total ratio: the real file count is unknown mid-walk.
+    expect(walkStatus).not.toContain('(1234/2000)');
+    expect(walkStatus).toContain('Estimating time...');
+
+    // Walk finished: no ETA once the counters meet the estimate.
+    socket.emit({
+      type: 'scan_progress',
+      status: 'processing',
+      stage: 'reconcile_scan',
+      model_type: 'lora',
+      full_rebuild: false,
+      progress: 50,
+      processed: 2000,
+      total: 2000,
+      files_seen: 2000,
+      active_roots: [],
+      current_name: 'Y:',
+    });
+
+    const finalWalkStatus = setStatusMock.mock.calls.at(-1)[0];
+    expect(finalWalkStatus).toContain('2,000 files');
+    expect(finalWalkStatus).not.toContain('Estimating time...');
+
+    fetchControl.resolveOk();
+    await promise;
+  });
+
+  it('drops the ETA samples when the scan moves to another stage', async () => {
+    const fetchControl = mockFetchPending();
+    let now = 1000;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+
+    const client = await createClient();
+    const { promise, socket } = await startRefresh(client);
+
+    const emit = (stage, processed, total, extra = {}) => socket.emit({
+      type: 'scan_progress',
+      status: 'processing',
+      stage,
+      model_type: 'lora',
+      full_rebuild: false,
+      progress: 50,
+      processed,
+      total,
+      ...extra,
+    });
+
+    emit('process_models', 1, 10);
+    now = 101000;
+    emit('process_models', 2, 10);
+    expect(setStatusMock.mock.calls.at(-1)[0]).toContain('~7 min remaining');
+
+    // Same counters on the walk stage: without the reset the old per-file rate
+    // (50s/file for 2 files) would be reused and produce a huge ETA.
+    now = 102000;
+    emit('reconcile_scan', 2, 100, { files_seen: 2, active_roots: ['G:'] });
+    expect(setStatusMock.mock.calls.at(-1)[0]).toContain('Estimating time...');
+
+    fetchControl.resolveOk();
+    await promise;
+  });
+
+  it('requests a scoped scan when roots are passed', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ status: 'success' }),
+    });
+
+    const client = await createClient();
+    await client.refreshModels(false, { roots: ['/mnt/a/loras', '/mnt/b/loras'] });
+
+    const [url] = global.fetch.mock.calls[0];
+    expect(url.searchParams.getAll('roots')).toEqual(['/mnt/a/loras', '/mnt/b/loras']);
+    expect(url.searchParams.get('full_rebuild')).toBe('false');
+  });
+
+  it('reports the scoped scan summary and the entries kept unreachable', async () => {
+    const fetchControl = mockFetchPending();
+    const client = await createClient();
+    const { promise } = await startRefresh(client, false, { roots: ['/mnt/a/loras'] });
+
+    fetchControl.resolveOk({
+      status: 'success',
+      scanned_roots: ['a/loras'],
+      added: 2,
+      removed: 1,
+      kept_unreachable: 5,
+      unavailable_paths: [
+        { path: '/mnt/g/loras', reason: 'root_unreachable', kept: 5 },
+      ],
+      skipped_roots: [{ path: '/mnt/g/loras', label: 'g/loras' }],
+    });
+    await promise;
+
+    expect(showToastMock).toHaveBeenCalledWith(
+      'toast.api.refreshCompleteScoped',
+      { scope: 'a/loras', added: 2, removed: 1 },
+      'success'
+    );
+    expect(showToastMock).toHaveBeenCalledWith(
+      'toast.api.refreshKeptUnreachable',
+      { count: '5', paths: 'g/loras' },
+      'info'
+    );
+  });
+
+  it('requests a folder scan without a root', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ status: 'success' }),
+    });
+
+    const client = await createClient();
+    await client.refreshModels(false, { folder: 'pack/sub' });
+
+    const [url] = global.fetch.mock.calls[0];
+    // The backend walks this relative path under every root that holds it.
+    expect(url.searchParams.get('folder')).toBe('pack/sub');
+    expect(url.searchParams.getAll('roots')).toEqual([]);
+  });
+
+  it('names a folder scan by the folder, not by the roots it walked', async () => {
+    const fetchControl = mockFetchPending();
+    const client = await createClient();
+    const { promise } = await startRefresh(client, false, { folder: 'pack' });
+
+    fetchControl.resolveOk({
+      status: 'success',
+      scope_label: 'pack',
+      scanned_roots: ['a/loras', 'usb/loras'],
+      added: 3,
+      removed: 0,
+      kept_unreachable: 0,
+    });
+    await promise;
+
+    expect(showToastMock).toHaveBeenCalledWith(
+      'toast.api.refreshCompleteScoped',
+      { scope: 'pack', added: 3, removed: 0 },
+      'success'
+    );
+  });
+
+  it('keeps the generic completion toast for a full-library scan', async () => {
+    const fetchControl = mockFetchPending();
+    const client = await createClient();
+    const { promise } = await startRefresh(client);
+
+    fetchControl.resolveOk({
+      status: 'success',
+      scanned_roots: ['a/loras', 'b/loras'],
+      added: 0,
+      removed: 0,
+    });
+    await promise;
+
+    expect(showToastMock).toHaveBeenCalledWith(
+      'toast.api.refreshComplete',
+      { action: 'Refresh' },
+      'success'
+    );
+    expect(showToastMock).not.toHaveBeenCalledWith(
+      'toast.api.refreshCompleteScoped',
+      expect.anything(),
+      expect.anything()
+    );
   });
 
   it('shows the cancelled toast when the server reports cancellation', async () => {

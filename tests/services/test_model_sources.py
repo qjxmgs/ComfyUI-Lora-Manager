@@ -195,6 +195,7 @@ class TestCapabilities:
             "modelscope",
             "modelscope-ai",
             "tensorart",
+            "openmodeldb",
         }
 
     def test_labels_are_brand_names(self):
@@ -202,6 +203,7 @@ class TestCapabilities:
         assert source_label("modelscope") == "ModelScope"
         assert source_label("modelscope-ai") == "ModelScope (International)"
         assert source_label("tensorart") == "TensorArt"
+        assert source_label("openmodeldb") == "OpenModelDB"
         assert source_label("unknown", "fallback") == "fallback"
 
 
@@ -279,13 +281,37 @@ class TestHelpers:
         assert get_source_platform({"source_platform": "tensorart"}) == "tensorart"
         assert get_source_platform({}) == ""
 
-    def test_group_keys_match_legacy_hf_shape(self):
-        assert source_group_key({"hf_url": "https://huggingface.co/u/r"}) == "hf:u/r"
-        assert (
-            source_group_key({"source_url": "https://modelscope.cn/models/u/r"}) == "ms:u/r"
-        )
+    def test_group_keys_use_site_native_identity(self):
+        # Hugging Face has no site-native model identity: never grouped.
+        assert source_group_key({"hf_url": "https://huggingface.co/u/r"}) is None
+        # TensorArt's numeric id already identifies a single model.
         assert (
             source_group_key({"source_url": "https://tensor.art/models/123"}) == "ta:123"
+        )
+
+    def test_modelscope_groups_by_published_model_id(self):
+        # Without an enriched source_model_id the model stays standalone —
+        # never grouped by repo, which would collapse a collection repo.
+        assert (
+            source_group_key({"source_url": "https://modelscope.cn/models/u/r"}) is None
+        )
+        assert (
+            source_group_key(
+                {
+                    "source_url": "https://modelscope.cn/models/u/r",
+                    "source_model_id": "555",
+                }
+            )
+            == "ms:555"
+        )
+        assert (
+            source_group_key(
+                {
+                    "source_url": "https://www.modelscope.ai/models/u/r",
+                    "source_model_id": "678",
+                }
+            )
+            == "msai:678"
         )
 
     def test_group_key_is_none_without_source(self):
@@ -457,7 +483,12 @@ def _modelscope_detail_payload() -> dict:
                 "versions": [
                     {
                         "stats": {"fileList": ["Krea-2-LORA_c1-st8000.safetensors"]},
-                        "modelVersion": {"showName": "c1-st8000", "triggerWords": '[""]'},
+                        "modelVersion": {
+                            "showName": "c1-st8000",
+                            "triggerWords": '[""]',
+                            "id": 1001,
+                            "modelId": 555,
+                        },
                         "coverImages": [
                             {"url": "https://resources.modelscope.cn/cover-images/a.png"}
                         ],
@@ -467,6 +498,8 @@ def _modelscope_detail_payload() -> dict:
                         "modelVersion": {
                             "showName": "c1-st1000",
                             "triggerWords": '["kreaface","kreamodel"]',
+                            "id": 1002,
+                            "modelId": 555,
                         },
                         "coverImages": [
                             {"url": "https://resources.modelscope.cn/cover-images/b.png"},
@@ -533,6 +566,9 @@ class TestFetchModelCardContext:
         # The version label is taken from the file that was matched, not from
         # whichever version happens to come first in the payload.
         assert context.version_name == "c1-st1000"
+        # The site-native identity ids belong to the matched version too.
+        assert context.source_model_id == "555"
+        assert context.source_version_id == "1002"
 
     @pytest.mark.asyncio
     async def test_modelscope_version_label_is_empty_for_an_unknown_file(
@@ -550,6 +586,9 @@ class TestFetchModelCardContext:
         )
 
         assert context.version_name == ""
+        # No version matched, so there is no per-version identity either.
+        assert context.source_model_id == ""
+        assert context.source_version_id == ""
         # The repository-wide fields are still published.
         assert context.model_name == "Krea-2-LORA"
 
@@ -883,7 +922,7 @@ class TestSourceIdValidation:
 class TestDownloadSourceRegistry:
     def test_downloadable_sources_excludes_link_only_sites(self):
         platforms = {source.platform for source in downloadable_sources()}
-        assert platforms == {"huggingface", "modelscope", "modelscope-ai"}
+        assert platforms == {"huggingface", "modelscope", "modelscope-ai", "openmodeldb"}
 
     def test_get_download_source_rejects_link_only_platform(self):
         assert get_download_source("tensorart") is None
@@ -1139,3 +1178,100 @@ class TestHashBasedVersionMatching:
             )
 
         assert mock_ctx.call_args.kwargs["sha256"] == "c" * 64
+
+
+# ---------------------------------------------------------------------------
+# Hugging Face authentication (gated / private repositories)
+# ---------------------------------------------------------------------------
+
+
+class TestHuggingFaceAuth:
+    def test_auth_headers_empty_without_token(self, monkeypatch):
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface._hf_token", lambda: ""
+        )
+
+        assert HuggingFaceSource().auth_headers() == {}
+
+    def test_auth_headers_bearer_with_token(self, monkeypatch):
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface._hf_token", lambda: "hf_secret"
+        )
+
+        assert HuggingFaceSource().auth_headers() == {
+            "Authorization": "Bearer hf_secret"
+        }
+
+    @pytest.mark.asyncio
+    async def test_list_files_sends_token_to_tree_api(self, monkeypatch):
+        captured: dict = {}
+
+        async def fake_fetch_json(url, **kwargs):
+            captured.update(kwargs)
+            return 200, []
+
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface.fetch_json", fake_fetch_json
+        )
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface._hf_token", lambda: "hf_secret"
+        )
+
+        await HuggingFaceSource().list_files("u/r")
+
+        assert captured["headers"] == {"Authorization": "Bearer hf_secret"}
+
+    @pytest.mark.asyncio
+    async def test_model_card_sends_token(self, monkeypatch):
+        captured: dict = {}
+
+        async def fake_fetch_text(url, **kwargs):
+            captured.update(kwargs)
+            return "# card"
+
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface.fetch_text", fake_fetch_text
+        )
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface._hf_token", lambda: "hf_secret"
+        )
+
+        await HuggingFaceSource().fetch_model_card("u/r")
+
+        assert captured["headers"] == {"Authorization": "Bearer hf_secret"}
+
+    @pytest.mark.asyncio
+    async def test_unauthorised_without_token_explains_how_to_fix(self, monkeypatch):
+        async def fake_fetch_json(url, **_kwargs):
+            return 401, None
+
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface.fetch_json", fake_fetch_json
+        )
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface._hf_token", lambda: ""
+        )
+
+        with pytest.raises(ModelSourceError) as excinfo:
+            await HuggingFaceSource().list_files("u/r")
+
+        assert excinfo.value.status == 401
+        assert "access token" in str(excinfo.value)
+
+    @pytest.mark.asyncio
+    async def test_denied_with_token_points_at_repo_terms(self, monkeypatch):
+        async def fake_fetch_json(url, **_kwargs):
+            return 403, None
+
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface.fetch_json", fake_fetch_json
+        )
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface._hf_token", lambda: "hf_secret"
+        )
+
+        with pytest.raises(ModelSourceError) as excinfo:
+            await HuggingFaceSource().list_files("u/r")
+
+        assert excinfo.value.status == 403
+        assert "accept its terms" in str(excinfo.value)

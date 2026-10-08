@@ -73,7 +73,8 @@
                 "lessThanMinute": "残り1分未満",
                 "minutes": "残り約 {minutes} 分",
                 "hours": "残り約 {hours} 時間 {minutes} 分"
-            }
+            },
+            "walkFiles": "{count} 件のファイル"
         }
     },
     "onboarding": {
@@ -201,7 +202,11 @@
             "loading": "{type} のアップデートを確認中...",
             "success": "{type} のアップデートが {count} 件見つかりました",
             "none": "すべての {type} は最新です",
-            "error": "{type} のアップデート確認に失敗しました: {message}"
+            "error": "{type} のアップデート確認に失敗しました: {message}",
+            "gateEvents": {
+                "becameFree": "未ダウンロードの {count} バージョンが無料になりました",
+                "newGate": "{count} バージョンが有料になりました"
+            }
         },
         "cleanupExampleImages": {
             "label": "例画像フォルダをクリーンアップ",
@@ -251,7 +256,6 @@
                 "modelname": "モデル名",
                 "tags": "タグ",
                 "creator": "作成者",
-                "hash": "ハッシュ",
                 "title": "レシピタイトル",
                 "loraName": "LoRAファイル名",
                 "loraModel": "LoRAモデル名",
@@ -325,6 +329,12 @@
         "civitaiApiKeyConfigured": "設定済み",
         "civitaiApiKeyNotConfigured": "未設定",
         "civitaiApiKeySet": "設定",
+        "huggingfaceApiKey": "Hugging Face アクセストークン",
+        "huggingfaceApiKeyPlaceholder": "Hugging Face アクセストークンを入力してください",
+        "huggingfaceApiKeyHelp": "ゲート付きまたはプライベートな Hugging Face リポジトリからダウンロードする際に必要です。huggingface.co/settings/tokens で読み取り専用トークンを作成し、先にリポジトリのページで利用条件に同意してください。",
+        "huggingfaceApiKeyConfigured": "設定済み",
+        "huggingfaceApiKeyNotConfigured": "未設定",
+        "huggingfaceApiKeySet": "設定",
         "civitaiHost": {
             "label": "CivitAI ホスト",
             "help": "「View on CivitAI」リンクを使うときに開く CivitAI サイトを選択します。",
@@ -347,6 +357,14 @@
             "placeholder": "空欄のままにすると PATH 上の aria2c を使用します"
         },
         "aria2HelpLink": "aria2 ダウンロードバックエンドの設定方法",
+        "unknownBaseModelRouting": {
+            "label": "不明なベースモデルの振り分け",
+            "help": "CivitAIが報告するベースモデルが既知のCheckpoint（SD 1.x/2.x/3.x、SDXL、Pony、Illustrious、NoobAI）でも既知のDiffusion Modelでもない場合に、Checkpointのダウンロードの保存先を決定します。新しい拡散アーキテクチャは頻繁に登場するため、通常はDiffusion Modelへの振り分けが正しい選択です。",
+            "options": {
+                "diffusionModel": "Diffusion Model",
+                "checkpoint": "Checkpoint"
+            }
+        },
         "civitaiHostBanner": {
             "title": "CivitAI ホスト設定を利用できます",
             "content": "CivitAI は現在、SFW コンテンツには civitai.com、制限なしコンテンツには civitai.red を使用しています。設定で既定で開くサイトを変更できます。",
@@ -374,9 +392,11 @@
             "downloadPathTemplates": "ダウンロードパステンプレート",
             "priorityTags": "優先タグ",
             "versionScope": "アップデートフラグ",
+            "priceTracking": "Buzz ダウンロード価格",
             "exampleImages": "例画像",
             "autoOrganize": "自動整理",
             "metadata": "メタデータ",
+            "sidecarStorage": "サイドカーファイルの保存",
             "proxySettings": "プロキシ設定"
         },
         "nav": {
@@ -511,6 +531,12 @@
                 "hover": "ホバー時に表示"
             },
             "cardInfoDisplayHelp": "モデル情報とアクションボタンの表示タイミングを選択",
+            "showcaseLayout": "ショーケースのレイアウト",
+            "showcaseLayoutHelp": "モデルモーダルでの例画像の表示方法を選択：1枚ずつ表示するギャラリー、または従来の縦並びリスト。",
+            "showcaseLayoutOptions": {
+                "gallery": "ギャラリー",
+                "vertical": "縦並びリスト"
+            },
             "showVersionOnCard": "カードにバージョンを表示",
             "showVersionOnCardHelp": "モデルカード上のバージョン名の表示/非表示を切り替えます",
             "modelCardFooterAction": "モデルカードボタンのアクション",
@@ -739,6 +765,13 @@
             "label": "有料更新を非表示",
             "help": "有効にすると、有料の更新のみがあるモデルには「更新あり」バッジが表示されません"
         },
+        "priceTracking": {
+            "help": "CivitAI の公開 API はダウンロード価格を提供していないため、モデルページから読み取ります。有料モデルごとに 1 回の追加リクエストが発生し、以下の間隔で更新されます。価格は未ダウンロードのバージョンにのみ表示されます。",
+            "enabled": "有料バージョンのダウンロード価格を表示",
+            "enabledHelp": "モデルページからダウンロード価格を読み取り、有料バージョンと早期アクセスバージョンの費用と早期アクセスの終了時期を表示します",
+            "refreshHours": "価格の更新間隔（時間）",
+            "refreshHoursHelp": "保存された価格が再読み取りまで有効な期間"
+        },
         "licenseIcons": {
             "useNewStyle": "更新されたライセンスアイコンを使用",
             "useNewStyleHelp": "カラーインジケーター付きでライセンス許可を表示（新スタイル）するか、制限のみのアイコンを表示（クラシックスタイル）します。現在のCivitAIデザインを反映しています。"
@@ -778,10 +811,40 @@
             "downloadComplete": "ダウンロードが正常に完了しました",
             "enableCivarchiveApi": "CivArchive API をメタデータプロバイダーとして有効化",
             "enableCivarchiveApiHelp": "有効にすると、CivArchive API がモデルメタデータの代替ソースとして使用されます（例：CivitAI から削除されたモデルの場合）。オフにすると、CivArchive のレート制限を完全に回避できます。",
+            "enableOpenmodeldbApi": "OpenModelDB をメタデータプロバイダーとして有効化",
+            "enableOpenmodeldbApiHelp": "有効にすると、CivitAI に記録がない場合に、OpenModelDB カタログ（openmodeldb.info）でも Upscaler のメタデータを検索します。カタログはローカルにキャッシュされ、毎日更新されます。",
             "providerOrder": "メタデータプロバイダーのフォールバック順序",
             "providerOrderHelp": "CivitAI API が常に最初に試行されます。メタデータ検索時の残りのプロバイダーの順序を選択してください。",
             "providerOrderCivitaiArchiveSqlite": "CivitAI → CivArchive → Archive DB",
             "providerOrderCivitaiSqliteArchive": "CivitAI → Archive DB → CivArchive"
+        },
+        "sidecarStorage": {
+            "mode": "サイドカーファイルの保存モード",
+            "modeHelp": ".metadata.json サイドカーファイルとプレビュー画像の保存先を選択します。各モデルファイルの隣に保存するか、ライブラリ構造をミラーリングした単一の集中ディレクトリに保存します。.civitai.info ファイルは常にモデルファイルの隣に置かれます。",
+            "modeOptions": {
+                "alongside": "モデルファイルの隣（デフォルト）",
+                "centralized": "集中保存"
+            },
+            "path": "集中保存先パス",
+            "pathHelp": "サイドカーファイルを集中保存するルートディレクトリ。空欄の場合は既定の場所（<settings dir>/sidecars）を使用します。",
+            "pathPlaceholder": "空欄 = <settings dir>/sidecars",
+            "management": "サイドカーファイルの移動",
+            "managementHelp": "既存の .metadata.json サイドカーファイルとプレビュー画像を、現在選択されているモードに合わせて「モデルファイルの隣」と「集中保存」の間で移動します。モードを変更しても既存ファイルは自動では移動しません。",
+            "migrateButton": "今すぐサイドカーファイルを移動",
+            "migratingButton": "移動しています...",
+            "migrating": "サイドカーファイルを移動しています...",
+            "migrateFailed": "サイドカーファイルの移動に失敗しました：{message}",
+            "migrationDeferred": "既存のサイドカーファイルは移動されませんでした。後で「設定 > ライブラリ > サイドカーファイルの保存」から移動できます。",
+            "confirmToCentralized": "保存モードが変更されましたが、既存の .metadata.json サイドカーファイルとプレビュー画像は自動では移動しません。今すぐ集中保存ディレクトリに移動しますか？「今すぐサイドカーファイルを移動」ボタンで後から実行することもできます。",
+            "confirmToAlongside": "保存モードが変更されましたが、既存の .metadata.json サイドカーファイルとプレビュー画像は自動では移動しません。今すぐ各モデルファイルの隣に戻しますか？「今すぐサイドカーファイルを移動」ボタンで後から実行することもできます。",
+            "confirmRelocateRoot": "集中保存ディレクトリが変更されましたが、既存のサイドカーファイルとプレビュー画像はまだ以前のディレクトリにあります。今すぐ新しいディレクトリに移動しますか？",
+            "effectivePathLabel": "実際の保存場所：",
+            "openFolderButton": "フォルダを開く",
+            "repoWarning": "実際の保存場所が LoRA Manager のインストールフォルダ内にあります。プラグインの再インストールやクリーンアップデートで削除される可能性があります。インストールフォルダの外に明示的な保存パスを設定してください。",
+            "openLocationSuccess": "サイドカーファイルの保存フォルダを開きました",
+            "openLocationCopied": "サイドカーファイルの保存パスをクリップボードにコピーしました：{path}",
+            "openLocationClipboardFallback": "サイドカーファイルの保存パスを手動でコピーしてください：{path}",
+            "openLocationFailed": "サイドカーファイルの保存フォルダを開けませんでした"
         },
         "proxySettings": {
             "enableProxy": "アプリレベルのプロキシを有効化",
@@ -855,7 +918,10 @@
             "refresh": {
                 "title": "モデルリストを更新",
                 "full": "キャッシュを再構築",
-                "fullTooltip": "メタデータファイルから全モデル情報を再読み込みします。リストが古いと感じるときや手動編集後に使用してください。"
+                "fullTooltip": "メタデータファイルから全モデル情報を再読み込みします。リストが古いと感じるときや手動編集後に使用してください。",
+                "scopeSection": "フォルダを 1 つだけスキャン",
+                "rootOffline": "オフライン",
+                "rootModels": "{count} 個のモデル"
             },
             "fetch": {
                 "title": "CivitAIからメタデータを取得",
@@ -1344,7 +1410,20 @@
             "emptyNote": "このフォルダにはモデルがありません。他のファイルもすべて削除されます。",
             "notEmptyTitle": "フォルダが空ではありません",
             "notEmptyMessage": "このフォルダにはまだモデルがあります。先に削除するか移動してください —— フォルダを削除してもモデルファイルがまとめて削除されることはありません。",
-            "confirm": "フォルダを削除"
+            "notEmptyMessageCount": "このフォルダにはまだ {count} 個のモデルファイルがあります。先に削除するか移動してください —— フォルダを削除してもモデルファイルがまとめて削除されることはありません。",
+            "notEmptyMessageExcluded": "このフォルダにはまだ {count} 個のモデルファイルがあり、そのうち {excluded} 個はライブラリから除外されています。「除外モデルを管理」で除外を解除してから削除してください —— フォルダを削除してもモデルファイルがまとめて削除されることはありません。",
+            "missingTitle": "フォルダが見つかりません",
+            "missingMessage": "このフォルダはディスク上に存在しません。サイドバーを再読み込みしてからもう一度お試しください。",
+            "symlinkTitle": "フォルダがシンボリックリンクです",
+            "symlinkMessage": "このフォルダのすべてのコピーがシンボリックリンクです。LoRA Manager の外でリンクまたはそのリンク先を削除してください。",
+            "protectedTitle": "フォルダは保護されています",
+            "protectedMessage": "このフォルダにはレシピライブラリが保存されているため、LoRA Manager から削除できません。",
+            "busyTitle": "保留中の削除があります",
+            "checking": "フォルダの内容を確認しています...",
+            "confirm": "フォルダを削除",
+            "confirmMulti": "{count} 個のフォルダを削除",
+            "deleting": "削除しています...",
+            "keptNote": "チェックを外したコピーがあると、このフォルダはサイドバーに残ります。"
         },
         "deleteFolderResult": {
             "success": "フォルダ \"{name}\" を削除しました",
@@ -1352,9 +1431,13 @@
             "restored": "フォルダを復元しました",
             "failed": "フォルダの削除に失敗しました: {message}",
             "notEmpty": "このフォルダにはまだモデルがあります。サイドバーを再読み込みしてからもう一度お試しください。",
+            "notEmptyWithCount": "このフォルダにはまだ {count} 個のモデルファイルがあります。サイドバーを再読み込みしてからもう一度お試しください。",
             "busy": "このフォルダ内に保留中の削除があります。取り消し可能な時間が過ぎるまでお待ちください。",
             "unsupported": "このページではフォルダを削除できません",
-            "noRoot": "モデルルートが設定されていません"
+            "missing": "このフォルダはディスク上に存在しません。サイドバーを再読み込みしてからもう一度お試しください。",
+            "symlink": "このフォルダはシンボリックリンクです。サイドバーからは削除できません。",
+            "successMulti": "{count} 個のモデルルートからフォルダ \"{name}\" を削除しました",
+            "partial": "{total} 個のコピーのうち {count} 個を削除しました —— {failed} 個は削除できませんでした。サイドバーを再読み込みしてからもう一度お試しください。"
         },
         "renameFolder": "フォルダ名を変更",
         "renameFolderResult": {
@@ -1363,7 +1446,26 @@
             "targetExists": "同じ名前のフォルダが既に存在します",
             "busy": "このフォルダ内に保留中の削除があります。取り消し可能な時間が過ぎるまでお待ちください。",
             "unsupported": "このページではフォルダ名を変更できません",
-            "noRoot": "モデルルートが設定されていません"
+            "missing": "このフォルダはディスク上に存在しません。サイドバーを再読み込みしてからもう一度お試しください。",
+            "symlink": "このフォルダはシンボリックリンクです。サイドバーからはフォルダ名を変更できません。"
+        },
+        "folderRoot": {
+            "chooseTitle": "このフォルダは複数のモデルルートに存在します",
+            "symlinkOption": "シンボリックリンク",
+            "rootsHint": "このフォルダを削除するモデルルートを選択してください：",
+            "checkingStatus": "確認しています...",
+            "okStatus": "モデルなし",
+            "notEmptyStatus": "モデルファイルが {count} 個あります —— 先に削除するか移動してください",
+            "notEmptyExcludedStatus": "モデルファイルが {count} 個あり、そのうち {excluded} 個はライブラリから除外されています",
+            "busyStatus": "保留中の削除があります",
+            "missingStatus": "ディスク上に存在しません",
+            "symlinkStatus": "シンボリックリンク —— ここからは削除できません",
+            "protectedStatus": "レシピライブラリを保存 —— ここからは削除できません",
+            "unknownStatus": "確認できませんでした",
+            "deletedStatus": "削除しました"
+        },
+        "folderResult": {
+            "unresolved": "このフォルダがどのモデルルートにあるかを特定できませんでした。サイドバーを再読み込みしてからもう一度お試しください。"
         },
         "dragDrop": {
             "unableToResolveRoot": "移動先のパスを特定できません。",
@@ -1383,6 +1485,10 @@
             "success": "このフォルダの{type}sに{count}件のアップデートが見つかりました",
             "none": "このフォルダのすべての{type}sは最新です",
             "error": "フォルダの{type}アップデート確認に失敗しました: {message}"
+        },
+        "scanFolder": "このフォルダをスキャン",
+        "scanFolderResult": {
+            "missing": "このフォルダはディスク上に存在しません。サイドバーを再読み込みしてからもう一度お試しください。"
         }
     },
     "statistics": {
@@ -1515,6 +1621,10 @@
             "selectRootDirectory": "ルートディレクトリを選択",
             "selectModelRoot": "モデルルートを選択：",
             "selectTypeRoot": "{type}ルートを選択：",
+            "routingOverride": {
+                "label": "保存先タイプ：",
+                "tooltip": "モデルのメタデータから自動検出されます。誤検出の場合は切り替えてください。切り替えると、このダウンロードでは「デフォルトパスを使用」がオフになります。"
+            },
             "targetFolderPath": "ターゲットフォルダパス：",
             "browseFolders": "フォルダを参照：",
             "createNewFolder": "新しいフォルダを作成",
@@ -1630,6 +1740,28 @@
             "titleApply": "ファイル名テンプレートをライブラリに適用しますか？",
             "titleRevert": "元のファイル名を復元しますか？",
             "revertButton": "元のファイル名を復元"
+        },
+        "sidecarMigrationConfirm": {
+            "titleToCentralized": "サイドカーファイルを集中保存に移動しますか？",
+            "titleToAlongside": "サイドカーファイルをモデルファイルの隣に戻しますか？",
+            "confirmButton": "今すぐ移動",
+            "titleRelocateRoot": "サイドカーファイルを新しい保存ディレクトリに移動しますか？",
+            "destination": "移動先：{path}"
+        },
+        "sidecarMigrationResult": {
+            "title": "サイドカーファイル移動の概要",
+            "completedSuccessfully": "移動が正常に完了しました",
+            "completedWithErrors": "{count} 件のエラーで完了しました",
+            "statMoved": "移動したファイル",
+            "statModels": "モデル",
+            "statSkipped": "スキップ",
+            "statConflicts": "解決した競合",
+            "statErrors": "エラー",
+            "failedItems": "失敗した項目（{count}）",
+            "columnModel": "モデル",
+            "columnError": "エラー",
+            "successMessage": "{models} 個のモデルの {moved} 個のファイルを移動しました",
+            "location": "保存場所：{path}"
         },
         "bulkAddTags": {
             "title": "複数モデルにタグを追加",
@@ -1763,6 +1895,8 @@
                 "sendToWorkflow": "ComfyUI に送信",
                 "sendToWorkflowText": "ComfyUI に送信",
                 "copyHash": "ハッシュをコピー",
+                "copyCivitaiId": "Civitai IDをコピー",
+                "civitaiIdCopied": "Civitai IDをクリップボードにコピーしました",
                 "deleteModelWithShortcut": "モデルを削除（Del）"
             },
             "openFileLocation": {
@@ -1781,6 +1915,8 @@
                 "baseModel": "ベースモデル",
                 "size": "サイズ",
                 "hashes": "ハッシュ",
+                "civitaiModelId": "モデル ID",
+                "civitaiVersionId": "バージョン ID",
                 "unknown": "不明",
                 "usageTips": "使用のヒント",
                 "additionalNotes": "追加メモ",
@@ -1898,7 +2034,9 @@
                 "nsfwMature": "成人向けコンテンツ",
                 "nsfwR": "R指定コンテンツ",
                 "nsfwX": "X指定コンテンツ",
-                "nsfwXxx": "XXX指定コンテンツ"
+                "nsfwXxx": "XXX指定コンテンツ",
+                "layoutGallery": "ギャラリー表示",
+                "layoutList": "リスト表示"
             },
             "versions": {
                 "heading": "モデルバージョン",
@@ -1929,10 +2067,15 @@
                     "earlyAccessTooltip": "このバージョンは現在 CivitAI の早期アクセスが必要です",
                     "paid": "有料",
                     "paidTooltip": "このバージョンのダウンロードには支払いが必要です",
+                    "priceSaleTooltip": "セール中、通常 {list} Buzz",
+                    "priceBlueBuzzTooltip": "Blue Buzz でも支払えます",
+                    "freeNow": "無料化",
+                    "freeNowTooltip": "このバージョンは支払いが不要になりました",
                     "ignored": "無視中",
                     "ignoredTooltip": "このバージョンの更新通知は無効です",
                     "onSiteOnly": "サイト内のみ",
-                    "onSiteOnlyTooltip": "このバージョンはCivitAIサイト内でのみ利用可能で、ダウンロードはできません"
+                    "onSiteOnlyTooltip": "このバージョンはCivitAIサイト内でのみ利用可能で、ダウンロードはできません",
+                    "earlyAccessTooltipUntil": "{date} まで早期アクセス、以降は無料でダウンロードできます"
                 },
                 "actions": {
                     "download": "ダウンロード",
@@ -2671,7 +2814,10 @@
             "exampleImagesDownloadFailed": "例画像のダウンロードに失敗しました：{message}",
             "moveFailed": "アイテムを移動できませんでした: {message}",
             "copiedToClipboard": "クリップボードにコピーしました",
-            "downloadStarted": "ダウンロードを開始しました"
+            "downloadStarted": "ダウンロードを開始しました",
+            "refreshCompleteScoped": "{scope} をスキャンしました：新規 {added} 件、削除 {removed} 件",
+            "refreshKeptUnreachable": "{count} 個のモデルを保持しました：{paths} にアクセスできません",
+            "scanRootUnreachable": "{scope} に現在アクセスできません。変更は行われていません。"
         },
         "agent": {
             "llmNotConfigured": "AIプロバイダーが設定されていません。設定 → AIプロバイダーで有効にしてください。",
@@ -2706,6 +2852,9 @@
             },
             "filename_conflicts": {
                 "title": "ファイル名重複競合"
+            },
+            "sidecar_mirror_orphans": {
+                "title": "集中保存のサイドカーファイル"
             },
             "ui_version": {
                 "title": "UI バージョン"

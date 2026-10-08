@@ -1,8 +1,9 @@
 import asyncio
 import logging
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from types import SimpleNamespace
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 import pytest
 
@@ -146,6 +147,8 @@ class StubExampleImagesProcessor(ExampleImagesProcessor):
         self.calls: List[Dict[str, Any]] = []
         self.error: Optional[str] = None
         self.response: Dict[str, Any] = {"success": True}
+        self.resolved_hash: Optional[str] = None
+        self.resolve_calls: List[str] = []
 
     async def import_images(self, model_hash: str, files: List[str]) -> Dict[str, Any]:  # pyright: ignore[reportIncompatibleMethodOverride]
         self.calls.append({"model_hash": model_hash, "files": files})
@@ -154,6 +157,10 @@ class StubExampleImagesProcessor(ExampleImagesProcessor):
         if self.error == "generic":
             raise ExampleImagesImportError("boom")
         return self.response
+
+    async def resolve_hash_for_file_path(self, file_path: str) -> str:
+        self.resolve_calls.append(file_path)
+        return self.resolved_hash or ""
 
 
 async def test_auto_organize_use_case_executes_with_lock() -> None:
@@ -506,6 +513,34 @@ async def test_import_example_images_use_case_propagates_generic_error() -> None
         await use_case.execute(request)  # pyright: ignore[reportArgumentType]
 
 
+async def test_import_example_images_use_case_resolves_hash_from_model_path() -> None:
+    """Models with a deferred hash (checkpoints, Other) send model_path
+    instead of model_hash; the use case must resolve the hash on demand."""
+    processor = StubExampleImagesProcessor()
+    processor.resolved_hash = "f" * 64
+    use_case = ImportExampleImagesUseCase(processor=processor)
+
+    request = DummyJsonRequest(
+        {"model_path": "/models/vae/x.safetensors", "file_paths": ["/tmp/file"]}
+    )
+    result = await use_case.execute(request)  # pyright: ignore[reportArgumentType]
+
+    assert processor.resolve_calls == ["/models/vae/x.safetensors"]
+    assert processor.calls == [{"model_hash": "f" * 64, "files": ["/tmp/file"]}]
+    assert result == {"success": True}
+
+
+async def test_import_example_images_use_case_rejects_unresolvable_model_path() -> None:
+    processor = StubExampleImagesProcessor()
+    use_case = ImportExampleImagesUseCase(processor=processor)
+    request = DummyJsonRequest(
+        {"model_path": "/models/unknown.safetensors", "file_paths": []}
+    )
+
+    with pytest.raises(ImportExampleImagesValidationError):
+        await use_case.execute(request)  # pyright: ignore[reportArgumentType]
+
+
 class StubLifecycleService:
     def __init__(self, scanner: Optional[MockScanner] = None) -> None:
         self.renames: List[Dict[str, str]] = []
@@ -513,7 +548,13 @@ class StubLifecycleService:
         self.cancel_on_rename = False
         self._scanner = scanner
 
-    async def rename_model(self, *, file_path: str, new_file_name: str) -> Dict[str, Any]:
+    @asynccontextmanager
+    async def bulk_rename_session(self) -> AsyncIterator[None]:
+        yield None
+
+    async def rename_model(
+        self, *, file_path: str, new_file_name: str, bulk_context: Any = None
+    ) -> Dict[str, Any]:
         if self.error is not None:
             raise self.error
         self.renames.append({"file_path": file_path, "new_file_name": new_file_name})

@@ -73,7 +73,8 @@
                 "lessThanMinute": "Weniger als eine Minute verbleibend",
                 "minutes": "~{minutes} Min. verbleibend",
                 "hours": "~{hours} Std. {minutes} Min. verbleibend"
-            }
+            },
+            "walkFiles": "{count} Dateien"
         }
     },
     "onboarding": {
@@ -201,7 +202,11 @@
             "loading": "Prüfe auf {type}-Updates...",
             "success": "{count} Update(s) für {type} gefunden",
             "none": "Alle {type} sind auf dem neuesten Stand",
-            "error": "Fehler beim Prüfen auf {type}-Updates: {message}"
+            "error": "Fehler beim Prüfen auf {type}-Updates: {message}",
+            "gateEvents": {
+                "becameFree": "{count} Version(en), die Sie nicht besitzen, sind jetzt kostenlos",
+                "newGate": "{count} Version(en) sind jetzt kostenpflichtig"
+            }
         },
         "cleanupExampleImages": {
             "label": "Beispielbild-Ordner bereinigen",
@@ -251,7 +256,6 @@
                 "modelname": "Modellname",
                 "tags": "Tags",
                 "creator": "Ersteller",
-                "hash": "Hash",
                 "title": "Rezept-Titel",
                 "loraName": "LoRA-Dateiname",
                 "loraModel": "LoRA-Modellname",
@@ -325,6 +329,12 @@
         "civitaiApiKeyConfigured": "Konfiguriert",
         "civitaiApiKeyNotConfigured": "Nicht konfiguriert",
         "civitaiApiKeySet": "Einrichten",
+        "huggingfaceApiKey": "Hugging Face Access Token",
+        "huggingfaceApiKeyPlaceholder": "Geben Sie Ihren Hugging Face Access Token ein",
+        "huggingfaceApiKeyHelp": "Erforderlich für Downloads aus gated oder privaten Hugging Face Repositories. Erstellen Sie ein Read-only-Token unter huggingface.co/settings/tokens und akzeptieren Sie zuerst die Nutzungsbedingungen des Repositories auf dessen Seite.",
+        "huggingfaceApiKeyConfigured": "Konfiguriert",
+        "huggingfaceApiKeyNotConfigured": "Nicht konfiguriert",
+        "huggingfaceApiKeySet": "Einrichten",
         "civitaiHost": {
             "label": "CivitAI-Host",
             "help": "Wählen Sie aus, welche CivitAI-Seite geöffnet wird, wenn Sie „View on CivitAI“-Links verwenden.",
@@ -347,6 +357,14 @@
             "placeholder": "Leer lassen, um aria2c aus dem PATH zu verwenden"
         },
         "aria2HelpLink": "Erfahren Sie, wie Sie das aria2-Download-Backend einrichten",
+        "unknownBaseModelRouting": {
+            "label": "Routing unbekannter Basismodelle",
+            "help": "Legt fest, wohin Checkpoint-Downloads gehen, wenn CivitAI ein Basismodell meldet, das weder ein bekanntes Checkpoint (SD 1.x/2.x/3.x, SDXL, Pony, Illustrious, NoobAI) noch ein bekanntes Diffusionsmodell ist. Neue Diffusionsarchitekturen erscheinen häufig, daher ist das Routing zu Diffusionsmodellen meist korrekt.",
+            "options": {
+                "diffusionModel": "Diffusionsmodelle",
+                "checkpoint": "Checkpoints"
+            }
+        },
         "civitaiHostBanner": {
             "title": "CivitAI-Host-Einstellung verfügbar",
             "content": "CivitAI verwendet jetzt civitai.com für SFW-Inhalte und civitai.red für uneingeschränkte Inhalte. In den Einstellungen können Sie ändern, welche Seite standardmäßig geöffnet wird.",
@@ -374,9 +392,11 @@
             "downloadPathTemplates": "Download-Pfad-Vorlagen",
             "priorityTags": "Prioritäts-Tags",
             "versionScope": "Update-Markierungen",
+            "priceTracking": "Buzz-Downloadpreise",
             "exampleImages": "Beispielbilder",
             "autoOrganize": "Auto-Organisierung",
             "metadata": "Metadaten",
+            "sidecarStorage": "Sidecar-Speicherung",
             "proxySettings": "Proxy-Einstellungen"
         },
         "nav": {
@@ -511,6 +531,12 @@
                 "hover": "Bei Hover anzeigen"
             },
             "cardInfoDisplayHelp": "Wählen Sie, wann Modellinformationen und Aktionsschaltflächen angezeigt werden sollen",
+            "showcaseLayout": "Beispielbilder-Layout",
+            "showcaseLayoutHelp": "Wählen Sie, wie Beispielbilder im Modell-Dialog angezeigt werden: eine Galerie mit jeweils einem Bild oder die klassische vertikale Liste.",
+            "showcaseLayoutOptions": {
+                "gallery": "Galerie",
+                "vertical": "Vertikale Liste"
+            },
             "showVersionOnCard": "Version auf Karte anzeigen",
             "showVersionOnCardHelp": "Den Versionsnamen auf Modellkarten ein- oder ausblenden",
             "modelCardFooterAction": "Aktion der Modellkarten-Schaltfläche",
@@ -739,6 +765,13 @@
             "label": "Bezahlte Updates ausblenden",
             "help": "Wenn aktiviert, zeigen Modelle mit nur bezahlten Updates kein 'Update verfügbar'-Badge an"
         },
+        "priceTracking": {
+            "help": "Die öffentliche API von CivitAI veröffentlicht keine Downloadpreise, daher werden sie von der Modellseite gelesen - eine zusätzliche Anfrage pro bezahltem Modell, aktualisiert im unten stehenden Intervall. Preise werden nur bei Versionen angezeigt, die Sie noch nicht haben.",
+            "enabled": "Downloadpreise für bezahlte Versionen anzeigen",
+            "enabledHelp": "Liest den Downloadpreis von der Modellseite, damit bezahlte Versionen und Versionen mit frühem Zugriff ihren Preis und das Ende des frühen Zugriffs zeigen",
+            "refreshHours": "Aktualisierungsintervall für Preise (Stunden)",
+            "refreshHoursHelp": "Wie lange ein gespeicherter Preis gültig bleibt, bevor er erneut gelesen wird"
+        },
         "licenseIcons": {
             "useNewStyle": "Aktualisierte Lizenzsymbole verwenden",
             "useNewStyleHelp": "Lizenzberechtigungen mit farbigen Indikatoren (neuer Stil) oder nur Einschränkungssymbolen (klassischer Stil) anzeigen. Orientiert sich am aktuellen CivitAI-Design."
@@ -778,10 +811,40 @@
             "downloadComplete": "Download erfolgreich abgeschlossen",
             "enableCivarchiveApi": "CivArchive API als Metadaten-Anbieter aktivieren",
             "enableCivarchiveApiHelp": "Wenn aktiviert, wird die CivArchive API als alternative Quelle für Modell-Metadaten verwendet (z. B. für von CivitAI gelöschte Modelle). Deaktivieren, um die Ratenbegrenzungen von CivArchive vollständig zu vermeiden.",
+            "enableOpenmodeldbApi": "OpenModelDB als Metadaten-Anbieter aktivieren",
+            "enableOpenmodeldbApiHelp": "Wenn aktiviert, werden Upscaler-Metadaten zusätzlich im OpenModelDB-Katalog (openmodeldb.info) nachgeschlagen, wenn CivitAI keinen Eintrag hat. Der Katalog wird lokal zwischengespeichert und täglich aktualisiert.",
             "providerOrder": "Reihenfolge der Metadaten-Anbieter",
             "providerOrderHelp": "Die CivitAI API wird immer zuerst versucht. Wählen Sie die Reihenfolge der übrigen Anbieter bei der Metadatensuche.",
             "providerOrderCivitaiArchiveSqlite": "CivitAI → CivArchive → Archive DB",
             "providerOrderCivitaiSqliteArchive": "CivitAI → Archive DB → CivArchive"
+        },
+        "sidecarStorage": {
+            "mode": "Sidecar-Speichermodus",
+            "modeHelp": "Wählen Sie, wo .metadata.json-Sidecar-Dateien und Vorschaubilder gespeichert werden: neben jeder Modelldatei oder in einem einzelnen zentralen Verzeichnis, das Ihre Bibliotheksstruktur spiegelt. .civitai.info-Dateien bleiben immer neben der Modelldatei.",
+            "modeOptions": {
+                "alongside": "Neben den Modelldateien (Standard)",
+                "centralized": "Zentrale Speicherung"
+            },
+            "path": "Pfad der zentralen Speicherung",
+            "pathHelp": "Stammverzeichnis für die zentrale Sidecar-Speicherung. Leer lassen, um den Standardspeicherort (<settings dir>/sidecars) zu verwenden.",
+            "pathPlaceholder": "Leer = <settings dir>/sidecars",
+            "management": "Sidecar-Migration",
+            "managementHelp": "Verschieben Sie vorhandene .metadata.json-Sidecar-Dateien und Vorschaubilder zwischen der Ablage neben den Modelldateien und der zentralen Speicherung, passend zum aktuell gewählten Modus. Ein Moduswechsel verschiebt vorhandene Dateien nicht automatisch.",
+            "migrateButton": "Sidecar-Dateien jetzt verschieben",
+            "migratingButton": "Wird verschoben...",
+            "migrating": "Sidecar-Dateien werden verschoben...",
+            "migrateFailed": "Sidecar-Migration fehlgeschlagen: {message}",
+            "migrationDeferred": "Vorhandene Sidecar-Dateien wurden nicht verschoben. Sie können sie später unter Einstellungen → Bibliothek → Sidecar-Speicherung verschieben.",
+            "confirmToCentralized": "Der Speichermodus wurde geändert, aber vorhandene .metadata.json-Sidecar-Dateien und Vorschaubilder werden nicht automatisch verschoben. Jetzt in das zentrale Speicherverzeichnis verschieben? Sie können das auch später über die Schaltfläche „Sidecar-Dateien jetzt verschieben“ tun.",
+            "confirmToAlongside": "Der Speichermodus wurde geändert, aber vorhandene .metadata.json-Sidecar-Dateien und Vorschaubilder werden nicht automatisch verschoben. Jetzt wieder neben ihre Modelldateien verschieben? Sie können das auch später über die Schaltfläche „Sidecar-Dateien jetzt verschieben“ tun.",
+            "confirmRelocateRoot": "Das zentrale Speicherverzeichnis wurde geändert, aber vorhandene Sidecar-Dateien und Vorschaubilder liegen noch im vorherigen Verzeichnis. Jetzt in das neue Verzeichnis verschieben?",
+            "effectivePathLabel": "Tatsächlicher Speicherort:",
+            "openFolderButton": "Ordner öffnen",
+            "repoWarning": "Der tatsächliche Speicherort liegt innerhalb des LoRA-Manager-Installationsordners. Eine Neuinstallation des Plugins oder eine saubere Aktualisierung kann ihn löschen — legen Sie einen expliziten Speicherpfad außerhalb des Installationsordners fest.",
+            "openLocationSuccess": "Sidecar-Speicherordner geöffnet",
+            "openLocationCopied": "Sidecar-Speicherpfad in die Zwischenablage kopiert: {path}",
+            "openLocationClipboardFallback": "Kopieren Sie den Sidecar-Speicherpfad manuell: {path}",
+            "openLocationFailed": "Sidecar-Speicherordner konnte nicht geöffnet werden"
         },
         "proxySettings": {
             "enableProxy": "App-Proxy aktivieren",
@@ -855,7 +918,10 @@
             "refresh": {
                 "title": "Modelliste aktualisieren",
                 "full": "Cache neu aufbauen",
-                "fullTooltip": "Alle Modelldetails aus Metadatendateien neu laden – nutzen, wenn die Bibliothek veraltet wirkt oder nach manuellen Änderungen."
+                "fullTooltip": "Alle Modelldetails aus Metadatendateien neu laden – nutzen, wenn die Bibliothek veraltet wirkt oder nach manuellen Änderungen.",
+                "scopeSection": "Nur einen Ordner scannen",
+                "rootOffline": "Offline",
+                "rootModels": "{count} Modelle"
             },
             "fetch": {
                 "title": "Metadaten von CivitAI abrufen",
@@ -1344,7 +1410,20 @@
             "emptyNote": "Dieser Ordner enthält keine Modelle. Alle anderen darin enthaltenen Dateien werden ebenfalls gelöscht.",
             "notEmptyTitle": "Ordner ist nicht leer",
             "notEmptyMessage": "Dieser Ordner enthält noch Modelle. Löschen oder verschieben Sie diese zuerst — beim Löschen eines Ordners werden Modelldateien niemals mitgelöscht.",
-            "confirm": "Ordner löschen"
+            "notEmptyMessageCount": "Dieser Ordner enthält noch {count} Modelldatei(en). Löschen oder verschieben Sie diese zuerst — beim Löschen eines Ordners werden Modelldateien niemals mitgelöscht.",
+            "notEmptyMessageExcluded": "Dieser Ordner enthält noch {count} Modelldatei(en), davon {excluded} von der Bibliothek ausgeschlossen. Heben Sie den Ausschluss unter „Ausgeschlossene Modelle verwalten“ auf und löschen Sie sie zuerst — beim Löschen eines Ordners werden Modelldateien niemals mitgelöscht.",
+            "missingTitle": "Ordner nicht gefunden",
+            "missingMessage": "Dieser Ordner existiert nicht mehr auf dem Datenträger. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut.",
+            "symlinkTitle": "Ordner ist ein symbolischer Link",
+            "symlinkMessage": "Alle Kopien dieses Ordners sind symbolische Links; entfernen Sie den Link oder sein Ziel außerhalb von LoRA Manager.",
+            "protectedTitle": "Ordner ist geschützt",
+            "protectedMessage": "Dieser Ordner enthält die Rezept-Bibliothek und kann nicht aus LoRA Manager heraus gelöscht werden.",
+            "busyTitle": "Eine Löschung steht noch aus",
+            "checking": "Ordnerinhalt wird geprüft...",
+            "confirm": "Ordner löschen",
+            "confirmMulti": "{count} Ordner löschen",
+            "deleting": "Wird gelöscht...",
+            "keptNote": "Nicht angehakte Kopien lassen diesen Ordner in der Seitenleiste bestehen."
         },
         "deleteFolderResult": {
             "success": "Ordner \"{name}\" gelöscht",
@@ -1352,9 +1431,13 @@
             "restored": "Ordner wiederhergestellt",
             "failed": "Ordner konnte nicht gelöscht werden: {message}",
             "notEmpty": "Dieser Ordner enthält noch Modelle. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut.",
+            "notEmptyWithCount": "Dieser Ordner enthält noch {count} Modelldatei(en). Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut.",
             "busy": "In diesem Ordner steht noch eine Löschung aus. Warten Sie, bis das Zeitfenster für das Rückgängigmachen abgelaufen ist.",
             "unsupported": "Das Löschen von Ordnern wird auf dieser Seite nicht unterstützt",
-            "noRoot": "Es ist kein Modell-Stammverzeichnis konfiguriert"
+            "missing": "Dieser Ordner existiert nicht mehr auf dem Datenträger. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut.",
+            "symlink": "Dieser Ordner ist ein symbolischer Link; er kann nicht über die Seitenleiste gelöscht werden.",
+            "successMulti": "Ordner \"{name}\" aus {count} Modell-Stammverzeichnissen gelöscht",
+            "partial": "{count} von {total} Kopien gelöscht — {failed} konnten nicht gelöscht werden. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut."
         },
         "renameFolder": "Ordner umbenennen",
         "renameFolderResult": {
@@ -1363,7 +1446,26 @@
             "targetExists": "Ein Ordner mit diesem Namen ist hier bereits vorhanden",
             "busy": "In diesem Ordner steht noch eine Löschung aus. Warten Sie, bis das Zeitfenster für das Rückgängigmachen abgelaufen ist.",
             "unsupported": "Das Umbenennen von Ordnern wird auf dieser Seite nicht unterstützt",
-            "noRoot": "Es ist kein Modell-Stammverzeichnis konfiguriert"
+            "missing": "Dieser Ordner existiert nicht mehr auf dem Datenträger. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut.",
+            "symlink": "Dieser Ordner ist ein symbolischer Link; er kann nicht über die Seitenleiste umbenannt werden."
+        },
+        "folderRoot": {
+            "chooseTitle": "Dieser Ordner existiert in mehreren Modell-Stammverzeichnissen",
+            "symlinkOption": "symbolischer Link",
+            "rootsHint": "Wählen Sie die Modell-Stammverzeichnisse, aus denen dieser Ordner gelöscht werden soll:",
+            "checkingStatus": "wird geprüft...",
+            "okStatus": "keine Modelle",
+            "notEmptyStatus": "enthält {count} Modelldatei(en) — löschen oder verschieben Sie diese zuerst",
+            "notEmptyExcludedStatus": "enthält {count} Modelldatei(en), davon {excluded} von der Bibliothek ausgeschlossen",
+            "busyStatus": "eine Löschung steht noch aus",
+            "missingStatus": "existiert nicht mehr auf dem Datenträger",
+            "symlinkStatus": "symbolischer Link — hier nicht löschbar",
+            "protectedStatus": "enthält die Rezept-Bibliothek — hier nicht löschbar",
+            "unknownStatus": "konnte nicht geprüft werden",
+            "deletedStatus": "gelöscht"
+        },
+        "folderResult": {
+            "unresolved": "Es konnte nicht ermittelt werden, welches Modell-Stammverzeichnis diesen Ordner enthält. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut."
         },
         "dragDrop": {
             "unableToResolveRoot": "Zielpfad für das Verschieben konnte nicht ermittelt werden.",
@@ -1383,6 +1485,10 @@
             "success": "{count} Update(s) für {type}s in diesem Ordner gefunden",
             "none": "Alle {type}s in diesem Ordner sind aktuell",
             "error": "Fehler beim Prüfen des Ordners auf {type}-Updates: {message}"
+        },
+        "scanFolder": "Diesen Ordner scannen",
+        "scanFolderResult": {
+            "missing": "Dieser Ordner existiert nicht mehr auf dem Datenträger. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut."
         }
     },
     "statistics": {
@@ -1515,6 +1621,10 @@
             "selectRootDirectory": "Wählen Sie ein Stammverzeichnis",
             "selectModelRoot": "Modell-Stammverzeichnis auswählen:",
             "selectTypeRoot": "{type}-Stammverzeichnis auswählen:",
+            "routingOverride": {
+                "label": "Zieltyp:",
+                "tooltip": "Automatisch aus den Modell-Metadaten erkannt. Wechseln Sie, wenn die Erkennung falsch war; ein Wechsel deaktiviert „Standardpfad verwenden“ für diesen Download."
+            },
             "targetFolderPath": "Zielordnerpfad:",
             "browseFolders": "Ordner durchsuchen:",
             "createNewFolder": "Neuen Ordner erstellen",
@@ -1630,6 +1740,28 @@
             "titleApply": "Dateinamen-Vorlage auf Bibliothek anwenden?",
             "titleRevert": "Ursprüngliche Dateinamen wiederherstellen?",
             "revertButton": "Ursprüngliche Dateinamen wiederherstellen"
+        },
+        "sidecarMigrationConfirm": {
+            "titleToCentralized": "Sidecar-Dateien in die zentrale Speicherung verschieben?",
+            "titleToAlongside": "Sidecar-Dateien zurück neben die Modelldateien verschieben?",
+            "confirmButton": "Jetzt verschieben",
+            "titleRelocateRoot": "Sidecar-Dateien in das neue Speicherverzeichnis verschieben?",
+            "destination": "Ziel: {path}"
+        },
+        "sidecarMigrationResult": {
+            "title": "Sidecar-Migrationsübersicht",
+            "completedSuccessfully": "Migration erfolgreich abgeschlossen",
+            "completedWithErrors": "Abgeschlossen mit {count} Fehler(n)",
+            "statMoved": "Verschobene Dateien",
+            "statModels": "Modelle",
+            "statSkipped": "Übersprungen",
+            "statConflicts": "Gelöste Konflikte",
+            "statErrors": "Fehler",
+            "failedItems": "Fehlgeschlagene Elemente ({count})",
+            "columnModel": "Modell",
+            "columnError": "Fehler",
+            "successMessage": "{moved} Dateien für {models} Modelle verschoben",
+            "location": "Speicherort: {path}"
         },
         "bulkAddTags": {
             "title": "Tags zu mehreren Modellen hinzufügen",
@@ -1763,6 +1895,8 @@
                 "sendToWorkflow": "An ComfyUI senden",
                 "sendToWorkflowText": "An ComfyUI senden",
                 "copyHash": "Hash kopieren",
+                "copyCivitaiId": "Civitai-ID kopieren",
+                "civitaiIdCopied": "Civitai-ID in die Zwischenablage kopiert",
                 "deleteModelWithShortcut": "Modell löschen (Del)"
             },
             "openFileLocation": {
@@ -1781,6 +1915,8 @@
                 "baseModel": "Basismodell",
                 "size": "Größe",
                 "hashes": "Hashes",
+                "civitaiModelId": "Modell-ID",
+                "civitaiVersionId": "Versions-ID",
                 "unknown": "Unbekannt",
                 "usageTips": "Nutzungstipps",
                 "additionalNotes": "Zusätzliche Notizen",
@@ -1898,7 +2034,9 @@
                 "nsfwMature": "Nicht jugendfreie Inhalte",
                 "nsfwR": "Inhalte ab 18 (R)",
                 "nsfwX": "Inhalte mit X-Einstufung",
-                "nsfwXxx": "Inhalte mit XXX-Einstufung"
+                "nsfwXxx": "Inhalte mit XXX-Einstufung",
+                "layoutGallery": "Galerieansicht",
+                "layoutList": "Listenansicht"
             },
             "versions": {
                 "heading": "Modellversionen",
@@ -1929,10 +2067,15 @@
                     "earlyAccessTooltip": "Für diese Version ist derzeit CivitAI Early Access erforderlich",
                     "paid": "Bezahlt",
                     "paidTooltip": "Diese Version erfordert eine Zahlung zum Herunterladen",
+                    "priceSaleTooltip": "Im Angebot, normalerweise {list} Buzz",
+                    "priceBlueBuzzTooltip": "Kann auch mit Blue Buzz bezahlt werden",
+                    "freeNow": "Jetzt kostenlos",
+                    "freeNowTooltip": "Diese Version erfordert keine Zahlung mehr",
                     "ignored": "Ignoriert",
                     "ignoredTooltip": "Für diese Version sind Update-Benachrichtigungen deaktiviert",
                     "onSiteOnly": "Nur On-Site",
-                    "onSiteOnlyTooltip": "Diese Version ist nur für die On-Site-Generierung auf CivitAI verfügbar"
+                    "onSiteOnlyTooltip": "Diese Version ist nur für die On-Site-Generierung auf CivitAI verfügbar",
+                    "earlyAccessTooltipUntil": "Früher Zugriff bis {date}, danach kostenlos zum Herunterladen"
                 },
                 "actions": {
                     "download": "Herunterladen",
@@ -2671,7 +2814,10 @@
             "exampleImagesDownloadFailed": "Fehler beim Herunterladen der Beispielbilder: {message}",
             "moveFailed": "Element konnte nicht verschoben werden: {message}",
             "copiedToClipboard": "In die Zwischenablage kopiert",
-            "downloadStarted": "Download gestartet"
+            "downloadStarted": "Download gestartet",
+            "refreshCompleteScoped": "{scope} gescannt: {added} neu, {removed} entfernt",
+            "refreshKeptUnreachable": "{count} Modelle beibehalten: {paths} nicht erreichbar",
+            "scanRootUnreachable": "{scope} ist derzeit nicht erreichbar. Es wurde nichts geändert."
         },
         "agent": {
             "llmNotConfigured": "KI-Anbieter nicht konfiguriert. Aktivieren Sie ihn unter Einstellungen → KI-Anbieter.",
@@ -2706,6 +2852,9 @@
             },
             "filename_conflicts": {
                 "title": "Konflikte durch doppelte Dateinamen"
+            },
+            "sidecar_mirror_orphans": {
+                "title": "Zentralisierte Sidecar-Dateien"
             },
             "ui_version": {
                 "title": "UI-Version"

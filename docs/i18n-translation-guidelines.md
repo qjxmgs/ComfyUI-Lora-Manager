@@ -4,7 +4,7 @@ This document is the canonical set of conventions for translating LoRA Manager U
 It applies to **human translators and AI agents** alike. Read it before editing anything in
 `locales/`.
 
-Source of truth: `locales/en.json` (10 locales, 2025 leaf keys; all locales share the exact
+Source of truth: `locales/en.json` (10 locales, 2128 leaf keys; all locales share the exact
 same key structure).
 
 Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
@@ -77,6 +77,123 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > `loras.bulkOperations.filenameTemplateProgress.*`, `modals.filenameTemplateConfirm.*` and
 > the `toast.loras.filenameTemplate*` / `toast.settings.filenameTemplates*` toasts. All 9
 > locales are translated (terminology in §2, "Filename Templates feature").
+
+> **Status (2026-09, folder delete verification):** the folder delete modal no longer trusts the
+> sidebar's "empty folder" prediction — it dry-runs the delete against the backend and renders
+> the answer, so a folder whose models are all *excluded* (invisible to the model lists, still
+> real weight files on disk) is refused with an explanation instead of contradicting itself.
+> That added 5 keys (`sidebar.deleteFolderModal.notEmptyMessageCount`,
+> `.notEmptyMessageExcluded`, `.busyTitle`, `.checking`, `sidebar.deleteFolderResult.notEmptyWithCount`);
+> all 9 locales are translated (terminology in §2, "Folder sidebar feature"), so the
+> "no remaining placeholders" claim holds again.
+
+> **Status (2026-09, sidecar storage):** optional centralized storage for `.metadata.json`
+> sidecars and preview images added 23 keys — `settings.sections.sidecarStorage`,
+> the 18 `settings.sidecarStorage.*` labels/help/status/confirm strings, and the 4
+> `modals.sidecarMigrationConfirm.*` titles/button. The pull request merged them as
+> `[TODO: Translate]` copies; all 9 locales are now translated (terminology in §2,
+> "Sidecar storage feature"), so no placeholder remains and the "no remaining placeholders"
+> claim holds again.
+
+> **Status (2026-09, sidecar storage UX follow-up):** the migration UX follow-up added
+> 7 `settings.sidecarStorage.open*`/path-display keys, `modals.sidecarMigrationConfirm.destination`,
+> and the 13-key `modals.sidecarMigrationResult.*` summary block (which replaces
+> `settings.sidecarStorage.migrateSuccess` — the result modal is now the success feedback,
+> mirroring `modals.metadataFetchSummary.*`/`modals.downloadBatchSummary.*` stat-card and
+> failure-table conventions; reuse each locale's existing renderings of those sibling keys).
+> All 9 locales are translated in the same pass (terminology in §2, "Sidecar storage feature").
+
+> **Status (2026-10, unknown base model routing):** the download-routing inversion added
+> 4 keys (`settings.unknownBaseModelRouting.label`, `.help`, `.options.diffusionModel`,
+> `.options.checkpoint`) — the option labels reuse each locale's existing
+> `checkpoints.modelTypes.diffusion_model` / `.checkpoint` renderings. The same pass also
+> translated the leftover `doctor.issues.sidecar_mirror_orphans.title` ("Centralized
+> Sidecars", §2 "Sidecar storage feature" terminology). All 9 locales are translated,
+> so the "no remaining placeholders" claim holds again. Terminology in §2, "Download
+> routing feature".
+
+> **Status (2026-10, routing-override follow-up):** the download modal's location step
+> gained a manual "Destination type" toggle (Checkpoint | Diffusion Model) for when the
+> auto routing misdetects, adding 2 keys (`modals.download.routingOverride.label`,
+> `.tooltip`). The tooltip quotes each locale's `modals.download.useDefaultPath` label
+> verbatim (switching turns it off for the session), using that locale's UI-label quoting
+> style. All 9 locales are translated (terminology in §2, "Download routing feature"),
+> so the "no remaining placeholders" claim holds again.
+
+> **Status (2026-10, OpenModelDB):** the OpenModelDB metadata-provider toggle added 2 keys
+> (`settings.metadataArchive.enableOpenmodeldbApi(Help)`); all 9 locales are translated
+> (terminology in §2, "OpenModelDB feature"), so the "no remaining placeholders" claim
+> holds again.
+
+> **Status (2026-10, Civitai ids in model modal):** the model modal's hash footnote now
+> shows the Civitai model id and version id (right-aligned, with copy buttons), adding
+> 4 keys (`modals.model.metadata.civitaiModelId` / `.civitaiVersionId`,
+> `modals.model.actions.copyCivitaiId` / `.civitaiIdCopied`). The same pass removed the
+> search-options "hash" toggle (`header.search.filters.hash`) because hash/id search is
+> now always on. All 9 locales are translated (terminology in §2, "Civitai ids feature"),
+> so the "no remaining placeholders" claim holds again.
+
+> **Status (2026-10, showcase layout option):** the model modal's example images became
+> switchable between the on-demand gallery and the classic vertical list (issue #1136),
+> adding 6 keys (`settings.layoutSettings.showcaseLayout`, `.showcaseLayoutHelp`,
+> `.showcaseLayoutOptions.gallery` / `.vertical`, `modals.model.showcase.layoutGallery` /
+> `.layoutList`). All 9 locales are translated (terminology in §2, "Showcase layout
+> feature"), so the "no remaining placeholders" claim holds again.
+> **Status (2026-10, Buzz download prices):** the paid/early-access obtainability feature added
+> 13 keys — the two `globalContextMenu.checkModelUpdates.gateEvents.*` counts, five
+> `modals.model.versions.badges.*` (sale, Blue Buzz, "free now" and its tooltip, and the early
+> access end-date tooltip) and the six `settings.priceTracking.*` strings — plus the section
+> header. All 13 are now translated in all 9 locales. **Buzz** and **Blue Buzz** stay as-is
+> everywhere (CivitAI currency names, R3). Two source fixes came with the pass: the unused
+> `settings.priceTracking.label` key was removed (no template renders it; the toggle uses
+> `enabled`/`enabledHelp`) and `settings.sections.priceTracking` was reworded to
+> "Buzz Download Prices" so the header matches what the feature does (prices are displayed;
+> nothing is tracked for alerts). Register follows each file's existing norm: 你 (zh-CN),
+> 您 (zh-TW), Sie (de), tú (es), вы (ru). No remaining `[TODO: Translate]` placeholders.
+
+> **Status (2026-10, scoped scan):** the Refresh dropdown gained a per-root scope section
+> (`loras.controls.refresh.scopeSection` / `.rootOffline` / `.rootModels`) and the scan result
+> toasts (`toast.api.refreshCompleteScoped`, `.refreshKeptUnreachable`, `.scanRootUnreachable`),
+> 6 keys in total, translated in all 9 locales in the same pass (renderings in §2, "Scoped scan
+> and root availability"). The sidebar's folder-level follow-up added 2 more
+> (`sidebar.scanFolder`, `sidebar.scanFolderResult.missing`), translated in a second pass, so the
+> "no remaining placeholders" claim holds again.
+
+> **Status (2026-10, recipes folder protection):** the recipes storage directory (the first
+> lora root's `recipes/` by default) is now excluded from the folder sidebar and refused by the
+> folder delete/rename endpoints, adding 3 keys (`sidebar.deleteFolderModal.protectedTitle` /
+> `.protectedMessage`, `sidebar.folderRoot.protectedStatus`). All 9 locales are translated
+> (terminology in §2, "Folder sidebar feature" — the `recipe library` row), so the "no
+> remaining placeholders" claim holds again.
+
+> **Status (2026-10, reconcile walk progress):** a regular Refresh now reports the reconcile
+> walk per model root (which roots are being checked, how many model files have been seen, and
+> an ETA) and splits the progress bar into walk (0-50 %) and new-file (50-99 %) phases, which
+> added the single `common.scanProgress.walkFiles` fragment. All 9 locales are translated
+> (renderings in §2, "Scan progress (walk phase)"), so the "no remaining placeholders" claim
+> holds again. The same pass scoped the client-side ETA to the current stage in
+> `static/js/api/baseModelApi.js`; no other locale string changed.
+
+> **Status (2026-10, multi-root folder resolution):** the folder sidebar used to turn a tree
+> node into a path by prefixing the *default* model root, so a folder living under another root
+> failed to delete ("Folder no longer exists") and a same-named folder in another root could be
+> the one that got hit. Folder operations now resolve a node through the backend
+> (`GET /api/lm/{prefix}/resolve-folder`) and act on the directories that really exist. When
+> several roots hold the folder, the delete modal lists **one checkbox row per copy** — each row
+> carries its own guard verdict, every deletable copy is ticked by default, and a copy that
+> still holds models (or is a symbolic link) is unticked, disabled and explained instead of
+> silently dropped. Deleting a subset leaves the node in the sidebar, because the folder list is
+> a union over the model roots; `deleteFolderModal.keptNote` warns about that before the click.
+> The scanner bookkeeping is root-aware for the same reason: deleting one copy no longer hides
+> the node until the next scan, and no longer purges the model cards of its same-named twin in
+> another root (rename keeps the twin's records untouched too). That added 26 keys —
+> `sidebar.deleteFolderModal.{missingTitle,missingMessage,symlinkTitle,symlinkMessage,confirmMulti,deleting,keptNote}`,
+> `sidebar.deleteFolderResult.{missing,symlink,successMulti,partial}`,
+> `sidebar.renameFolderResult.{missing,symlink}`, the 12 `sidebar.folderRoot.*`
+> chooser/status strings and `sidebar.folderResult.unresolved` — all translated in all 9
+> locales (terminology below). The `en.json` wording was normalized to the established **model
+> root** noun while translating (`library root` → `model root`, R5); the count-bearing
+> `successMulti` uses the singular `success` key when only one copy was removed.
 
 ---
 
@@ -365,6 +482,20 @@ in `en`, not "Enrich HF Metadata": they cover ModelScope as well, so no locale m
 an `HF` qualifier in `loras.contextMenu.enrichHfAgent` / `loras.bulkOperations.enrichHfAgent`
 (the key names keep the historical `Hf`; only the values changed).
 
+The gated/private-repository download support added `settings.huggingfaceApiKey*` (label,
+placeholder, help, and the three status strings). "Access token" renderings, and the status
+strings reuse each locale's existing `civitaiApiKey*` forms ("Configured" / "Not configured" /
+"Set up") verbatim:
+
+| Term | Rendering |
+|---|---|
+| access token | zh-CN 访问令牌 · zh-TW 存取權杖 · ja アクセストークン · ko 액세스 토큰 · fr jeton d'accès · de Access Token (Latin, like `CivitAI API Key`) · es token de acceso · ru токен доступа · he אסימון גישה |
+| gated repository | zh-CN 受限（gated）仓库 · zh-TW 受限（gated）倉庫 · ja ゲート付きリポジトリ · ko 게이트가 설정된 저장소 · fr dépôt restreint (gated) · de gated Repository (loanword) · es repositorio restringido (gated) · ru закрытый (gated) репозиторий · he מאגר מוגבל (gated) |
+
+The help text tells the user to create a **read-only** token at
+`huggingface.co/settings/tokens` and to accept the repository's terms on its page first —
+keep both clauses: a token alone does not unlock a gated repository.
+
 ### Folder sidebar feature (create / rename / delete folders, empty folders, view options)
 
 The model-root sidebar manages on-disk folders. "Folder" reuses the noun already fixed in §2
@@ -377,11 +508,57 @@ The model-root sidebar manages on-disk folders. "Folder" reuses the noun already
 | tree view / list view | zh-CN 树形视图 / 列表视图 · zh-TW 樹狀檢視 / 清單檢視 · ja ツリー表示 / リスト表示 · ko 트리 보기 / 목록 보기 · fr Vue arborescente / Vue liste · de Baumansicht / Listenansicht · es Vista de árbol / Vista de lista · ru Дерево / Список · he תצוגת עץ / תצוגת רשימה |
 | sidebar | reuse each locale's `sidebar.hideOnThisPage` noun: zh-CN 侧边栏 · zh-TW 側邊欄 · ja サイドバー · ko 사이드바 · fr barre latérale · de Seitenleiste · es barra lateral · ru боковая панель · he סרגל צד |
 
-Deleting a folder **never cascades over model files** — the backend refuses it and
-`sidebar.deleteFolderModal.notEmptyMessage` states the rule in every locale, so keep that
-clause (and its `—`) when the copy is edited. The `{name}` / `{count}` / `{message}` tokens in
-`sidebar.createFolderResult.*`, `sidebar.deleteFolderResult.*` and `sidebar.renameFolderResult.*`
-are verbatim §1-R2 placeholders; `successWithFiles` is the only key carrying `{count}`.
+Deleting a folder **never cascades over model files** — the backend refuses it and the
+`sidebar.deleteFolderModal.notEmptyMessage*` keys state the rule in every locale, so keep that
+clause (and its `—`) when the copy is edited. The three variants split by what the modal knows:
+`notEmptyMessage` (no counts), `notEmptyMessageCount` (`{count}`, the blocking models are all
+listed) and `notEmptyMessageExcluded` (`{count}` + `{excluded}`, at least one is hidden by the
+`exclude` flag — the case where the folder legitimately looks empty). `checking` ("Checking the
+folder contents...", ASCII ellipsis) shows while the backend dry run is pending, `busyTitle`
+titles the already-pending-staged-delete state, and `notEmptyWithCount` mirrors
+`deleteFolderResult.notEmpty` with the count for the stale-tree toast.
+
+| Term | Rendering |
+|---|---|
+| excluded from the library | zh-CN 已从模型库中排除 · zh-TW 已從模型庫中排除 · ja ライブラリから除外 · ko 라이브러리에서 제외 · fr exclu de la bibliothèque · de von der Bibliothek ausgeschlossen · es excluido de la biblioteca · ru исключены из библиотеки · he מוחרגים מהספרייה |
+| un-exclude (verb) | zh-CN 取消排除 · zh-TW 取消排除 · ja 除外を解除 · ko 제외를 해제 · fr annuler l'exclusion · de den Ausschluss aufheben · es anular la exclusión · ru снять исключение · he לבטל את ההחרגה |
+| "Manage Excluded Models" quoted in prose | zh-CN “管理已排除的模型” · zh-TW 「管理已排除的模型」 · ja 「除外モデルを管理」 · ko '제외된 모델 관리' · fr « Gérer les modèles exclus » · de „Ausgeschlossene Modelle verwalten“ · es «Gestionar modelos excluidos» · ru «Управление исключёнными моделями» · he «ניהול מודלים מוחרגים» |
+
+A UI label quoted inside prose follows each locale's existing help-text style (zh-CN “ ”,
+zh-TW/ja 「 」, ko ASCII `' '`, fr/ru/es/he « », de „ “) — see `settings.hideEarlyAccessUpdates.help`
+/ `settings.civitaiHost.help` as the precedent. `קובצי מודלים` is the Hebrew model-file noun
+(`notEmptyMessage`); keep it identical in all four Hebrew keys.
+
+The `{name}` / `{count}` / `{excluded}` / `{message}` tokens in `sidebar.createFolderResult.*`,
+`sidebar.deleteFolderResult.*` and `sidebar.renameFolderResult.*` are verbatim §1-R2
+placeholders. The keys carrying `{count}` are `successWithFiles`, `notEmptyMessageCount`,
+`notEmptyMessageExcluded` and `notEmptyWithCount`; `notEmptyMessageExcluded` is the only key
+carrying `{excluded}`.
+
+#### Multi-root folder operations (resolution, copies, symlinks)
+
+The sidebar's folder tree is a union over the model roots, so a relative folder can stand for
+several directories at once. Copy is called **copy** (one directory per root), never "version"
+or "instance"; a directory the backend refuses to touch is called out as a **symbolic link**,
+and a per-row verdict reads **no models** when the copy is deletable:
+
+| Term | Rendering |
+|---|---|
+| copy (one directory per root holding the same relative folder) | zh-CN 副本 · zh-TW 副本 · ja コピー · ko 복사본 · fr copie · de Kopie · es copia · ru копия · he עותק |
+| symbolic link | zh-CN 符号链接 · zh-TW 符號連結 · ja シンボリックリンク · ko 심볼릭 링크 · fr lien symbolique · de symbolischer Link · es enlace simbólico · ru символическая ссылка · he קישור סמלי |
+| recipe library (the protected `recipes/` storage dir) | zh-CN 配方库 · zh-TW 配方庫 · ja レシピライブラリ · ko 레시피 라이브러리 · fr bibliothèque de Recipes · de Rezept-Bibliothek · es biblioteca de recetas · ru библиотека рецептов · he ספריית המתכונים — the Recipe noun follows §1-R4 per locale; `protectedStatus` is a row verdict (fragment, no capitalization/period, keeps the locale's `—`/`——` dash style of the sibling `symlinkStatus`) |
+| unchecked (row / note wording) | zh-CN 未勾选 · zh-TW 未勾選 · ja チェックを外した · ko 선택하지 않은 · fr non cochée · de nicht angehakt · es no marcada · ru неотмеченная · he שלא סומן |
+| "no models" (row verdict) | zh-CN 无模型 · zh-TW 無模型 · ja モデルなし · ko 모델 없음 · fr aucun modèle · de keine Modelle · es sin modelos · ru моделей нет · he אין מודלים |
+| model root — plural ("more than one model root", "from {count} model roots") | zh-CN 模型根目录（多个模型根目录）· zh-TW 模型根目錄（多個模型根目錄）· ja モデルルート（複数のモデルルート）· ko 모델 루트（여러 모델 루트）· fr racine de modèle (plusieurs racines de modèle) · de Modell-Stammverzeichnis (mehrere Modell-Stammverzeichnisse) · es raíz de modelo (más de una raíz de modelo) · ru корневая папка моделей (несколько корневых папок моделей) · he שורש מודלים (יותר משורש מודלים אחד) |
+
+`{count}` / `{total}` / `{failed}` / `{excluded}` / `{name}` are verbatim §1-R2 placeholders in
+`deleteFolderModal.confirmMulti`, `deleteFolderResult.successMulti` / `.partial` and
+`folderRoot.notEmptyStatus` / `.notEmptyExcludedStatus`. The row verdicts are **fragments, not
+sentences**: they sit under a path inside the chooser box, so no locale capitalizes them or adds
+a period (`de` keeps its lowercase start, `fr` too). `folderRoot.rootsHint` ends with each
+locale's colon (`：` for CJK, ASCII elsewhere). `partial` reuses the locale's "N of M" shape and
+keeps the `—` before the failed count; `successMulti` keeps the locale's plain
+`deleteFolderResult.success` verb and appends the root count.
 
 ### Settings Organization tab
 
@@ -403,6 +580,48 @@ the **noun for arranging files**, matching each locale's existing
 | he | ארגון |
 
 zh-CN/zh-TW use 整理 ("tidying/arranging"), not 组织/組織 (an organization as a group).
+
+### Sidecar storage feature (centralized `.metadata.json` / preview storage)
+
+The Library settings tab hosts an optional mode that stores `.metadata.json` sidecars and
+preview images either **alongside** each model file or in a single **centralized** mirror tree,
+plus the manual migration that moves existing files between the two. Everything lives in
+`settings.sections.sidecarStorage` (the section header inside the Library tab),
+`settings.sidecarStorage.*` and `modals.sidecarMigrationConfirm.*`.
+
+- **`sidecar` is a technical noun, not a brand**, so each locale either borrows it or uses its
+  own companion-file word — one rendering per file:
+
+| Term | Rendering |
+|---|---|
+| sidecar (noun) | zh-CN 附属文件 · zh-TW 附屬檔案 · ja サイドカーファイル · ko 사이드카 파일 · fr fichier sidecar · de Sidecar-Datei · es archivo sidecar · ru sidecar-файл · he קובץ לוואי |
+| centralized storage | zh-CN 集中存储 · zh-TW 集中儲存 · ja 集中保存 · ko 중앙 집중식 저장 · fr stockage centralisé · de zentrale Speicherung · es almacenamiento centralizado · ru централизованное хранилище · he אחסון מרכזי |
+| alongside model files | zh-CN 与模型文件放在一起 · zh-TW 與模型檔案放在一起 · ja モデルファイルの隣 · ko 모델 파일 옆 · fr à côté des fichiers de modèle · de neben den Modelldateien · es junto a los archivos de modelo · ru рядом с файлами моделей · he לצד קובצי המודלים |
+| migrate (verb/noun) | zh-CN 迁移 · zh-TW 遷移 · ja 移動 · ko 이동 · fr migrer / migration · de verschieben / Migration · es migrar / migración · ru перенести / перенос · he להעביר / העברה |
+| mirror (verb) | zh-CN 镜像 · zh-TW 對應 · ja ミラーリング · ko 미러링 · fr refléter · de spiegeln · es reflejar · ru повторять структуру · he לשקף |
+| preview images | zh-CN 预览图片 · zh-TW 預覽圖片 · ja プレビュー画像 · ko 미리보기 이미지 · fr images d’aperçu · de Vorschaubilder · es imágenes de vista previa · ru изображения превью · he תמונות תצוגה מקדימה |
+| (effective) storage location | zh-CN （实际）存储位置 · zh-TW （實際）儲存位置 · ja （実際の）保存場所 · ko （실제） 저장 위치 · fr emplacement de stockage (effectif) · de (tatsächlicher) Speicherort · es ubicación de almacenamiento (efectiva) · ru (фактическое) расположение хранилища · he מיקום האחסון (בפועל) |
+| Open Folder (button) | zh-CN 打开文件夹 · zh-TW 開啟資料夾 · ja フォルダを開く · ko 폴더 열기 · fr Ouvrir le dossier · de Ordner öffnen · es Abrir carpeta · ru Открыть папку · he פתח תיקייה |
+| installation folder | zh-CN 安装目录 · zh-TW 安裝目錄 · ja インストールフォルダ · ko 설치 폴더 · fr dossier d’installation · de Installationsordner · es carpeta de instalación · ru папка установки · he תיקיית ההתקנה |
+
+- `ja`/`ko` follow the file's existing storage-relocation verb (ja 移動, ko 이동, from
+  `settings.folderSettings.recipesPathMigrating`) rather than a transliteration of "migration";
+  `ru` uses перенос for the same reason, and `de` keeps the loan noun `Migration` while the verbs
+  use `verschieben`.
+- **`.metadata.json`**, **`.civitai.info`** and the default-path literal
+  `(<settings dir>/sidecars)` stay byte-identical in every locale — they are file names and a
+  path, not prose (§6 exception). Hebrew drops the wrapping parentheses to avoid bidi mirroring
+  and writes the literal bare.
+- `migrationDeferred` names a navigation path ("Settings → Library → Sidecar Storage"), so each
+  locale renders it with its **own** settings label and Library tab label
+  (`common.actions.settings` + `settings.nav.library` + the new section label), using the same
+  arrow and quoting style its other nav-path strings already use — zh-CN “设置 → 库 → …”,
+  zh-TW/ja 「設定 > … > …」, ko `설정 → …` bare, fr/de/es bare
+  (`Paramètres` / `Einstellungen` / `Configuración` → …), ru «Настройки → …»,
+  he `הגדרות > …` bare (cf. `other.noPaths.descriptionStandalone`).
+- The migrate-button label is quoted inside `confirmToCentralized` / `confirmToAlongside` with
+  each locale's UI-label quoting style (zh-CN “ ”, zh-TW/ja 「 」, ko `' '`, fr/ru/es/he « »,
+  de „ “), matching `settings.sidecarStorage.migrateButton` verbatim so the two never drift.
 
 ### Filename Templates feature
 
@@ -440,6 +659,129 @@ short and imperative and do not append a keyboard hint in any locale.
 | drag to reorder | zh-CN 拖拽以调整顺序 · zh-TW 拖曳以調整順序 · ja ドラッグして並べ替え · ko 드래그하여 순서 변경 · fr Glisser pour réordonner · de Zum Neuordnen ziehen · es Arrastra para reordenar · ru Перетащите, чтобы изменить порядок · he גרור כדי לשנות סדר |
 
 The grip itself is an icon and is never translated.
+
+### Download routing feature (unknown base model routing)
+
+The `settings.unknownBaseModelRouting.*` keys (Settings → Library → Folder Settings) decide
+which library a checkpoint download lands in when CivitAI reports a baseModel that is in
+neither the known-checkpoint nor the known-diffusion-model list. The option labels reuse
+each locale's `checkpoints.modelTypes.diffusion_model` / `.checkpoint` renderings
+(model-type names, R3 — ja/ko keep the Latin loanword), pluralized only where the locale
+pluralizes (de Diffusionsmodelle, es Modelos de difusión, fr Modèles de diffusion,
+ru Диффузионные модели, he מודלי דיפוזיה; CJK stays singular, "Checkpoint(s)" follows
+`header.navigation.checkpoints`).
+
+| Term | Rendering |
+|---|---|
+| routing (noun, of a download into a library) | zh-CN 路由 · zh-TW 路由 · ja 振り分け · ko 라우팅 · fr routage · de Routing · es enrutamiento · ru маршрутизация · he ניתוב |
+| unknown base model | zh-CN 未知基础模型 · zh-TW 未知基礎模型 · ja 不明なベースモデル · ko 알 수 없는 베이스 모델 · fr modèle de base inconnu · de unbekanntes Basismodell · es modelo base desconocido · ru неизвестная базовая модель · he מודל בסיס לא מוכר |
+| destination type (download-modal toggle label) | zh-CN 目标类型 · zh-TW 目標類型 · ja 保存先タイプ · ko 대상 유형 · fr type de destination · de Zieltyp · es tipo de destino · ru тип назначения · he סוג יעד |
+
+The baseModel family names in the help text (`SD 1.x/2.x/3.x, SDXL, Pony, Illustrious,
+NoobAI`) are CivitAI baseModel values and stay verbatim in every locale.
+
+The routing-override toggle (`modals.download.routingOverride.*`) sits on the checkpoints
+page of the download modal; its two button labels come from `checkpoints.modelTypes.*`
+directly (model-type names, R3). The tooltip quotes the `modals.download.useDefaultPath`
+label verbatim with each locale's UI-label quoting style (zh-CN “ ”, zh-TW/ja 「 」,
+ko `' '`, fr « … », de „ … “, es/ru/he «…»).
+
+### OpenModelDB feature
+
+**OpenModelDB** is a brand name and stays Latin in every locale (R3, same as CivitAI /
+CivArchive); `openmodeldb.info` is a URL and stays verbatim. **Upscaler** follows the
+Other Models rule (model-type name, Latin everywhere). The label/help mirror each
+locale's existing `settings.metadataArchive.enableCivarchiveApi(Help)` phrasing, and
+"metadata" uses the §5 rendering per locale.
+
+| Term | Rendering |
+|---|---|
+| catalogue (the OpenModelDB catalogue) | zh-CN 目录 · zh-TW 目錄 · ja カタログ · ko 카탈로그 · fr catalogue · de Katalog · es catálogo · ru каталог · he קטלוג |
+
+### Civitai ids feature (model/version id in the model modal)
+
+The model modal's hash footnote shows the Civitai **model id** and **version id** with
+copy buttons (`modals.model.metadata.civitaiModelId` / `.civitaiVersionId` labels,
+`modals.model.actions.copyCivitaiId` tooltip, `.civitaiIdCopied` toast). **"ID" stays
+Latin in every locale** (same precedent as `recipes.*.copyId`), and `Civitai` is the
+brand (R3) — it is never translated or transliterated; the casing mirrors `en.json`
+verbatim (R9). The copy/copied strings reuse each locale's existing clipboard patterns
+(`modals.model.actions.copyHash` / `openFileLocation.copied`).
+
+| Term | Rendering |
+|---|---|
+| Model ID (label) | zh-CN 模型 ID · zh-TW 模型 ID · ja モデル ID · ko 모델 ID · fr ID du modèle · de Modell-ID · es ID del modelo · ru ID модели · he מזהה מודל |
+| Version ID (label) | zh-CN 版本 ID · zh-TW 版本 ID · ja バージョン ID · ko 버전 ID · fr ID de version · de Versions-ID · es ID de versión · ru ID версии · he מזהה גרסה |
+
+Hebrew uses its established מזהה ("identifier") noun instead of Latin `ID` in these
+labels, matching `recipes.*.copyId` (העתק מזהה מתכון).
+
+### Showcase layout feature (gallery / vertical list toggle)
+
+The model modal's example images can switch between a one-at-a-time **gallery** and the
+classic **vertical list**, via a Settings select (`settings.layoutSettings.showcaseLayout*`,
+mirroring the `recipesLayout*` select shape) and an in-modal segmented toggle whose two
+icon buttons are labelled by `modals.model.showcase.layoutGallery` / `.layoutList`
+(kept short — they are icon-button tooltips).
+
+"Showcase Layout" is rendered as the **example-images layout** in most locales (the
+section's user-facing content), reusing each locale's fixed "example images" noun
+(`modelCardFooterActionOptions.exampleImages`); ja keeps its established ショーケース
+loanword instead. The `layoutList` tooltip reuses the fixed "list view" noun from the
+folder-sidebar row (above), so it stays byte-consistent with `sidebar.listView` where
+that form fits a tooltip (ru shortens both toggle labels to bare «Галерея» / «Список»).
+
+| Term | Rendering |
+|---|---|
+| showcase layout (settings label) | zh-CN 示例图片布局 · zh-TW 範例圖片版面 · ja ショーケースのレイアウト · ko 예시 이미지 레이아웃 · fr Disposition des images d'exemple · de Beispielbilder-Layout · es Diseño de imágenes de ejemplo · ru Макет примеров изображений · he פריסת תמונות דוגמה |
+| example images | zh-CN 示例图片 · zh-TW 範例圖片 · ja 例画像 · ko 예시 이미지 · fr images d'exemple · de Beispielbilder · es imágenes de ejemplo · ru примеры изображений · he תמונות דוגמה |
+| gallery / vertical list (option labels) | zh-CN 画廊 / 纵向列表 · zh-TW 圖庫 / 垂直清單 · ja ギャラリー / 縦並びリスト · ko 갤러리 / 세로 목록 · fr Galerie / Liste verticale · de Galerie / Vertikale Liste · es Galería / Lista vertical · ru Галерея / Вертикальный список · he גלריה / רשימה אנכית |
+| gallery view / list view (toggle tooltips) | zh-CN 画廊视图 / 列表视图 · zh-TW 圖庫檢視 / 清單檢視 · ja ギャラリー表示 / リスト表示 · ko 갤러리 보기 / 목록 보기 · fr Vue galerie / Vue liste · de Galerieansicht / Listenansicht · es Vista de galería / Vista de lista · ru Галерея / Список · he תצוגת גלריה / תצוגת רשימה |
+
+### Scoped scan and root availability
+
+A refresh can be restricted to one model root (the Refresh ▾ menu) or one folder (the sidebar
+context menu). The menu labels a root and reports whether it can be read at all; the result
+toasts report what the scan changed and what it deliberately left alone because a path could not
+be read (an unreachable drive is no longer treated as deleted).
+
+| Term | Rendering |
+|---|---|
+| `scopeSection` ("Scan one folder") | zh-CN 只扫描一个文件夹 · zh-TW 只掃描一個資料夾 · ja フォルダを 1 つだけスキャン · ko 폴더 하나만 스캔 · fr Analyser un seul dossier · de Nur einen Ordner scannen · es Escanear solo una carpeta · ru Сканировать только одну папку · he סרוק תיקייה אחת בלבד |
+| `rootOffline` ("Offline") | zh-CN 离线 · zh-TW 離線 · ja オフライン · ko 오프라인 · fr Hors ligne · de Offline · es Sin conexión · ru Недоступен · he לא זמין |
+| `rootModels` ("{count} models") | zh-CN {count} 个模型 · zh-TW {count} 個模型 · ja {count} 個のモデル · ko 모델 {count}개 · fr {count} modèles · de {count} Modelle · es {count} modelos · ru {count} модел(ей) · he {count} מודלים |
+| `refreshCompleteScoped` ("Scanned {scope}: {added} new, {removed} removed") | zh-CN 已扫描 {scope}：新增 {added}，移除 {removed} · zh-TW 已掃描 {scope}：新增 {added}，移除 {removed} · ja {scope} をスキャンしました：新規 {added} 件、削除 {removed} 件 · ko {scope} 스캔 완료: 새 모델 {added}개, 제거 {removed}개 · fr {scope} analysé : {added} nouveau(x), {removed} supprimé(s) · de {scope} gescannt: {added} neu, {removed} entfernt · es {scope} escaneado: {added} nuevo(s), {removed} eliminado(s) · ru {scope}: просканировано — новых {added}, удалено {removed} · he {scope} נסרק: {added} חדשים, {removed} הוסרו |
+| `refreshKeptUnreachable` ("{count} models kept: {paths} not reachable") | zh-CN 已保留 {count} 个模型：{paths} 当前不可访问 · zh-TW 已保留 {count} 個模型：{paths} 目前無法存取 · ja {count} 個のモデルを保持しました：{paths} にアクセスできません · ko 모델 {count}개 유지됨: {paths}에 접근할 수 없음 · fr {count} modèles conservés : {paths} inaccessible(s) · de {count} Modelle beibehalten: {paths} nicht erreichbar · es {count} modelos conservados: {paths} no accesible(s) · ru Сохранено моделей: {count} — {paths} недоступны · he נשמרו {count} מודלים: {paths} אינם זמינים |
+| `scanRootUnreachable` ("{scope} is not reachable right now. Nothing was changed.") | zh-CN {scope} 当前不可访问，未做任何改动。 · zh-TW {scope} 目前無法存取，未做任何變更。 · ja {scope} に現在アクセスできません。変更は行われていません。 · ko {scope}에 현재 접근할 수 없습니다. 변경된 내용은 없습니다. · fr {scope} est actuellement inaccessible. Aucune modification n’a été apportée. · de {scope} ist derzeit nicht erreichbar. Es wurde nichts geändert. · es {scope} no es accesible ahora mismo. No se ha cambiado nada. · ru {scope} сейчас недоступен. Изменений не внесено. · he {scope} אינו זמין כעת. לא בוצעו שינויים. |
+
+| `sidebar.scanFolder` ("Scan this folder") | zh-CN 扫描此文件夹 · zh-TW 掃描此資料夾 · ja このフォルダをスキャン · ko 이 폴더 스캔 · fr Analyser ce dossier · de Diesen Ordner scannen · es Escanear esta carpeta · ru Сканировать эту папку · he סרוק תיקייה זו |
+| `sidebar.scanFolderResult.missing` | identical to `sidebar.renameFolderResult.missing` / `deleteFolderResult.missing` in every locale (the folder vanished between the menu opening and the click) — reuse that rendering rather than writing a third variant |
+
+`{scope}` is a root label (`G: loras`) or a folder path, `{paths}` is a comma-joined list capped
+at three entries, and both counts arrive pre-formatted. "Offline" describes a configured root
+whose directory cannot be read right now (drive switched off, unmounted share) — it is a state of
+the *root*, never a property of the models inside it, which stay in the library.
+
+### Scan progress (walk phase)
+
+The manual Refresh dialog renders its status line from `common.scanProgress.*`. During the
+reconcile walk the backend does not know the real file count yet (counting *is* the walk), so
+the client shows the roots being walked plus a running count instead of a `processed/total`
+ratio: `Checking for changes... G:, Y: (12,345 files) | ~3 min remaining`. The bar covers
+0-50 % for the walk and 50-99 % for the new-file pass.
+
+| Term | Rendering |
+|---|---|
+| `walkFiles` ("{count} files") | zh-CN {count} 个文件 · zh-TW {count} 個檔案 · ja {count} 件のファイル · ko 파일 {count}개 · fr {count} fichiers · de {count} Dateien · es {count} archivos · ru {count} файл(ов) · he {count} קבצים |
+
+`walkFiles` is a **fragment, not a sentence**: the root labels, the `(` `)`, the ` | ` before
+the ETA and the ETA text itself all come from `static/js/api/baseModelApi.js`, so no locale
+carries punctuation here (the ASCII parentheses match the sibling `stages.process_models`
+count, `(5/10)`). `{count}` is substituted with an already-formatted number
+(`toLocaleString()`), so no locale adds its own digit grouping. "files" means the **model
+files the walk looked at**, not every file on disk — the noun mirrors each locale's
+`stages.count_models` rendering, and `ru` uses the `файл(ов)` form because the count ticks
+live and can be any number (`notEmptyMessageCount` precedent).
 
 ---
 

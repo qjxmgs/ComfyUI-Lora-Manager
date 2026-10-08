@@ -73,7 +73,8 @@
         "lessThanMinute": "Less than a minute remaining",
         "minutes": "~{minutes} min remaining",
         "hours": "~{hours} hr {minutes} min remaining"
-      }
+      },
+      "walkFiles": "{count} files"
     }
   },
   "onboarding": {
@@ -201,7 +202,11 @@
       "loading": "Checking for {type} updates...",
       "success": "Found {count} update(s) for {type}s",
       "none": "All {type}s are up to date",
-      "error": "Failed to check for {type} updates: {message}"
+      "error": "Failed to check for {type} updates: {message}",
+      "gateEvents": {
+        "becameFree": "{count} version(s) you do not have became free",
+        "newGate": "{count} version(s) are now paid"
+      }
     },
     "cleanupExampleImages": {
       "label": "Clean up example image folders",
@@ -251,7 +256,6 @@
         "modelname": "Model Name",
         "tags": "Tags",
         "creator": "Creator",
-        "hash": "Hash",
         "title": "Recipe Title",
         "loraName": "LoRA Filename",
         "loraModel": "LoRA Model Name",
@@ -325,6 +329,12 @@
     "civitaiApiKeyConfigured": "Configured",
     "civitaiApiKeyNotConfigured": "Not configured",
     "civitaiApiKeySet": "Set up",
+    "huggingfaceApiKey": "Hugging Face Access Token",
+    "huggingfaceApiKeyPlaceholder": "Enter your Hugging Face access token",
+    "huggingfaceApiKeyHelp": "Required to download from gated or private Hugging Face repositories. Create a read-only token at huggingface.co/settings/tokens, and accept the repository's terms on its page first.",
+    "huggingfaceApiKeyConfigured": "Configured",
+    "huggingfaceApiKeyNotConfigured": "Not configured",
+    "huggingfaceApiKeySet": "Set up",
     "civitaiHost": {
       "label": "CivitAI host",
       "help": "Choose which CivitAI site opens when using View on CivitAI links.",
@@ -347,6 +357,14 @@
       "placeholder": "Leave empty to use aria2c from PATH"
     },
     "aria2HelpLink": "Learn how to set up the aria2 download backend",
+    "unknownBaseModelRouting": {
+      "label": "Unknown base model routing",
+      "help": "Decides where checkpoint downloads go when CivitAI reports a base model that is neither a known checkpoint (SD 1.x/2.x/3.x, SDXL, Pony, Illustrious, NoobAI) nor a known diffusion model. New diffusion architectures appear frequently, so routing them to diffusion models is usually correct.",
+      "options": {
+        "diffusionModel": "Diffusion models",
+        "checkpoint": "Checkpoints"
+      }
+    },
     "civitaiHostBanner": {
       "title": "CivitAI host preference available",
       "content": "CivitAI now uses civitai.com for SFW content and civitai.red for unrestricted content. You can change which site opens by default in Settings.",
@@ -374,9 +392,11 @@
       "downloadPathTemplates": "Download Path Templates",
       "priorityTags": "Priority Tags",
       "versionScope": "Version Scope",
+      "priceTracking": "Buzz Download Prices",
       "exampleImages": "Example Images",
       "autoOrganize": "Auto-organize",
       "metadata": "Metadata",
+      "sidecarStorage": "Sidecar Storage",
       "proxySettings": "Proxy Settings"
     },
     "nav": {
@@ -511,6 +531,12 @@
         "hover": "Reveal on Hover"
       },
       "cardInfoDisplayHelp": "Choose when to display model information and action buttons",
+      "showcaseLayout": "Showcase Layout",
+      "showcaseLayoutHelp": "Choose how example images are displayed in the model modal: a one-at-a-time gallery or the classic vertical list.",
+      "showcaseLayoutOptions": {
+        "gallery": "Gallery",
+        "vertical": "Vertical List"
+      },
       "showVersionOnCard": "Show Version on Card",
       "showVersionOnCardHelp": "Show or hide the version name on model cards",
       "modelCardFooterAction": "Model Card Button Action",
@@ -739,6 +765,13 @@
       "label": "Hide Paid Updates",
       "help": "When enabled, models with only paid updates will not show 'Update available' badge"
     },
+    "priceTracking": {
+      "help": "CivitAI does not publish download prices in its public API, so they are read from the model page - one extra request per paid model, refreshed on the interval below. Prices are shown on versions you do not have yet.",
+      "enabled": "Show download prices for paid versions",
+      "enabledHelp": "Reads the download price from the model page so paid and early access versions show what they cost, and when early access ends",
+      "refreshHours": "Price refresh interval (hours)",
+      "refreshHoursHelp": "How long a stored price stays fresh before it is read again"
+    },
     "licenseIcons": {
       "useNewStyle": "Use updated license icons",
       "useNewStyleHelp": "Display license permissions with colored indicators (new style) or restriction-only icons (classic style). Mirroring the current CivitAI design."
@@ -778,10 +811,40 @@
       "downloadComplete": "Download completed successfully",
       "enableCivarchiveApi": "Enable CivArchive API as metadata provider",
       "enableCivarchiveApiHelp": "When on, CivArchive API is used as a fallback source for model metadata (e.g. for models deleted from CivitAI). Turn off to avoid CivArchive rate limits entirely.",
+      "enableOpenmodeldbApi": "Enable OpenModelDB as metadata provider",
+      "enableOpenmodeldbApiHelp": "When on, upscaler metadata is also looked up in the OpenModelDB catalogue (openmodeldb.info) when CivitAI has no record. The catalogue is cached locally and refreshed daily.",
       "providerOrder": "Metadata provider fallback order",
       "providerOrderHelp": "CivitAI API is always tried first. Choose the order of the remaining providers when looking up metadata.",
       "providerOrderCivitaiArchiveSqlite": "CivitAI → CivArchive → Archive DB",
       "providerOrderCivitaiSqliteArchive": "CivitAI → Archive DB → CivArchive"
+    },
+    "sidecarStorage": {
+      "mode": "Sidecar Storage Mode",
+      "modeHelp": "Choose where .metadata.json sidecars and preview images are stored: next to each model file, or in a single centralized directory that mirrors your library structure. .civitai.info files always stay next to the model file.",
+      "modeOptions": {
+        "alongside": "Alongside model files (default)",
+        "centralized": "Centralized storage"
+      },
+      "path": "Centralized Storage Path",
+      "pathHelp": "Root directory for centralized sidecar storage. Leave empty to use the default location (<settings dir>/sidecars).",
+      "pathPlaceholder": "Empty = <settings dir>/sidecars",
+      "management": "Sidecar Migration",
+      "managementHelp": "Move existing .metadata.json sidecars and preview images between alongside and centralized storage, matching the currently selected mode. Changing the mode does not move existing files automatically.",
+      "migrateButton": "Migrate Sidecars Now",
+      "migratingButton": "Migrating...",
+      "migrating": "Migrating sidecars...",
+      "migrateFailed": "Sidecar migration failed: {message}",
+      "migrationDeferred": "Existing sidecars were not moved. You can migrate them later from Settings → Library → Sidecar Storage.",
+      "confirmToCentralized": "The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them into the centralized storage directory now? You can also do this later with the \"Migrate Sidecars Now\" button.",
+      "confirmToAlongside": "The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the \"Migrate Sidecars Now\" button.",
+      "confirmRelocateRoot": "The centralized storage directory changed, but existing sidecars and preview images are still in the previous directory. Move them to the new directory now?",
+      "effectivePathLabel": "Effective storage location:",
+      "openFolderButton": "Open Folder",
+      "repoWarning": "The effective storage location is inside the LoRA Manager installation folder. Reinstalling the plugin or a clean update can delete it — set an explicit storage path outside the installation folder.",
+      "openLocationSuccess": "Opened sidecar storage folder",
+      "openLocationCopied": "Sidecar storage path copied to clipboard: {path}",
+      "openLocationClipboardFallback": "Copy the sidecar storage path manually: {path}",
+      "openLocationFailed": "Failed to open the sidecar storage folder"
     },
     "proxySettings": {
       "enableProxy": "Enable App-level Proxy",
@@ -855,7 +918,10 @@
       "refresh": {
         "title": "Refresh model list",
         "full": "Rebuild Cache",
-        "fullTooltip": "Reload all model details from metadata files—use if the library looks out of date or after manual edits."
+        "fullTooltip": "Reload all model details from metadata files—use if the library looks out of date or after manual edits.",
+        "scopeSection": "Scan one folder",
+        "rootOffline": "Offline",
+        "rootModels": "{count} models"
       },
       "fetch": {
         "title": "Fetch metadata from CivitAI",
@@ -1344,7 +1410,20 @@
       "emptyNote": "This folder contains no models. Any other files it holds will be deleted too.",
       "notEmptyTitle": "Folder is not empty",
       "notEmptyMessage": "This folder still contains models. Delete or move them first — deleting a folder never cascades over model files.",
-      "confirm": "Delete folder"
+      "notEmptyMessageCount": "This folder still contains {count} model file(s). Delete or move them first — deleting a folder never cascades over model files.",
+      "notEmptyMessageExcluded": "This folder still contains {count} model file(s), {excluded} of them excluded from the library. Un-exclude them in Manage Excluded Models and delete them first — deleting a folder never cascades over model files.",
+      "missingTitle": "Folder not found",
+      "missingMessage": "This folder no longer exists on disk. Refresh the sidebar and try again.",
+      "symlinkTitle": "Folder is a symbolic link",
+      "symlinkMessage": "Every copy of this folder is a symbolic link; remove the link or its target outside LoRA Manager.",
+      "protectedTitle": "Folder is protected",
+      "protectedMessage": "This folder holds the recipe library and cannot be deleted from LoRA Manager.",
+      "busyTitle": "A deletion is still pending",
+      "checking": "Checking the folder contents...",
+      "confirm": "Delete folder",
+      "confirmMulti": "Delete {count} folders",
+      "deleting": "Deleting...",
+      "keptNote": "Unchecked copies keep this folder in the sidebar."
     },
     "deleteFolderResult": {
       "success": "Folder \"{name}\" deleted",
@@ -1352,9 +1431,13 @@
       "restored": "Folder restored",
       "failed": "Failed to delete folder: {message}",
       "notEmpty": "This folder still contains models. Refresh the sidebar and try again.",
+      "notEmptyWithCount": "This folder still contains {count} model file(s). Refresh the sidebar and try again.",
       "busy": "A deletion is still pending inside this folder. Wait for the undo window to expire.",
       "unsupported": "Folder deletion is not supported on this page",
-      "noRoot": "No model root is configured"
+      "missing": "This folder no longer exists on disk. Refresh the sidebar and try again.",
+      "symlink": "This folder is a symbolic link; it cannot be deleted from the sidebar.",
+      "successMulti": "Folder \"{name}\" deleted from {count} model roots",
+      "partial": "Deleted {count} of {total} copies — {failed} could not be deleted. Refresh the sidebar and retry."
     },
     "renameFolder": "Rename folder",
     "renameFolderResult": {
@@ -1363,7 +1446,26 @@
       "targetExists": "A folder with that name already exists here",
       "busy": "A deletion is still pending inside this folder. Wait for the undo window to expire.",
       "unsupported": "Folder renaming is not supported on this page",
-      "noRoot": "No model root is configured"
+      "missing": "This folder no longer exists on disk. Refresh the sidebar and try again.",
+      "symlink": "This folder is a symbolic link; it cannot be renamed from the sidebar."
+    },
+    "folderRoot": {
+      "chooseTitle": "This folder exists in more than one model root",
+      "symlinkOption": "symbolic link",
+      "rootsHint": "Select the model roots to delete this folder from:",
+      "checkingStatus": "checking...",
+      "okStatus": "no models",
+      "notEmptyStatus": "contains {count} model file(s) — delete or move them first",
+      "notEmptyExcludedStatus": "contains {count} model file(s), {excluded} of them excluded from the library",
+      "busyStatus": "a deletion is still pending",
+      "missingStatus": "no longer exists on disk",
+      "symlinkStatus": "symbolic link — cannot be deleted here",
+      "protectedStatus": "holds the recipe library — cannot be deleted here",
+      "unknownStatus": "could not be checked",
+      "deletedStatus": "deleted"
+    },
+    "folderResult": {
+      "unresolved": "Could not determine which model root holds this folder. Refresh the sidebar and try again."
     },
     "dragDrop": {
       "unableToResolveRoot": "Unable to determine destination path for move.",
@@ -1383,6 +1485,10 @@
       "success": "Found {count} update(s) for {type}s in this folder",
       "none": "All {type}s in this folder are up to date",
       "error": "Failed to check folder for {type} updates: {message}"
+    },
+    "scanFolder": "Scan this folder",
+    "scanFolderResult": {
+      "missing": "This folder no longer exists on disk. Refresh the sidebar and try again."
     }
   },
   "statistics": {
@@ -1515,6 +1621,10 @@
       "selectRootDirectory": "Select a root directory",
       "selectModelRoot": "Select Model Root:",
       "selectTypeRoot": "Select {type} Root:",
+      "routingOverride": {
+        "label": "Destination type:",
+        "tooltip": "Auto-detected from the model metadata. Switch if it was misdetected; switching turns off \"Use Default Path\" for this download."
+      },
       "targetFolderPath": "Target Folder Path:",
       "browseFolders": "Browse Folders:",
       "createNewFolder": "Create new folder",
@@ -1630,6 +1740,28 @@
       "titleApply": "Apply filename template to library?",
       "titleRevert": "Restore original filenames?",
       "revertButton": "Restore Original Filenames"
+    },
+    "sidecarMigrationConfirm": {
+      "titleToCentralized": "Move sidecars to centralized storage?",
+      "titleToAlongside": "Move sidecars back next to model files?",
+      "confirmButton": "Migrate Now",
+      "titleRelocateRoot": "Move sidecars to the new storage directory?",
+      "destination": "Destination: {path}"
+    },
+    "sidecarMigrationResult": {
+      "title": "Sidecar Migration Summary",
+      "completedSuccessfully": "Migration completed successfully",
+      "completedWithErrors": "Completed with {count} error(s)",
+      "statMoved": "Moved Files",
+      "statModels": "Models",
+      "statSkipped": "Skipped",
+      "statConflicts": "Conflicts Resolved",
+      "statErrors": "Errors",
+      "failedItems": "Failed Items ({count})",
+      "columnModel": "Model",
+      "columnError": "Error",
+      "successMessage": "Moved {moved} files for {models} models",
+      "location": "Storage location: {path}"
     },
     "bulkAddTags": {
       "title": "Add Tags to Multiple Models",
@@ -1763,6 +1895,8 @@
         "sendToWorkflow": "Send to ComfyUI",
         "sendToWorkflowText": "Send to ComfyUI",
         "copyHash": "Copy hash",
+        "copyCivitaiId": "Copy Civitai ID",
+        "civitaiIdCopied": "Civitai ID copied to clipboard",
         "deleteModelWithShortcut": "Delete model (Del)"
       },
       "openFileLocation": {
@@ -1781,6 +1915,8 @@
         "baseModel": "Base Model",
         "size": "Size",
         "hashes": "Hashes",
+        "civitaiModelId": "Model ID",
+        "civitaiVersionId": "Version ID",
         "unknown": "Unknown",
         "usageTips": "Usage Tips",
         "additionalNotes": "Additional Notes",
@@ -1898,7 +2034,9 @@
         "nsfwMature": "Mature Content",
         "nsfwR": "R-rated Content",
         "nsfwX": "X-rated Content",
-        "nsfwXxx": "XXX-rated Content"
+        "nsfwXxx": "XXX-rated Content",
+        "layoutGallery": "Gallery view",
+        "layoutList": "List view"
       },
       "versions": {
         "heading": "Model versions",
@@ -1929,10 +2067,15 @@
           "earlyAccessTooltip": "This version currently requires CivitAI early access",
           "paid": "Paid",
           "paidTooltip": "This version requires payment to download",
+          "priceSaleTooltip": "On sale, normally {list} Buzz",
+          "priceBlueBuzzTooltip": "Can also be paid with Blue Buzz",
+          "freeNow": "Free Now",
+          "freeNowTooltip": "This version no longer requires payment",
           "ignored": "Ignored",
           "ignoredTooltip": "Update notifications are disabled for this version",
           "onSiteOnly": "On-Site Only",
-          "onSiteOnlyTooltip": "This version is only available for on-site generation on CivitAI"
+          "onSiteOnlyTooltip": "This version is only available for on-site generation on CivitAI",
+          "earlyAccessTooltipUntil": "Early access until {date}, free to download after that"
         },
         "actions": {
           "download": "Download",
@@ -2671,7 +2814,10 @@
       "exampleImagesDownloadFailed": "Failed to download example images: {message}",
       "moveFailed": "Failed to move item: {message}",
       "copiedToClipboard": "Copied to clipboard",
-      "downloadStarted": "Download started"
+      "downloadStarted": "Download started",
+      "refreshCompleteScoped": "Scanned {scope}: {added} new, {removed} removed",
+      "refreshKeptUnreachable": "{count} models kept: {paths} not reachable",
+      "scanRootUnreachable": "{scope} is not reachable right now. Nothing was changed."
     },
     "agent": {
       "llmNotConfigured": "AI provider not configured. Enable it in Settings → AI Provider.",
@@ -2706,6 +2852,9 @@
       },
       "filename_conflicts": {
         "title": "Duplicate Filename Conflicts"
+      },
+      "sidecar_mirror_orphans": {
+        "title": "Centralized Sidecars"
       },
       "ui_version": {
         "title": "UI Version"

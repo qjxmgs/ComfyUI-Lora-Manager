@@ -22,6 +22,8 @@ class RouteDefinition:
 MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("GET", "/api/lm/settings", "get_settings"),
     RouteDefinition("POST", "/api/lm/settings", "update_settings"),
+    # App-wide and registered once: the alerts panel spans every model type, and
+    # the update DB is shared, so there is nothing per-type about it.
     RouteDefinition("GET", "/api/lm/llm/models", "get_llm_models"),
     RouteDefinition("GET", "/api/lm/llm/provider-models", "get_provider_models"),
     RouteDefinition("GET", "/api/lm/doctor/diagnostics", "get_doctor_diagnostics"),
@@ -112,6 +114,16 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     # Download target routing decision (checkpoint vs diffusion model roots)
     RouteDefinition(
         "POST", "/api/lm/download/routing", "get_download_routing"
+    ),
+    # Sidecar storage layout migration (GET supported for the extension)
+    RouteDefinition(
+        "POST", "/api/lm/sidecars/migrate", "migrate_sidecars"
+    ),
+    RouteDefinition(
+        "GET", "/api/lm/sidecars/migrate", "migrate_sidecars"
+    ),
+    RouteDefinition(
+        "POST", "/api/lm/sidecars/open-location", "open_sidecar_location"
     ),
     RouteDefinition(
         "POST", "/api/lm/download-model-source", "download_model_source"

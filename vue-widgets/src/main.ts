@@ -131,6 +131,11 @@ function createLoraPoolWidget(node) {
         // No need for custom onSetValue mechanism
       },
       serialize: true,
+      // Keep LM DOM widgets out of the right-side Properties Panel: the panel
+      // falls back to WidgetLegacy for unknown widget types and writes
+      // widget.width onto the real widget, squashing the canvas overlay
+      // (ComfyUI_frontend #11574).
+      hideInPanel: true,
       // Per dev guide: providing getMinHeight via options allows the system to
       // skip expensive DOM measurements during rendering loop, improving performance
       getMinHeight() {
@@ -214,6 +219,7 @@ function createLoraRandomizerWidget(node) {
         // No need for custom onSetValue mechanism
       },
       serialize: true,
+      hideInPanel: true,
       getMinHeight() {
         return LORA_RANDOMIZER_WIDGET_MIN_HEIGHT
       }
@@ -315,6 +321,7 @@ function createLoraCyclerWidget(node) {
         }
       },
       serialize: true,
+      hideInPanel: true,
       getMinHeight() {
         return LORA_CYCLER_WIDGET_MIN_HEIGHT
       }
@@ -386,6 +393,7 @@ function createJsonDisplayWidget(node) {
         }
       },
       serialize: false, // Display-only widget - don't save metadata in workflows
+      hideInPanel: true,
       getMinHeight() {
         return JSON_DISPLAY_WIDGET_MIN_HEIGHT
       }
@@ -691,6 +699,7 @@ function createLoraInfoWidget(node: any) {
         }
       },
       serialize: true,
+      hideInPanel: true,
       getMinHeight() {
         return LORA_INFO_WIDGET_MIN_HEIGHT
       }
@@ -809,6 +818,7 @@ function createAutocompleteTextWidgetFactory(
         }
       },
       serialize: true,
+      hideInPanel: true,
       getMinHeight() {
         return AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT
       },

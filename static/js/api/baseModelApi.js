@@ -511,8 +511,10 @@ export class BaseModelApiClient {
         }
     }
 
-    async refreshModels(fullRebuild = false) {
+    async refreshModels(fullRebuild = false, { roots = null, folder = null } = {}) {
         const abortController = new AbortController();
+        const scopeRoots = Array.isArray(roots) ? roots.filter(Boolean) : [];
+        const scopeFolder = typeof folder === 'string' && folder ? folder : null;
         const displayName = this.apiConfig.config.displayName;
         const singularName = this.apiConfig.config.singularName;
         const actionText = translate(
@@ -532,17 +534,48 @@ export class BaseModelApiClient {
         );
         const etaTracker = createScanEtaTracker();
         let ws = null;
+        let lastProgressStage = null;
 
         const handleScanProgress = (data) => {
             if (typeof data.progress === 'number') {
                 state.loadingManager.setProgress(data.progress);
+            }
+            // The per-file rate of one stage says nothing about the next one:
+            // the walk phase counts files while the new-file pass processes
+            // them, so a carried-over average would produce a nonsense ETA.
+            if (data.stage && data.stage !== lastProgressStage) {
+                lastProgressStage = data.stage;
+                etaTracker.reset();
             }
             let statusText = translate(
                 `common.scanProgress.stages.${data.stage}`,
                 { total: data.total },
                 data.stage || ''
             );
-            if (data.status === 'processing' && data.total > 0) {
+            if (data.status === 'processing' && data.stage === 'reconcile_scan') {
+                // Walk phase: the real file count is only known once the walk
+                // finishes, so report the files checked so far and the roots
+                // being walked instead of a processed/total ratio.
+                const filesSeen = Number(data.files_seen) || 0;
+                if (filesSeen > 0) {
+                    const roots = Array.isArray(data.active_roots)
+                        ? data.active_roots.filter(Boolean)
+                        : [];
+                    const formattedFiles = filesSeen.toLocaleString();
+                    const filesText = translate(
+                        'common.scanProgress.walkFiles',
+                        { count: formattedFiles },
+                        `${formattedFiles} files`
+                    );
+                    statusText += roots.length
+                        ? ` ${roots.join(', ')} (${filesText})`
+                        : ` (${filesText})`;
+                    const etaText = etaTracker.update(data.processed, data.total);
+                    if (etaText) {
+                        statusText += ` | ${etaText}`;
+                    }
+                }
+            } else if (data.status === 'processing' && data.total > 0) {
                 statusText += ` (${data.processed}/${data.total})`;
                 if (data.current_name) {
                     statusText += ` ${data.current_name}`;
@@ -569,6 +602,12 @@ export class BaseModelApiClient {
 
             const url = new URL(this.apiConfig.endpoints.scan, window.location.origin);
             url.searchParams.append('full_rebuild', fullRebuild);
+            for (const root of scopeRoots) {
+                url.searchParams.append('roots', root);
+            }
+            if (scopeFolder) {
+                url.searchParams.append('folder', scopeFolder);
+            }
 
             const response = await fetch(url, { signal: abortController.signal });
 
@@ -584,7 +623,7 @@ export class BaseModelApiClient {
 
             resetAndReload(true);
 
-            showToast('toast.api.refreshComplete', { action: actionText }, 'success');
+            this._showRefreshSummary(data, actionText, scopeRoots, scopeFolder);
         } catch (error) {
             if (error.name === 'AbortError') {
                 showToast('toast.api.operationCancelled', {}, 'info');
@@ -598,6 +637,62 @@ export class BaseModelApiClient {
             }
             state.loadingManager.hide();
             state.loadingManager.restoreProgressBar();
+        }
+    }
+
+    /**
+     * Report what a finished scan did.
+     *
+     * A scoped scan names the folder it scanned and how many models changed; a
+     * scan that could not read part of its scope says so instead of silently
+     * looking like "nothing found" (the entries are kept, not deleted).
+     * @param {Object} summary - Scan response payload
+     * @param {string} actionText - Localized "Refresh" / "Full rebuild"
+     * @param {Array<string>} scopeRoots - Roots the scan was restricted to
+     */
+    _showRefreshSummary(summary, actionText, scopeRoots = [], scopeFolder = null) {
+        const payload = summary || {};
+        const scannedRoots = Array.isArray(payload.scanned_roots) ? payload.scanned_roots : [];
+        // A folder scan is named by the folder the user clicked; a root scan by
+        // the roots it walked.
+        const scopeLabel = payload.scope_label
+            || (scannedRoots.length ? scannedRoots.join(', ') : '');
+
+        if ((scopeRoots.length || scopeFolder) && scopeLabel) {
+            showToast(
+                'toast.api.refreshCompleteScoped',
+                {
+                    scope: scopeLabel,
+                    added: Number(payload.added || 0),
+                    removed: Number(payload.removed || 0),
+                },
+                'success'
+            );
+        } else {
+            showToast('toast.api.refreshComplete', { action: actionText }, 'success');
+        }
+
+        const keptCount = Number(payload.kept_unreachable || 0);
+        if (keptCount > 0) {
+            const unavailable = Array.isArray(payload.unavailable_paths)
+                ? payload.unavailable_paths
+                : [];
+            const skipped = Array.isArray(payload.skipped_roots) ? payload.skipped_roots : [];
+            // Skipped roots already carry a short label; the remaining
+            // unreadable folders only have a path.
+            const names = (
+                skipped.length
+                    ? skipped.map(entry => entry?.label || entry?.path)
+                    : unavailable.map(entry => entry?.path)
+            ).filter(Boolean);
+            showToast(
+                'toast.api.refreshKeptUnreachable',
+                {
+                    count: keptCount.toLocaleString(),
+                    paths: names.slice(0, 3).join(', ') || '—',
+                },
+                'info'
+            );
         }
     }
 
@@ -1395,6 +1490,34 @@ export class BaseModelApiClient {
         return result;
     }
 
+    /**
+     * Resolve a library-relative folder onto the directories it stands for.
+     *
+     * The unified folder tree merges every model root into one relative-path
+     * namespace, so a tree node cannot be turned into a business path by
+     * prefixing a root: the same relative folder may live under several roots,
+     * or only under one that is not the default root. Callers that hold a node
+     * ask here first; the answer is what the folder APIs must be given.
+     *
+     * @param {string} folderPath Library-relative folder path (e.g. `a/b`)
+     * @returns {Promise<{folder: string, candidates: Array<{folder_path: string, root: string, is_symlink: boolean}>}>}
+     *   `candidates` is empty when no root holds the directory on disk.
+     */
+    async resolveFolder(folderPath) {
+        const params = new URLSearchParams({ folder: folderPath });
+        const response = await fetch(`${this.apiConfig.endpoints.resolveFolder}?${params}`);
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || result.success === false) {
+            const error = new Error(result.error || `Failed to resolve folder`);
+            error.code = result.code || null;
+            throw error;
+        }
+
+        return result;
+    }
+
     async fetchUnifiedFolderTree(options = {}) {
         try {
             const { includeEmpty = false } = options;
@@ -1565,9 +1688,6 @@ export class BaseModelApiClient {
                 }
                 if (pageState.searchOptions.creator !== undefined) {
                     params.append('search_creator', pageState.searchOptions.creator.toString());
-                }
-                if (pageState.searchOptions.hash !== undefined) {
-                    params.append('search_hash', pageState.searchOptions.hash.toString());
                 }
             }
         }

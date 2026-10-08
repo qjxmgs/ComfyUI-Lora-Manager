@@ -73,7 +73,8 @@
                 "lessThanMinute": "剩餘時間不到一分鐘",
                 "minutes": "剩餘約 {minutes} 分鐘",
                 "hours": "剩餘約 {hours} 小時 {minutes} 分鐘"
-            }
+            },
+            "walkFiles": "{count} 個檔案"
         }
     },
     "onboarding": {
@@ -201,7 +202,11 @@
             "loading": "正在檢查 {type} 更新...",
             "success": "找到 {count} 個 {type} 更新",
             "none": "所有 {type} 都是最新版本",
-            "error": "檢查 {type} 更新失敗：{message}"
+            "error": "檢查 {type} 更新失敗：{message}",
+            "gateEvents": {
+                "becameFree": "{count} 個您未擁有的版本已免費",
+                "newGate": "{count} 個版本已變為付費"
+            }
         },
         "cleanupExampleImages": {
             "label": "清理範例圖片資料夾",
@@ -251,7 +256,6 @@
                 "modelname": "模型名稱",
                 "tags": "標籤",
                 "creator": "創作者",
-                "hash": "雜湊",
                 "title": "配方標題",
                 "loraName": "LoRA 檔案名稱",
                 "loraModel": "LoRA 模型名稱",
@@ -325,6 +329,12 @@
         "civitaiApiKeyConfigured": "已設定",
         "civitaiApiKeyNotConfigured": "未設定",
         "civitaiApiKeySet": "設定",
+        "huggingfaceApiKey": "Hugging Face 存取權杖",
+        "huggingfaceApiKeyPlaceholder": "請輸入您的 Hugging Face 存取權杖",
+        "huggingfaceApiKeyHelp": "從受限（gated）或私有 Hugging Face 倉庫下載時需要。請在 huggingface.co/settings/tokens 建立唯讀權杖，並先在該倉庫頁面同意其條款。",
+        "huggingfaceApiKeyConfigured": "已設定",
+        "huggingfaceApiKeyNotConfigured": "未設定",
+        "huggingfaceApiKeySet": "設定",
         "civitaiHost": {
             "label": "CivitAI 站點",
             "help": "選擇使用「在 CivitAI 中查看」時預設開啟的 CivitAI 站點。",
@@ -347,6 +357,14 @@
             "placeholder": "留空則使用 PATH 中的 aria2c"
         },
         "aria2HelpLink": "了解如何設定 aria2 下載後端",
+        "unknownBaseModelRouting": {
+            "label": "未知基礎模型路由",
+            "help": "當 CivitAI 回報的基礎模型既不是已知的 Checkpoint（SD 1.x/2.x/3.x、SDXL、Pony、Illustrious、NoobAI），也不是已知的擴散模型時，決定 Checkpoint 下載的儲存位置。新的擴散架構頻繁出現，因此將其路由到擴散模型通常是正確的。",
+            "options": {
+                "diffusionModel": "擴散模型",
+                "checkpoint": "Checkpoint"
+            }
+        },
         "civitaiHostBanner": {
             "title": "已提供 CivitAI 站點偏好設定",
             "content": "CivitAI 現在使用 civitai.com 提供 SFW 內容，使用 civitai.red 提供無限制內容。您可以在設定中變更預設開啟的站點。",
@@ -374,9 +392,11 @@
             "downloadPathTemplates": "下載路徑範本",
             "priorityTags": "優先標籤",
             "versionScope": "版本範圍",
+            "priceTracking": "Buzz 下載價格",
             "exampleImages": "範例圖片",
             "autoOrganize": "自動整理",
             "metadata": "中繼資料",
+            "sidecarStorage": "附屬檔案儲存",
             "proxySettings": "代理設定"
         },
         "nav": {
@@ -511,6 +531,12 @@
                 "hover": "滑鼠懸停顯示"
             },
             "cardInfoDisplayHelp": "選擇何時顯示模型資訊與操作按鈕",
+            "showcaseLayout": "範例圖片版面",
+            "showcaseLayoutHelp": "選擇範例圖片在模型彈窗中的顯示方式：一次一張的圖庫，或傳統的垂直清單。",
+            "showcaseLayoutOptions": {
+                "gallery": "圖庫",
+                "vertical": "垂直清單"
+            },
             "showVersionOnCard": "在卡片上顯示版本",
             "showVersionOnCardHelp": "在模型卡片上顯示或隱藏版本名稱",
             "modelCardFooterAction": "模型卡片按鈕操作",
@@ -739,6 +765,13 @@
             "label": "隱藏付費更新",
             "help": "啟用後，只有付費更新的模型將不會顯示「有可用更新」徽章"
         },
+        "priceTracking": {
+            "help": "CivitAI 的公開 API 不提供下載價格，因此價格從模型頁面讀取 —— 每個付費模型多一次請求，並依下方間隔重新整理。價格只顯示在您尚未擁有的版本上。",
+            "enabled": "顯示付費版本的下載價格",
+            "enabledHelp": "從模型頁面讀取下載價格，讓付費與搶先體驗版本顯示所需費用，以及搶先體驗的結束時間",
+            "refreshHours": "價格重新整理間隔（小時）",
+            "refreshHoursHelp": "已儲存的價格在重新讀取前保持有效的時長"
+        },
         "licenseIcons": {
             "useNewStyle": "使用新版許可協議圖標",
             "useNewStyleHelp": "以彩色指示器顯示許可權限（新樣式），或僅顯示限制圖標（經典樣式）。與當前 CivitAI 設計保持一致。"
@@ -778,10 +811,40 @@
             "downloadComplete": "下載成功完成",
             "enableCivarchiveApi": "啟用 CivArchive API 作為中繼資料提供者",
             "enableCivarchiveApiHelp": "開啟後，CivArchive API 將作為模型中繼資料的備用來源（例如用於已從 CivitAI 刪除的模型）。關閉可完全避免 CivArchive 的速率限制。",
+            "enableOpenmodeldbApi": "啟用 OpenModelDB 作為中繼資料提供者",
+            "enableOpenmodeldbApiHelp": "開啟後，當 CivitAI 沒有記錄時，也會在 OpenModelDB 目錄（openmodeldb.info）中查詢 Upscaler 中繼資料。目錄會快取在本機並每日更新。",
             "providerOrder": "中繼資料提供者回退順序",
             "providerOrderHelp": "CivitAI API 始終優先嘗試。選擇查詢中繼資料時其餘提供者的順序。",
             "providerOrderCivitaiArchiveSqlite": "CivitAI → CivArchive → Archive DB",
             "providerOrderCivitaiSqliteArchive": "CivitAI → Archive DB → CivArchive"
+        },
+        "sidecarStorage": {
+            "mode": "附屬檔案儲存模式",
+            "modeHelp": "選擇 .metadata.json 附屬檔案與預覽圖片的存放位置：與每個模型檔案放在一起，或集中在一個對應模型庫結構的目錄中。.civitai.info 檔案一律與模型檔案放在一起。",
+            "modeOptions": {
+                "alongside": "與模型檔案放在一起（預設）",
+                "centralized": "集中儲存"
+            },
+            "path": "集中儲存路徑",
+            "pathHelp": "集中儲存附屬檔案的根目錄。留空則使用預設位置（<settings dir>/sidecars）。",
+            "pathPlaceholder": "留空 = <settings dir>/sidecars",
+            "management": "附屬檔案遷移",
+            "managementHelp": "在「與模型檔案放在一起」與「集中儲存」之間遷移現有的 .metadata.json 附屬檔案與預覽圖片，以符合目前選擇的模式。變更模式不會自動遷移現有檔案。",
+            "migrateButton": "立即遷移附屬檔案",
+            "migratingButton": "遷移中...",
+            "migrating": "正在遷移附屬檔案...",
+            "migrateFailed": "附屬檔案遷移失敗：{message}",
+            "migrationDeferred": "現有附屬檔案未遷移。您稍後可以在「設定 > 模型庫 > 附屬檔案儲存」中遷移它們。",
+            "confirmToCentralized": "儲存模式已變更，但現有的 .metadata.json 附屬檔案與預覽圖片不會自動遷移。要現在將它們移入集中儲存目錄嗎？您也可以稍後使用「立即遷移附屬檔案」按鈕完成。",
+            "confirmToAlongside": "儲存模式已變更，但現有的 .metadata.json 附屬檔案與預覽圖片不會自動遷移。要現在將它們移回各自的模型檔案旁邊嗎？您也可以稍後使用「立即遷移附屬檔案」按鈕完成。",
+            "confirmRelocateRoot": "集中儲存目錄已變更，但現有的附屬檔案與預覽圖片仍在原目錄中。要現在將它們移到新目錄嗎？",
+            "effectivePathLabel": "實際儲存位置：",
+            "openFolderButton": "開啟資料夾",
+            "repoWarning": "實際儲存位置位於 LoRA Manager 安裝目錄內。重新安裝外掛或乾淨更新可能會將其刪除——請在安裝目錄之外設定明確的儲存路徑。",
+            "openLocationSuccess": "已開啟附屬檔案儲存資料夾",
+            "openLocationCopied": "附屬檔案儲存路徑已複製到剪貼簿：{path}",
+            "openLocationClipboardFallback": "請手動複製附屬檔案儲存路徑：{path}",
+            "openLocationFailed": "無法開啟附屬檔案儲存資料夾"
         },
         "proxySettings": {
             "enableProxy": "啟用應用程式代理",
@@ -855,7 +918,10 @@
             "refresh": {
                 "title": "重新整理模型列表",
                 "full": "重建快取",
-                "fullTooltip": "從中繼資料檔重新載入所有模型資訊；適用於清單過時或手動編輯後。"
+                "fullTooltip": "從中繼資料檔重新載入所有模型資訊；適用於清單過時或手動編輯後。",
+                "scopeSection": "只掃描一個資料夾",
+                "rootOffline": "離線",
+                "rootModels": "{count} 個模型"
             },
             "fetch": {
                 "title": "從 CivitAI 取得 metadata",
@@ -1344,7 +1410,20 @@
             "emptyNote": "該資料夾中沒有模型，其中的其他檔案也會一併刪除。",
             "notEmptyTitle": "資料夾不是空的",
             "notEmptyMessage": "該資料夾中仍有模型，請先刪除或移出這些模型 —— 刪除資料夾不會串聯刪除模型檔案。",
-            "confirm": "刪除資料夾"
+            "notEmptyMessageCount": "該資料夾中仍有 {count} 個模型檔案，請先刪除或移出這些模型 —— 刪除資料夾不會串聯刪除模型檔案。",
+            "notEmptyMessageExcluded": "該資料夾中仍有 {count} 個模型檔案，其中 {excluded} 個已從模型庫中排除。請先在「管理已排除的模型」中取消排除並刪除它們 —— 刪除資料夾不會串聯刪除模型檔案。",
+            "missingTitle": "未找到資料夾",
+            "missingMessage": "該資料夾在磁碟上已不存在，請重新整理側邊欄後再試。",
+            "symlinkTitle": "資料夾是符號連結",
+            "symlinkMessage": "該資料夾的每一份副本都是符號連結；請在 LoRA Manager 之外刪除該連結或其指向的目標。",
+            "protectedTitle": "資料夾受保護",
+            "protectedMessage": "此資料夾存放著配方庫，無法在 LoRA Manager 中刪除。",
+            "busyTitle": "仍有刪除操作待處理",
+            "checking": "正在檢查資料夾內容...",
+            "confirm": "刪除資料夾",
+            "confirmMulti": "刪除 {count} 個資料夾",
+            "deleting": "正在刪除...",
+            "keptNote": "未勾選的副本會讓該資料夾繼續顯示在側邊欄中。"
         },
         "deleteFolderResult": {
             "success": "已刪除資料夾 \"{name}\"",
@@ -1352,9 +1431,13 @@
             "restored": "資料夾已還原",
             "failed": "刪除資料夾失敗: {message}",
             "notEmpty": "該資料夾中仍有模型。請重新整理側邊欄後再試。",
+            "notEmptyWithCount": "該資料夾中仍有 {count} 個模型檔案。請重新整理側邊欄後再試。",
             "busy": "該資料夾內仍有待處理的刪除操作，請等待復原時間結束。",
             "unsupported": "此頁面不支援刪除資料夾",
-            "noRoot": "未設定模型根目錄"
+            "missing": "該資料夾在磁碟上已不存在，請重新整理側邊欄後再試。",
+            "symlink": "該資料夾是符號連結，無法從側邊欄中刪除。",
+            "successMulti": "已從 {count} 個模型根目錄中刪除資料夾 \"{name}\"",
+            "partial": "已刪除 {total} 份副本中的 {count} 份 —— {failed} 份無法刪除。請重新整理側邊欄後再試。"
         },
         "renameFolder": "重新命名資料夾",
         "renameFolderResult": {
@@ -1363,7 +1446,26 @@
             "targetExists": "此處已存在同名資料夾",
             "busy": "該資料夾內仍有待處理的刪除操作，請等待復原時間結束。",
             "unsupported": "此頁面不支援重新命名資料夾",
-            "noRoot": "未設定模型根目錄"
+            "missing": "該資料夾在磁碟上已不存在，請重新整理側邊欄後再試。",
+            "symlink": "該資料夾是符號連結，無法從側邊欄中重新命名。"
+        },
+        "folderRoot": {
+            "chooseTitle": "該資料夾存在於多個模型根目錄中",
+            "symlinkOption": "符號連結",
+            "rootsHint": "選擇要從中刪除該資料夾的模型根目錄：",
+            "checkingStatus": "正在檢查...",
+            "okStatus": "無模型",
+            "notEmptyStatus": "包含 {count} 個模型檔案 —— 請先刪除或移出這些模型",
+            "notEmptyExcludedStatus": "包含 {count} 個模型檔案，其中 {excluded} 個已從模型庫中排除",
+            "busyStatus": "仍有刪除操作待處理",
+            "missingStatus": "磁碟上已不存在",
+            "symlinkStatus": "符號連結 —— 無法在此刪除",
+            "protectedStatus": "存放配方庫 —— 無法在此刪除",
+            "unknownStatus": "無法檢查",
+            "deletedStatus": "已刪除"
+        },
+        "folderResult": {
+            "unresolved": "無法確定該資料夾位於哪個模型根目錄。請重新整理側邊欄後再試。"
         },
         "dragDrop": {
             "unableToResolveRoot": "無法確定移動的目標路徑。",
@@ -1383,6 +1485,10 @@
             "success": "在此資料夾中找到 {count} 個{type}更新",
             "none": "此資料夾中的所有{type}都是最新版本",
             "error": "檢查資料夾{type}更新失敗: {message}"
+        },
+        "scanFolder": "掃描此資料夾",
+        "scanFolderResult": {
+            "missing": "該資料夾在磁碟上已不存在，請重新整理側邊欄後再試。"
         }
     },
     "statistics": {
@@ -1515,6 +1621,10 @@
             "selectRootDirectory": "選擇根目錄",
             "selectModelRoot": "選擇模型根目錄：",
             "selectTypeRoot": "選擇 {type} 根目錄：",
+            "routingOverride": {
+                "label": "目標類型：",
+                "tooltip": "根據模型中繼資料自動偵測。如果偵測結果有誤，請切換；切換會為本次下載關閉「使用預設路徑」。"
+            },
             "targetFolderPath": "目標資料夾路徑：",
             "browseFolders": "瀏覽資料夾：",
             "createNewFolder": "建立新資料夾",
@@ -1630,6 +1740,28 @@
             "titleApply": "要將檔案名稱範本套用至模型庫嗎？",
             "titleRevert": "要還原原始檔案名稱嗎？",
             "revertButton": "還原原始檔案名稱"
+        },
+        "sidecarMigrationConfirm": {
+            "titleToCentralized": "要將附屬檔案移到集中儲存嗎？",
+            "titleToAlongside": "要將附屬檔案移回模型檔案旁邊嗎？",
+            "confirmButton": "立即遷移",
+            "titleRelocateRoot": "要將附屬檔案移到新的儲存目錄嗎？",
+            "destination": "目標位置：{path}"
+        },
+        "sidecarMigrationResult": {
+            "title": "附屬檔案遷移摘要",
+            "completedSuccessfully": "遷移已成功完成",
+            "completedWithErrors": "完成，但有 {count} 個錯誤",
+            "statMoved": "已遷移檔案",
+            "statModels": "模型",
+            "statSkipped": "已跳過",
+            "statConflicts": "已解決衝突",
+            "statErrors": "錯誤",
+            "failedItems": "失敗項目（{count}）",
+            "columnModel": "模型",
+            "columnError": "錯誤",
+            "successMessage": "已為 {models} 個模型遷移 {moved} 個檔案",
+            "location": "儲存位置：{path}"
         },
         "bulkAddTags": {
             "title": "新增標籤到多個模型",
@@ -1763,6 +1895,8 @@
                 "sendToWorkflow": "傳送到 ComfyUI",
                 "sendToWorkflowText": "傳送到 ComfyUI",
                 "copyHash": "複製雜湊值",
+                "copyCivitaiId": "複製 Civitai ID",
+                "civitaiIdCopied": "Civitai ID 已複製到剪貼簿",
                 "deleteModelWithShortcut": "刪除模型（Del）"
             },
             "openFileLocation": {
@@ -1781,6 +1915,8 @@
                 "baseModel": "基礎模型",
                 "size": "大小",
                 "hashes": "雜湊值",
+                "civitaiModelId": "模型 ID",
+                "civitaiVersionId": "版本 ID",
                 "unknown": "未知",
                 "usageTips": "使用提示",
                 "additionalNotes": "附加備註",
@@ -1898,7 +2034,9 @@
                 "nsfwMature": "成熟內容",
                 "nsfwR": "R 級內容",
                 "nsfwX": "X 級內容",
-                "nsfwXxx": "XXX 級內容"
+                "nsfwXxx": "XXX 級內容",
+                "layoutGallery": "圖庫檢視",
+                "layoutList": "清單檢視"
             },
             "versions": {
                 "heading": "模型版本",
@@ -1929,10 +2067,15 @@
                     "earlyAccessTooltip": "此版本目前需要 CivitAI 搶先體驗權限",
                     "paid": "付費",
                     "paidTooltip": "此版本需要付費才能下載",
+                    "priceSaleTooltip": "特價中，原價 {list} Buzz",
+                    "priceBlueBuzzTooltip": "也可以使用 Blue Buzz 支付",
+                    "freeNow": "現已免費",
+                    "freeNowTooltip": "此版本已不再需要付費",
                     "ignored": "已忽略",
                     "ignoredTooltip": "此版本已關閉更新通知",
                     "onSiteOnly": "僅站內生成",
-                    "onSiteOnlyTooltip": "此版本僅在 CivitAI 站內可用，無法下載"
+                    "onSiteOnlyTooltip": "此版本僅在 CivitAI 站內可用，無法下載",
+                    "earlyAccessTooltipUntil": "搶先體驗至 {date}，之後可免費下載"
                 },
                 "actions": {
                     "download": "下載",
@@ -2671,7 +2814,10 @@
             "exampleImagesDownloadFailed": "下載範例圖片失敗：{message}",
             "moveFailed": "移動項目失敗：{message}",
             "copiedToClipboard": "已複製到剪貼簿",
-            "downloadStarted": "下載已開始"
+            "downloadStarted": "下載已開始",
+            "refreshCompleteScoped": "已掃描 {scope}：新增 {added}，移除 {removed}",
+            "refreshKeptUnreachable": "已保留 {count} 個模型：{paths} 目前無法存取",
+            "scanRootUnreachable": "{scope} 目前無法存取，未做任何變更。"
         },
         "agent": {
             "llmNotConfigured": "AI 提供者尚未設定。請在 設定 → AI 提供者 中進行設定。",
@@ -2706,6 +2852,9 @@
             },
             "filename_conflicts": {
                 "title": "檔案名稱重複衝突"
+            },
+            "sidecar_mirror_orphans": {
+                "title": "集中儲存的附屬檔案"
             },
             "ui_version": {
                 "title": "UI 版本"
