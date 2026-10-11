@@ -297,7 +297,9 @@
             "loraAvailability": "Доступность LoRAs",
             "availabilityReady": "Готовы к использованию",
             "availabilityMissing": "Есть отсутствующие",
-            "availabilityDeleted": "Есть удалённые"
+            "availabilityDeleted": "Есть удалённые",
+            "workflow": "Workflow",
+            "hasWorkflow": "С Workflow"
         },
         "theme": {
             "toggle": "Переключить тему",
@@ -837,6 +839,8 @@
             "migrationDeferred": "Существующие sidecar-файлы не были перенесены. Вы можете перенести их позже в разделе «Настройки → Библиотека → Хранилище sidecar-файлов».",
             "confirmToCentralized": "Режим хранения изменён, но существующие sidecar-файлы .metadata.json и изображения превью не переносятся автоматически. Перенести их сейчас в централизованное хранилище? Это также можно сделать позже кнопкой «Перенести sidecar-файлы сейчас».",
             "confirmToAlongside": "Режим хранения изменён, но существующие sidecar-файлы .metadata.json и изображения превью не переносятся автоматически. Вернуть их сейчас рядом с их файлами моделей? Это также можно сделать позже кнопкой «Перенести sidecar-файлы сейчас».",
+            "confirmToCentralizedManual": "Перенести существующие sidecar-файлы .metadata.json и изображения превью в централизованное хранилище сейчас?",
+            "confirmToAlongsideManual": "Вернуть существующие sidecar-файлы .metadata.json и изображения превью рядом с их файлами моделей сейчас?",
             "confirmRelocateRoot": "Каталог централизованного хранилища изменён, но существующие sidecar-файлы и изображения превью всё ещё находятся в прежнем каталоге. Перенести их сейчас в новый каталог?",
             "effectivePathLabel": "Фактическое расположение хранилища:",
             "openFolderButton": "Открыть папку",
@@ -1069,7 +1073,8 @@
             "sendWorkflow": "Отправить workflow в ComfyUI",
             "sent": "Workflow отправлен в ComfyUI",
             "sendFailed": "Не удалось отправить workflow в ComfyUI",
-            "noWorkflow": "В этом рецепте не найден встроенный workflow"
+            "noWorkflow": "В этом рецепте не найден встроенный workflow",
+            "hasWorkflow": "Содержит Workflow ComfyUI"
         },
         "status": {
             "ready": "Готово к использованию",
@@ -1746,7 +1751,8 @@
             "titleToAlongside": "Вернуть sidecar-файлы рядом с файлами моделей?",
             "confirmButton": "Перенести сейчас",
             "titleRelocateRoot": "Перенести sidecar-файлы в новый каталог хранилища?",
-            "destination": "Назначение: {path}"
+            "destination": "Назначение: {path}",
+            "defaultLocationHint": "Будет использовано расположение по умолчанию. Чтобы использовать свою папку, отмените, укажите путь хранилища выше, затем нажмите «Перенести sidecar-файлы сейчас»."
         },
         "sidecarMigrationResult": {
             "title": "Сводка переноса sidecar-файлов",
@@ -1892,6 +1898,7 @@
                 "viewOnHuggingFaceText": "Открыть Hugging Face",
                 "viewCreatorProfile": "Посмотреть профиль создателя",
                 "openFileLocation": "Открыть расположение файла",
+                "openSidecarLocation": "Открыть расположение метаданных",
                 "sendToWorkflow": "Отправить в ComfyUI",
                 "sendToWorkflowText": "Отправить в ComfyUI",
                 "copyHash": "Копировать хеш",
@@ -1902,6 +1909,12 @@
             "openFileLocation": {
                 "success": "Расположение файла успешно открыто",
                 "failed": "Не удалось открыть расположение файла",
+                "copied": "Путь скопирован в буфер обмена: {{path}}",
+                "clipboardFallback": "Путь: {{path}}"
+            },
+            "openSidecarLocation": {
+                "success": "Расположение метаданных успешно открыто",
+                "failed": "Не удалось открыть расположение метаданных",
                 "copied": "Путь скопирован в буфер обмена: {{path}}",
                 "clipboardFallback": "Путь: {{path}}"
             },
@@ -2130,6 +2143,7 @@
             "statSuccess": "Успешно",
             "statFailed": "Ошибка",
             "statSkipped": "Пропущено",
+            "statOffline": "Диск недоступен",
             "statTotal": "Всего проверено",
             "statDuration": "Длительность",
             "successMessage": "Все {count} {type}s успешно обновлены",

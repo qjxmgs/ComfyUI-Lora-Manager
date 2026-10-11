@@ -3419,8 +3419,13 @@ export class SettingsManager {
         }
         // Baseline used to detect a mode change in handleSidecarStorageModeChange
         this._loadedSidecarStorageMode = currentMode;
-        // Baseline used to detect a root change in handleSidecarStoragePathChange
+        // Baseline of the raw path input, refreshed in handleSidecarStoragePathChange
         this._loadedSidecarStoragePath = state.global.settings.sidecar_storage_path || '';
+        // Baseline used to detect a root change in handleSidecarStoragePathChange.
+        // Must be the RESOLVED root, not the raw setting: with no custom path the
+        // setting is empty while sidecars live in the default root, and that
+        // default->custom transition is exactly the relocation we must offer.
+        this._loadedSidecarStorageRoot = state.global.settings.sidecar_storage_root || '';
 
         const pathInput = document.getElementById('sidecarStoragePath');
         if (pathInput) {
@@ -3527,26 +3532,30 @@ export class SettingsManager {
 
     // Path change while centralized storage is active: the assets under the
     // previous root do not move by themselves, so offer a root relocation.
+    // Compare RESOLVED roots (the raw setting is empty for the default root,
+    // which still holds sidecars and must be relocatable).
     async handleSidecarStoragePathChange() {
         const pathInput = document.getElementById('sidecarStoragePath');
         if (!pathInput) return;
 
-        const previousPath = this._loadedSidecarStoragePath || '';
+        const previousRoot = this._loadedSidecarStorageRoot || '';
 
         await this.saveInputSetting('sidecarStoragePath', 'sidecar_storage_path');
 
-        const newPath = pathInput.value.trim();
-        this._loadedSidecarStoragePath = newPath;
+        this._loadedSidecarStoragePath = pathInput.value.trim();
 
         // The resolved root is server-side; refresh before any relocate
         // confirm so the dialog can name the real destination.
         await this.refreshSidecarStorageInfo();
 
+        const newRoot = state.global.settings.sidecar_storage_root || '';
+        this._loadedSidecarStorageRoot = newRoot;
+
         const centralized = state.global.settings.sidecar_storage_mode === 'centralized';
-        if (centralized && previousPath && previousPath !== newPath) {
+        if (centralized && previousRoot && previousRoot !== newRoot) {
             const confirmed = await this.confirmSidecarMigration('relocate_root');
             if (confirmed) {
-                await this.migrateSidecars('relocate_root', { old_root: previousPath });
+                await this.migrateSidecars('relocate_root', { old_root: previousRoot });
             } else {
                 showToast('settings.sidecarStorage.migrationDeferred', {}, 'info');
             }
@@ -3554,18 +3563,19 @@ export class SettingsManager {
     }
 
     // Entry point for the "Migrate Sidecars Now" button: the direction follows
-    // the currently saved storage mode.
+    // the currently saved storage mode. manual=true drops the "storage mode
+    // changed / do it later" phrasing: the user just clicked the button.
     async confirmAndMigrateSidecars() {
         const direction = state.global.settings.sidecar_storage_mode === 'centralized'
             ? 'to_centralized'
             : 'to_alongside';
-        const confirmed = await this.confirmSidecarMigration(direction);
+        const confirmed = await this.confirmSidecarMigration(direction, { manual: true });
         if (confirmed) {
             await this.migrateSidecars(direction);
         }
     }
 
-    confirmSidecarMigration(direction) {
+    confirmSidecarMigration(direction, { manual = false } = {}) {
         const modalElement = document.getElementById('sidecarMigrationConfirmModal');
         if (!modalElement) {
             return Promise.resolve(false);
@@ -3588,8 +3598,12 @@ export class SettingsManager {
             messageElement.textContent = isRelocate
                 ? translate('settings.sidecarStorage.confirmRelocateRoot', {}, 'The centralized storage directory changed, but existing sidecars and preview images are still in the previous directory. Move them to the new directory now?')
                 : isToCentralized
-                    ? translate('settings.sidecarStorage.confirmToCentralized', {}, 'The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them into the centralized storage directory now? You can also do this later with the "Migrate Sidecars Now" button.')
-                    : translate('settings.sidecarStorage.confirmToAlongside', {}, 'The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the "Migrate Sidecars Now" button.');
+                    ? (manual
+                        ? translate('settings.sidecarStorage.confirmToCentralizedManual', {}, 'Move existing .metadata.json sidecars and preview images into the centralized storage directory now?')
+                        : translate('settings.sidecarStorage.confirmToCentralized', {}, 'The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them into the centralized storage directory now? You can also do this later with the "Migrate Sidecars Now" button.'))
+                    : (manual
+                        ? translate('settings.sidecarStorage.confirmToAlongsideManual', {}, 'Move existing .metadata.json sidecars and preview images back next to their model files now?')
+                        : translate('settings.sidecarStorage.confirmToAlongside', {}, 'The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the "Migrate Sidecars Now" button.'));
         }
 
         // Name the destination so users know where the files are going.
@@ -3603,6 +3617,22 @@ export class SettingsManager {
                     'modals.sidecarMigrationConfirm.destination', { path: resolvedRoot }, `Destination: ${resolvedRoot}`
                 );
                 destinationElement.style.display = 'block';
+            }
+        }
+
+        // Migrating into the default location: let users pick a custom folder
+        // first instead of migrating now and relocating afterwards.
+        const hintElement = modalElement.querySelector('[data-role="default-location-hint"]');
+        if (hintElement) {
+            if (isToCentralized && state.global.settings.sidecar_storage_root_is_default) {
+                hintElement.textContent = translate(
+                    'modals.sidecarMigrationConfirm.defaultLocationHint',
+                    {},
+                    'This uses the default location. To use a custom folder, cancel, set the storage path above, then click "Migrate Sidecars Now".'
+                );
+                hintElement.style.display = 'block';
+            } else {
+                hintElement.style.display = 'none';
             }
         }
 

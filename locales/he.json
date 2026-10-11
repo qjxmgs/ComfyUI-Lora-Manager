@@ -297,7 +297,9 @@
             "loraAvailability": "זמינות LoRA",
             "availabilityReady": "מוכנים לשימוש",
             "availabilityMissing": "עם LoRAs חסרים",
-            "availabilityDeleted": "עם LoRAs שנמחקו"
+            "availabilityDeleted": "עם LoRAs שנמחקו",
+            "workflow": "workflow",
+            "hasWorkflow": "עם workflow"
         },
         "theme": {
             "toggle": "החלף ערכת נושא",
@@ -837,6 +839,8 @@
             "migrationDeferred": "קובצי הלוואי הקיימים לא הועברו. ניתן להעביר אותם מאוחר יותר דרך הגדרות > ספרייה > אחסון קובצי לוואי.",
             "confirmToCentralized": "מצב האחסון השתנה, אך קובצי הלוואי .metadata.json ותמונות התצוגה המקדימה הקיימים אינם מועברים אוטומטית. להעביר אותם כעת לתיקיית האחסון המרכזי? ניתן לעשות זאת גם מאוחר יותר באמצעות הכפתור «העבר קובצי לוואי כעת».",
             "confirmToAlongside": "מצב האחסון השתנה, אך קובצי הלוואי .metadata.json ותמונות התצוגה המקדימה הקיימים אינם מועברים אוטומטית. להחזיר אותם כעת לצד קובצי המודל שלהם? ניתן לעשות זאת גם מאוחר יותר באמצעות הכפתור «העבר קובצי לוואי כעת».",
+            "confirmToCentralizedManual": "להעביר כעת את קובצי הלוואי .metadata.json ואת תמונות התצוגה המקדימה הקיימים לתיקיית האחסון המרכזי?",
+            "confirmToAlongsideManual": "להחזיר כעת את קובצי הלוואי .metadata.json ואת תמונות התצוגה המקדימה הקיימים לצד קובצי המודל שלהם?",
             "confirmRelocateRoot": "תיקיית האחסון המרכזי השתנתה, אך קובצי הלוואי ותמונות התצוגה המקדימה הקיימים עדיין נמצאים בתיקייה הקודמת. להעביר אותם כעת לתיקייה החדשה?",
             "effectivePathLabel": "מיקום האחסון בפועל:",
             "openFolderButton": "פתח תיקייה",
@@ -1069,7 +1073,8 @@
             "sendWorkflow": "שלח workflow ל-ComfyUI",
             "sent": "ה-workflow נשלח ל-ComfyUI",
             "sendFailed": "שליחת ה-workflow ל-ComfyUI נכשלה",
-            "noWorkflow": "לא נמצא workflow מוטבע במתכון זה"
+            "noWorkflow": "לא נמצא workflow מוטבע במתכון זה",
+            "hasWorkflow": "מכיל workflow של ComfyUI"
         },
         "status": {
             "ready": "מוכן לשימוש",
@@ -1746,7 +1751,8 @@
             "titleToAlongside": "להחזיר את קובצי הלוואי לצד קובצי המודל?",
             "confirmButton": "העבר כעת",
             "titleRelocateRoot": "להעביר את קובצי הלוואי לתיקיית האחסון החדשה?",
-            "destination": "יעד: {path}"
+            "destination": "יעד: {path}",
+            "defaultLocationHint": "נעשה שימוש במיקום ברירת המחדל. כדי להשתמש בתיקייה מותאמת אישית, בטל, הגדר את נתיב האחסון למעלה ולאחר מכן לחץ על «העבר קובצי לוואי כעת»."
         },
         "sidecarMigrationResult": {
             "title": "סיכום העברת קובצי לוואי",
@@ -1892,6 +1898,7 @@
                 "viewOnHuggingFaceText": "צפייה ב-Hugging Face",
                 "viewCreatorProfile": "הצג פרופיל יוצר",
                 "openFileLocation": "פתח מיקום קובץ",
+                "openSidecarLocation": "פתח מיקום מטא-נתונים",
                 "sendToWorkflow": "שלח ל-ComfyUI",
                 "sendToWorkflowText": "שלח ל-ComfyUI",
                 "copyHash": "העתק hash",
@@ -1902,6 +1909,12 @@
             "openFileLocation": {
                 "success": "מיקום הקובץ נפתח בהצלחה",
                 "failed": "פתיחת מיקום הקובץ נכשלה",
+                "copied": "הנתיב הועתק ללוח העריכה: {{path}}",
+                "clipboardFallback": "נתיב: {{path}}"
+            },
+            "openSidecarLocation": {
+                "success": "מיקום המטא-נתונים נפתח בהצלחה",
+                "failed": "פתיחת מיקום המטא-נתונים נכשלה",
                 "copied": "הנתיב הועתק ללוח העריכה: {{path}}",
                 "clipboardFallback": "נתיב: {{path}}"
             },
@@ -2130,6 +2143,7 @@
             "statSuccess": "הצלחה",
             "statFailed": "נכשל",
             "statSkipped": "דולג",
+            "statOffline": "כונן לא זמין",
             "statTotal": "סה\"כ נסרק",
             "statDuration": "משך",
             "successMessage": "כל {count} {type}s עודכנו בהצלחה!",

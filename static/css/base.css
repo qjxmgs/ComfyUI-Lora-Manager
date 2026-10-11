@@ -64,7 +64,16 @@ body {
     --border-color: var(--border-base);
 
     --lora-accent: var(--color-accent);
+    /* Channel aliases: referenced across components (oklch tints, focus
+       rings); previously undeclared, so those declarations silently dropped. */
+    --lora-accent-l: var(--color-accent-l);
+    --lora-accent-c: var(--color-accent-c);
+    --lora-accent-h: var(--color-accent-h);
+    --lora-accent-hover: var(--color-accent-hover);
+    --lora-accent-light: var(--color-accent-subtle);
+    --text-on-accent: var(--color-accent-contrast);
     --lora-surface: var(--bg-elevated);
+    --lora-surface-solid: var(--bg-elevated-solid);
     --lora-border: var(--border-subtle);
     --lora-text: var(--text-primary);
     --lora-error: var(--color-error);
@@ -79,6 +88,9 @@ body {
     --badge-skip-refresh-bg: var(--color-skip-refresh-bg);
     --badge-skip-refresh-text: var(--color-skip-refresh-text);
     --badge-skip-refresh-glow: var(--color-skip-refresh-glow);
+    --badge-workflow-bg: var(--color-workflow-bg);
+    --badge-workflow-text: var(--color-workflow-text);
+    --badge-workflow-glow: var(--color-workflow-glow);
 }
 
 :root[data-theme="dark"] {
@@ -89,7 +101,16 @@ body {
     --border-color: var(--border-base);
 
     --lora-accent: var(--color-accent);
+    /* Channel aliases: referenced across components (oklch tints, focus
+       rings); previously undeclared, so those declarations silently dropped. */
+    --lora-accent-l: var(--color-accent-l);
+    --lora-accent-c: var(--color-accent-c);
+    --lora-accent-h: var(--color-accent-h);
+    --lora-accent-hover: var(--color-accent-hover);
+    --lora-accent-light: var(--color-accent-subtle);
+    --text-on-accent: var(--color-accent-contrast);
     --lora-surface: var(--bg-elevated);
+    --lora-surface-solid: var(--bg-elevated-solid);
     --lora-border: var(--border-subtle);
     --lora-text: var(--text-primary);
     --lora-error: var(--color-error);
@@ -104,6 +125,9 @@ body {
     --badge-skip-refresh-bg: var(--color-skip-refresh-bg);
     --badge-skip-refresh-text: var(--color-skip-refresh-text);
     --badge-skip-refresh-glow: var(--color-skip-refresh-glow);
+    --badge-workflow-bg: var(--color-workflow-bg);
+    --badge-workflow-text: var(--color-workflow-text);
+    --badge-workflow-glow: var(--color-workflow-glow);
 }
 
 html[data-theme="dark"] {

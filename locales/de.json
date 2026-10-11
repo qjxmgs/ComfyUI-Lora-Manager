@@ -297,7 +297,9 @@
             "loraAvailability": "LoRA-Verfügbarkeit",
             "availabilityReady": "Einsatzbereit",
             "availabilityMissing": "Mit fehlenden LoRAs",
-            "availabilityDeleted": "Mit gelöschten LoRAs"
+            "availabilityDeleted": "Mit gelöschten LoRAs",
+            "workflow": "Workflow",
+            "hasWorkflow": "Mit Workflow"
         },
         "theme": {
             "toggle": "Theme wechseln",
@@ -837,6 +839,8 @@
             "migrationDeferred": "Vorhandene Sidecar-Dateien wurden nicht verschoben. Sie können sie später unter Einstellungen → Bibliothek → Sidecar-Speicherung verschieben.",
             "confirmToCentralized": "Der Speichermodus wurde geändert, aber vorhandene .metadata.json-Sidecar-Dateien und Vorschaubilder werden nicht automatisch verschoben. Jetzt in das zentrale Speicherverzeichnis verschieben? Sie können das auch später über die Schaltfläche „Sidecar-Dateien jetzt verschieben“ tun.",
             "confirmToAlongside": "Der Speichermodus wurde geändert, aber vorhandene .metadata.json-Sidecar-Dateien und Vorschaubilder werden nicht automatisch verschoben. Jetzt wieder neben ihre Modelldateien verschieben? Sie können das auch später über die Schaltfläche „Sidecar-Dateien jetzt verschieben“ tun.",
+            "confirmToCentralizedManual": "Vorhandene .metadata.json-Sidecar-Dateien und Vorschaubilder jetzt in das zentrale Speicherverzeichnis verschieben?",
+            "confirmToAlongsideManual": "Vorhandene .metadata.json-Sidecar-Dateien und Vorschaubilder jetzt wieder neben ihre Modelldateien verschieben?",
             "confirmRelocateRoot": "Das zentrale Speicherverzeichnis wurde geändert, aber vorhandene Sidecar-Dateien und Vorschaubilder liegen noch im vorherigen Verzeichnis. Jetzt in das neue Verzeichnis verschieben?",
             "effectivePathLabel": "Tatsächlicher Speicherort:",
             "openFolderButton": "Ordner öffnen",
@@ -1069,7 +1073,8 @@
             "sendWorkflow": "Workflow an ComfyUI senden",
             "sent": "Workflow an ComfyUI gesendet",
             "sendFailed": "Fehler beim Senden des Workflows an ComfyUI",
-            "noWorkflow": "Kein eingebetteter Workflow in diesem Rezept gefunden"
+            "noWorkflow": "Kein eingebetteter Workflow in diesem Rezept gefunden",
+            "hasWorkflow": "Enthält einen ComfyUI-Workflow"
         },
         "status": {
             "ready": "Einsatzbereit",
@@ -1746,7 +1751,8 @@
             "titleToAlongside": "Sidecar-Dateien zurück neben die Modelldateien verschieben?",
             "confirmButton": "Jetzt verschieben",
             "titleRelocateRoot": "Sidecar-Dateien in das neue Speicherverzeichnis verschieben?",
-            "destination": "Ziel: {path}"
+            "destination": "Ziel: {path}",
+            "defaultLocationHint": "Es wird der Standard-Speicherort verwendet. Um einen eigenen Ordner zu nutzen, brechen Sie ab, setzen Sie oben den Speicherpfad und klicken Sie dann auf „Sidecar-Dateien jetzt verschieben“."
         },
         "sidecarMigrationResult": {
             "title": "Sidecar-Migrationsübersicht",
@@ -1892,6 +1898,7 @@
                 "viewOnHuggingFaceText": "Auf Hugging Face ansehen",
                 "viewCreatorProfile": "Ersteller-Profil anzeigen",
                 "openFileLocation": "Dateispeicherort öffnen",
+                "openSidecarLocation": "Metadaten-Speicherort öffnen",
                 "sendToWorkflow": "An ComfyUI senden",
                 "sendToWorkflowText": "An ComfyUI senden",
                 "copyHash": "Hash kopieren",
@@ -1902,6 +1909,12 @@
             "openFileLocation": {
                 "success": "Dateispeicherort erfolgreich geöffnet",
                 "failed": "Fehler beim Öffnen des Dateispeicherorts",
+                "copied": "Pfad in die Zwischenablage kopiert: {{path}}",
+                "clipboardFallback": "Pfad: {{path}}"
+            },
+            "openSidecarLocation": {
+                "success": "Metadaten-Speicherort erfolgreich geöffnet",
+                "failed": "Fehler beim Öffnen des Metadaten-Speicherorts",
                 "copied": "Pfad in die Zwischenablage kopiert: {{path}}",
                 "clipboardFallback": "Pfad: {{path}}"
             },
@@ -2130,6 +2143,7 @@
             "statSuccess": "Erfolgreich",
             "statFailed": "Fehlgeschlagen",
             "statSkipped": "Übersprungen",
+            "statOffline": "Laufwerk offline",
             "statTotal": "Gesamt geprüft",
             "statDuration": "Dauer",
             "successMessage": "Alle {count} {type}s erfolgreich aktualisiert!",

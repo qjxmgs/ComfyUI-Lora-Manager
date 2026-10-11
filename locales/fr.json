@@ -297,7 +297,9 @@
             "loraAvailability": "Disponibilité des LoRAs",
             "availabilityReady": "Prêts à l'emploi",
             "availabilityMissing": "Avec LoRAs manquants",
-            "availabilityDeleted": "Avec LoRAs supprimés"
+            "availabilityDeleted": "Avec LoRAs supprimés",
+            "workflow": "Workflow",
+            "hasWorkflow": "Avec Workflow"
         },
         "theme": {
             "toggle": "Basculer le thème",
@@ -837,6 +839,8 @@
             "migrationDeferred": "Les fichiers sidecar existants n’ont pas été déplacés. Vous pouvez les migrer plus tard depuis Paramètres → Bibliothèque → Stockage des fichiers sidecar.",
             "confirmToCentralized": "Le mode de stockage a changé, mais les fichiers sidecar .metadata.json et les images d’aperçu existants ne sont pas déplacés automatiquement. Les déplacer maintenant dans le dossier de stockage centralisé ? Vous pouvez aussi le faire plus tard avec le bouton « Migrer les fichiers sidecar maintenant ».",
             "confirmToAlongside": "Le mode de stockage a changé, mais les fichiers sidecar .metadata.json et les images d’aperçu existants ne sont pas déplacés automatiquement. Les remettre maintenant à côté de leurs fichiers de modèle ? Vous pouvez aussi le faire plus tard avec le bouton « Migrer les fichiers sidecar maintenant ».",
+            "confirmToCentralizedManual": "Déplacer maintenant les fichiers sidecar .metadata.json et les images d’aperçu existants dans le dossier de stockage centralisé ?",
+            "confirmToAlongsideManual": "Remettre maintenant les fichiers sidecar .metadata.json et les images d’aperçu existants à côté de leurs fichiers de modèle ?",
             "confirmRelocateRoot": "Le dossier de stockage centralisé a changé, mais les fichiers sidecar et les images d’aperçu existants se trouvent encore dans le dossier précédent. Les déplacer maintenant dans le nouveau dossier ?",
             "effectivePathLabel": "Emplacement de stockage effectif :",
             "openFolderButton": "Ouvrir le dossier",
@@ -1069,7 +1073,8 @@
             "sendWorkflow": "Envoyer le workflow vers ComfyUI",
             "sent": "Workflow envoyé vers ComfyUI",
             "sendFailed": "Échec de l'envoi du workflow vers ComfyUI",
-            "noWorkflow": "Aucun workflow intégré trouvé dans cette Recipe"
+            "noWorkflow": "Aucun workflow intégré trouvé dans cette Recipe",
+            "hasWorkflow": "Contient un Workflow ComfyUI"
         },
         "status": {
             "ready": "Prêt à l'emploi",
@@ -1746,7 +1751,8 @@
             "titleToAlongside": "Remettre les fichiers sidecar à côté des fichiers de modèle ?",
             "confirmButton": "Migrer maintenant",
             "titleRelocateRoot": "Déplacer les fichiers sidecar vers le nouveau dossier de stockage ?",
-            "destination": "Destination : {path}"
+            "destination": "Destination : {path}",
+            "defaultLocationHint": "L’emplacement par défaut sera utilisé. Pour utiliser un dossier personnalisé, annulez, définissez le chemin de stockage ci-dessus, puis cliquez sur « Migrer les fichiers sidecar maintenant »."
         },
         "sidecarMigrationResult": {
             "title": "Résumé de la migration des fichiers sidecar",
@@ -1892,6 +1898,7 @@
                 "viewOnHuggingFaceText": "Voir sur Hugging Face",
                 "viewCreatorProfile": "Voir le profil du créateur",
                 "openFileLocation": "Ouvrir l'emplacement du fichier",
+                "openSidecarLocation": "Ouvrir l'emplacement des métadonnées",
                 "sendToWorkflow": "Envoyer vers ComfyUI",
                 "sendToWorkflowText": "Envoyer vers ComfyUI",
                 "copyHash": "Copier le hash",
@@ -1902,6 +1909,12 @@
             "openFileLocation": {
                 "success": "Emplacement du fichier ouvert avec succès",
                 "failed": "Échec de l'ouverture de l'emplacement du fichier",
+                "copied": "Chemin copié dans le presse-papiers: {{path}}",
+                "clipboardFallback": "Chemin: {{path}}"
+            },
+            "openSidecarLocation": {
+                "success": "Emplacement des métadonnées ouvert avec succès",
+                "failed": "Échec de l'ouverture de l'emplacement des métadonnées",
                 "copied": "Chemin copié dans le presse-papiers: {{path}}",
                 "clipboardFallback": "Chemin: {{path}}"
             },
@@ -2130,6 +2143,7 @@
             "statSuccess": "Réussi",
             "statFailed": "Échoué",
             "statSkipped": "Ignoré",
+            "statOffline": "Lecteur hors ligne",
             "statTotal": "Total scanné",
             "statDuration": "Durée",
             "successMessage": "Tous les {count} {type}s mis à jour avec succès !",
