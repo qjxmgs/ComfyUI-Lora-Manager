@@ -795,6 +795,28 @@ class SaveImageLM:
         ExifUtils.append_recipe_metadata(image_path, recipe_data)
         self._sync_recipe_cache(recipe_scanner, recipe_data, json_path)
 
+    @staticmethod
+    def _dedupe_existing_filename(full_output_folder, file):
+        """Return (file, file_path), appending an incrementing suffix when the
+        target file already exists so a counter-less save never overwrites."""
+        original_file = file
+        file_path = os.path.join(full_output_folder, file)
+        if not os.path.exists(file_path):
+            return file, file_path
+
+        stem, extension = os.path.splitext(original_file)
+        suffix = 1
+        while os.path.exists(file_path):
+            file = f"{stem}_{suffix:04}{extension}"
+            file_path = os.path.join(full_output_folder, file)
+            suffix += 1
+        logger.warning(
+            "Output file %s already exists; saving as %s to avoid overwriting it",
+            original_file,
+            file,
+        )
+        return file, file_path
+
     def save_images(
         self,
         images,
@@ -836,6 +858,21 @@ class SaveImageLM:
         if not os.path.exists(full_output_folder):
             os.makedirs(full_output_folder, exist_ok=True)
 
+        # Batch images with identical prefixes would silently overwrite each other;
+        # force a counter suffix when nothing else disambiguates the filenames.
+        force_counter = (
+            len(images) > 1
+            and not add_counter_to_filename
+            and "%batch_num%" not in filename
+        )
+        if force_counter:
+            logger.warning(
+                "Saving %d images with add_counter_to_filename disabled and no "
+                "%%batch_num%% pattern in the filename; adding a counter suffix "
+                "to avoid overwriting batch images.",
+                len(images),
+            )
+
         # Process each image with incrementing counter
         for i, image in enumerate(images):
             # Convert the tensor image to numpy array
@@ -844,7 +881,7 @@ class SaveImageLM:
 
             # Generate filename with counter if needed
             base_filename = filename.replace("%batch_num%", str(i))
-            if add_counter_to_filename:
+            if add_counter_to_filename or force_counter:
                 # Use counter + i to ensure unique filenames for all images in batch
                 current_counter = counter + i
                 base_filename += f"_{current_counter:05}_"
@@ -876,6 +913,10 @@ class SaveImageLM:
 
             # Full save path
             file_path = os.path.join(full_output_folder, file)
+            if not add_counter_to_filename and not force_counter:
+                file, file_path = self._dedupe_existing_filename(
+                    full_output_folder, file
+                )
 
             # Save the image with metadata
             try:

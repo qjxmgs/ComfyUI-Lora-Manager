@@ -264,6 +264,7 @@
         },
         "filter": {
             "title": "סנן מודלים",
+            "countTitle": "{name} — {count} מודלים",
             "presets": "קביעות מראש",
             "savePreset": "שמור מסננים פעילים כקביעה מראש חדשה.",
             "savePresetDisabledActive": "לא ניתן לשמור: קביעה מראש כבר פעילה. שנה מסננים כדי לשמור קביעה מראש חדשה",
@@ -399,7 +400,8 @@
             "autoOrganize": "ארגון אוטומטי",
             "metadata": "מטא-נתונים",
             "sidecarStorage": "אחסון קובצי לוואי",
-            "proxySettings": "הגדרות פרוקסי"
+            "proxySettings": "הגדרות פרוקסי",
+            "sendToWorkflow": "שליחה ל-workflow"
         },
         "nav": {
             "general": "כללי",
@@ -451,6 +453,18 @@
             "validation": {
                 "noPaths": "הזן לפחות נתיב אחד מופרד בפסיקים.",
                 "saveFailed": "לא ניתן לשמור נתיבי דילוג: {message}"
+            }
+        },
+        "sendToWorkflowExclusions": {
+            "nodeClasses": {
+                "label": "סוגי צמתים מוחרגים",
+                "placeholder": "דוגמה: CheckpointLoaderSimple, MyCustomNode",
+                "help": "שמות מחלקה של צמתים ב-ComfyUI שלעולם לא מופיעים כיעדי שליחה ל-workflow. הפרד ערכים מרובים בפסיקים או בנקודותיים. צמתים שסומנו במפורש ב-ComfyUI (לחיצה ימנית → Mark as) פטורים מכך."
+            },
+            "titlePatterns": {
+                "label": "תבניות כותרת של צמתים מוחרגים",
+                "placeholder": "דוגמה: negative, preview",
+                "help": "צמתים שכותרתם מכילה אחד מקטעי הטקסט האלה (ללא תלות ברישיות) מוסתרים מיעדי השליחה ל-workflow. הפרד ערכים מרובים בפסיקים או בנקודותיים. צמתים שסומנו במפורש ב-ComfyUI (לחיצה ימנית → Mark as) פטורים מכך."
             }
         },
         "backup": {
@@ -577,6 +591,8 @@
             },
             "showVersionOnCard": "הצג גרסה בכרטיס",
             "showVersionOnCardHelp": "הצג או הסתר את שם הגרסה בכרטיסי המודל",
+            "showQuantizationOnCard": "הצג קוונטיזציה בכרטיס",
+            "showQuantizationOnCardHelp": "הצג את רמת הקוונטיזציה (למשל Q4_K_M, FP8) לצד שם הגרסה בכרטיסי המודל",
             "modelCardFooterAction": "פעולת כפתור כרטיס מודל",
             "modelCardFooterActionOptions": {
                 "exampleImages": "פתח תמונות דוגמה",
@@ -955,6 +971,11 @@
                 "random": "אקראי",
                 "randomAction": "ערבוב אקראי"
             },
+            "modelType": {
+                "title": "סנן לפי סוג מודל",
+                "all": "כל הסוגים",
+                "multiple": "{count} סוגים"
+            },
             "refresh": {
                 "title": "רענן רשימת מודלים",
                 "full": "בניית מטמון מחדש",
@@ -1077,6 +1098,9 @@
     },
     "recipes": {
         "title": "מתכוני LoRA",
+        "filter": {
+            "countTitle": "{name} — {count} מתכונים"
+        },
         "actions": {
             "sendCheckpoint": "שלח ל-ComfyUI",
             "sendRecipe": "שלח ל-ComfyUI",
@@ -1454,8 +1478,8 @@
             "notEmptyMessageCount": "בתיקייה זו עדיין יש {count} קובצי מודלים. מחק או העבר אותם תחילה — מחיקת תיקייה לעולם אינה מוחקת קובצי מודלים.",
             "notEmptyMessageExcluded": "בתיקייה זו עדיין יש {count} קובצי מודלים, שמהם {excluded} מוחרגים מהספרייה. בטל את ההחרגה ב«ניהול מודלים מוחרגים» ומחק אותם תחילה — מחיקת תיקייה לעולם אינה מוחקת קובצי מודלים.",
             "missingTitle": "התיקייה לא נמצאה",
-            "missingMessage": "[TODO: Translate] This folder no longer exists on disk. You can remove it from the list.",
-            "removeFromList": "[TODO: Translate] Remove from list",
+            "missingMessage": "תיקייה זו אינה קיימת עוד בדיסק. ניתן להסיר אותה מהרשימה.",
+            "removeFromList": "הסר מהרשימה",
             "symlinkTitle": "התיקייה היא קישור סמלי",
             "symlinkMessage": "כל העותקים של תיקייה זו הם קישורים סמליים; מחק את הקישור או את היעד שלו מחוץ ל-LoRA Manager.",
             "protectedTitle": "תיקייה מוגנת",
@@ -1477,8 +1501,8 @@
             "busy": "מחיקה עדיין ממתינה בתיקייה זו. המתן לסיום חלון הביטול.",
             "unsupported": "מחיקת תיקיות אינה נתמכת בדף זה",
             "missing": "תיקייה זו אינה קיימת עוד בדיסק. רענן את סרגל הצד ונסה שוב.",
-            "forgotten": "[TODO: Translate] Folder \"{name}\" removed from the list",
-            "exists": "[TODO: Translate] The folder is back on disk. Delete it instead.",
+            "forgotten": "התיקייה \"{name}\" הוסרה מהרשימה",
+            "exists": "התיקייה חזרה לדיסק. מחק אותה במקום זאת.",
             "symlink": "תיקייה זו היא קישור סמלי; לא ניתן למחוק אותה מסרגל הצד.",
             "successMulti": "התיקייה \"{name}\" נמחקה מ-{count} שורשי מודלים",
             "partial": "נמחקו {count} מתוך {total} עותקים — {failed} לא נמחקו. רענן את סרגל הצד ונסה שוב."
@@ -1698,6 +1722,8 @@
             "errors": {
                 "invalidUrl": "פורמט URL של מודל לא חוקי",
                 "noVersions": "אין גרסאות זמינות למודל זה",
+                "linkedFileNotFound": "[TODO: Translate] File {fileId} was not found in the requested model version.",
+                "linkedFileNotWeightFile": "[TODO: Translate] File {fileId} is not a downloadable model file.",
                 "mixedSources": "לא ניתן לערבב כתובות URL של CivitAI ו-Hugging Face / ModelScope באותה קבוצה.",
                 "noModelFiles": "לא נמצאו קבצי מודל במאגר זה."
             },
@@ -2195,7 +2221,8 @@
             "copyReport": "העתק דוח",
             "downloadCsv": "הורד CSV",
             "columnModelName": "שם המודל",
-            "columnError": "שגיאה"
+            "columnError": "שגיאה",
+            "rateLimitedNotice": "[TODO: Translate] Fetch aborted: the metadata provider rate limit was reached. Re-run \"Fetch from Civitai\" later to retry the remaining models."
         },
         "downloadBatchSummary": {
             "title": "סיכום הורדה בכמות",
@@ -2280,6 +2307,52 @@
                 "description": "לחץ על Ctrl+F (Cmd+F ב-Mac) כדי לחפש במהירות בתצוגה הנוכחית שלך.",
                 "alt": "חיפוש מהיר"
             }
+        },
+        "error": {
+            "title": "[TODO: Translate] Initialization failed",
+            "message": "[TODO: Translate] Something went wrong while scanning your model library.",
+            "retry": "[TODO: Translate] Retry"
+        }
+    },
+    "firstRun": {
+        "title": "[TODO: Translate] Welcome to LoRA Manager",
+        "description": "[TODO: Translate] Before you start, LoRA Manager needs to scan your model libraries and generate metadata sidecar files. This is a one-time step; how long it takes depends on the size of your library and the speed of your disk.",
+        "libraries": {
+            "loras": "[TODO: Translate] LoRAs",
+            "checkpoints": "[TODO: Translate] Checkpoints",
+            "embeddings": "[TODO: Translate] Embeddings",
+            "other": "[TODO: Translate] Other Models"
+        },
+        "language": {
+            "label": "[TODO: Translate] Language"
+        },
+        "libraryStats": "[TODO: Translate] {count} models · {size}",
+        "rootMissing": "[TODO: Translate] Directory not found",
+        "estimate": "[TODO: Translate] About {count} models ({size}) — estimated scan time ~{minutes} min, depending on library size and disk speed.",
+        "noRoots": {
+            "plugin": "[TODO: Translate] No accessible model folders were found. Open Settings to configure your model directories, then reload this page.",
+            "standalone": "[TODO: Translate] No accessible model folders were found. Edit folder_paths in settings.json, then restart the server."
+        },
+        "sidecar": {
+            "title": "[TODO: Translate] Metadata storage",
+            "alongside": {
+                "label": "[TODO: Translate] Next to model files (recommended)",
+                "description": "[TODO: Translate] Metadata .json files are stored next to each model file, so they move together with the model."
+            },
+            "centralized": {
+                "label": "[TODO: Translate] Centralized directory",
+                "description": "[TODO: Translate] Metadata is stored in a separate directory, keeping your model folders clean.",
+                "pathPlaceholder": "[TODO: Translate] Directory for centralized metadata storage"
+            }
+        },
+        "actions": {
+            "start": "[TODO: Translate] Start Scan",
+            "defer": "[TODO: Translate] Later"
+        },
+        "errors": {
+            "loadFailed": "[TODO: Translate] Failed to load library information.",
+            "pathRequired": "[TODO: Translate] Please enter a storage directory for centralized metadata.",
+            "startFailed": "[TODO: Translate] Failed to start the scan."
         }
     },
     "duplicates": {
@@ -2320,7 +2393,8 @@
             "embeddingAdded": "Embedding נוסף ל-workflow",
             "embeddingFailed": "הוספת Embedding נכשלה",
             "promptSent": "פרומפט נשלחה ל-workflow",
-            "promptFailed": "שליחת הפרומפט נכשלה"
+            "promptFailed": "שליחת הפרומפט נכשלה",
+            "nodeTypeExcluded": "סוג הצומת \"{type}\" הוחרג מיעדי השליחה"
         },
         "nodeSelector": {
             "recipe": "מתכון",
@@ -2330,7 +2404,8 @@
             "replace": "החלף",
             "append": "הוסף",
             "selectTargetNode": "בחר צומת יעד",
-            "sendToAll": "שלח לכל"
+            "sendToAll": "שלח לכל",
+            "excludeNodeType": "לא להציע שוב סוג צומת זה"
         },
         "exampleImages": {
             "opened": "תיקיית תמונות הדוגמה נפתחה",
@@ -2792,7 +2867,9 @@
             "noItemsSelected": "לא נבחרו {type} למחיקה",
             "deleteError": "שגיאה: {message}",
             "deleteSuccess": "נמחקו בהצלחה {count} {type}",
-            "deleteFailed": "מחיקת {type} נכשלה: {message}"
+            "deleteFailed": "מחיקת {type} נכשלה: {message}",
+            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
+            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
         },
         "controls": {
             "reloadFailed": "טעינה מחדש של {pageType} נכשלה: {message}",
@@ -2852,6 +2929,7 @@
             "metadataUpdateComplete": "עדכון המטא-נתונים הושלם",
             "operationCancelled": "הפעולה בוטלה על ידי המשתמש",
             "operationCancelledPartial": "הפעולה בוטלה. {success} פריטים עובדו.",
+            "metadataFetchRateLimited": "[TODO: Translate] Metadata fetch aborted due to rate limiting — updated {success} of {total}, {failed} failed, {skipped} skipped. Re-run Fetch from Civitai later to retry the rest.",
             "metadataFetchFailed": "אחזור המטא-נתונים נכשל: {message}",
             "bulkMetadataCompleteAll": "רועננו בהצלחה כל {count} ה-{type}s",
             "bulkMetadataCompletePartial": "רועננו {success} מתוך {total} {type}s",

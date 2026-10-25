@@ -264,6 +264,7 @@
         },
         "filter": {
             "title": "Filtrar modelos",
+            "countTitle": "{name} — {count} modelos",
             "presets": "Preajustes",
             "savePreset": "Guardar filtros activos como nuevo preajuste.",
             "savePresetDisabledActive": "No se puede guardar: Ya hay un preajuste activo. Modifique los filtros para guardar un nuevo preajuste",
@@ -399,7 +400,8 @@
             "autoOrganize": "Organización automática",
             "metadata": "Metadatos",
             "sidecarStorage": "Almacenamiento de archivos sidecar",
-            "proxySettings": "Configuración de proxy"
+            "proxySettings": "Configuración de proxy",
+            "sendToWorkflow": "Enviar al workflow"
         },
         "nav": {
             "general": "General",
@@ -451,6 +453,18 @@
             "validation": {
                 "noPaths": "Ingrese al menos una ruta separada por comas.",
                 "saveFailed": "No se pudieron guardar las rutas a omitir: {message}"
+            }
+        },
+        "sendToWorkflowExclusions": {
+            "nodeClasses": {
+                "label": "Tipos de nodos excluidos",
+                "placeholder": "Ejemplo: CheckpointLoaderSimple, MyCustomNode",
+                "help": "Nombres de clase de nodos de ComfyUI que nunca aparecen como destinos de envío al workflow. Separa varias entradas con comas o puntos y comas. Los nodos marcados explícitamente en ComfyUI (clic derecho → Mark as) quedan exentos."
+            },
+            "titlePatterns": {
+                "label": "Patrones de títulos de nodos excluidos",
+                "placeholder": "Ejemplo: negative, preview",
+                "help": "Los nodos cuyo título contenga alguno de estos fragmentos de texto (sin distinguir mayúsculas y minúsculas) se ocultan de los destinos de envío al workflow. Separa varias entradas con comas o puntos y comas. Los nodos marcados explícitamente en ComfyUI (clic derecho → Mark as) quedan exentos."
             }
         },
         "backup": {
@@ -577,6 +591,8 @@
             },
             "showVersionOnCard": "Mostrar versión en la tarjeta",
             "showVersionOnCardHelp": "Mostrar u ocultar el nombre de versión en las tarjetas de modelo",
+            "showQuantizationOnCard": "Mostrar cuantización en la tarjeta",
+            "showQuantizationOnCardHelp": "Mostrar el nivel de cuantización (p. ej. Q4_K_M, FP8) junto al nombre de versión en las tarjetas de modelo",
             "modelCardFooterAction": "Acción del botón de tarjeta de modelo",
             "modelCardFooterActionOptions": {
                 "exampleImages": "Abrir imágenes de ejemplo",
@@ -955,6 +971,11 @@
                 "random": "Aleatorio",
                 "randomAction": "Aleatorizar (barajar)"
             },
+            "modelType": {
+                "title": "Filtrar por tipo de modelo",
+                "all": "Todos los tipos",
+                "multiple": "{count} tipos"
+            },
             "refresh": {
                 "title": "Actualizar lista de modelos",
                 "full": "Reconstruir caché",
@@ -1077,6 +1098,9 @@
     },
     "recipes": {
         "title": "Recetas de LoRA",
+        "filter": {
+            "countTitle": "{name} — {count} recetas"
+        },
         "actions": {
             "sendCheckpoint": "Enviar a ComfyUI",
             "sendRecipe": "Enviar a ComfyUI",
@@ -1454,8 +1478,8 @@
             "notEmptyMessageCount": "Esta carpeta aún contiene {count} archivo(s) de modelo. Elimínalos o muévelos primero — eliminar una carpeta nunca elimina los archivos de modelo en cascada.",
             "notEmptyMessageExcluded": "Esta carpeta aún contiene {count} archivo(s) de modelo, de los cuales {excluded} están excluidos de la biblioteca. Anula su exclusión en «Gestionar modelos excluidos» y elimínalos primero — eliminar una carpeta nunca elimina los archivos de modelo en cascada.",
             "missingTitle": "Carpeta no encontrada",
-            "missingMessage": "[TODO: Translate] This folder no longer exists on disk. You can remove it from the list.",
-            "removeFromList": "[TODO: Translate] Remove from list",
+            "missingMessage": "Esta carpeta ya no existe en el disco. Puedes quitarla de la lista.",
+            "removeFromList": "Quitar de la lista",
             "symlinkTitle": "La carpeta es un enlace simbólico",
             "symlinkMessage": "Todas las copias de esta carpeta son enlaces simbólicos; elimina el enlace o su destino fuera de LoRA Manager.",
             "protectedTitle": "Carpeta protegida",
@@ -1477,8 +1501,8 @@
             "busy": "Todavía hay una eliminación pendiente dentro de esta carpeta. Espera a que caduque la ventana de deshacer.",
             "unsupported": "La eliminación de carpetas no es compatible con esta página",
             "missing": "Esta carpeta ya no existe en el disco. Actualiza la barra lateral e inténtalo de nuevo.",
-            "forgotten": "[TODO: Translate] Folder \"{name}\" removed from the list",
-            "exists": "[TODO: Translate] The folder is back on disk. Delete it instead.",
+            "forgotten": "Carpeta \"{name}\" quitada de la lista",
+            "exists": "La carpeta ha vuelto al disco. Elimínala en su lugar.",
             "symlink": "Esta carpeta es un enlace simbólico; no se puede eliminar desde la barra lateral.",
             "successMulti": "Carpeta \"{name}\" eliminada de {count} raíces de modelo",
             "partial": "Se eliminaron {count} de {total} copias — {failed} no se pudieron eliminar. Actualiza la barra lateral e inténtalo de nuevo."
@@ -1698,6 +1722,8 @@
             "errors": {
                 "invalidUrl": "Formato de URL de modelo inválido",
                 "noVersions": "No hay versiones disponibles para este modelo",
+                "linkedFileNotFound": "[TODO: Translate] File {fileId} was not found in the requested model version.",
+                "linkedFileNotWeightFile": "[TODO: Translate] File {fileId} is not a downloadable model file.",
                 "mixedSources": "No se pueden mezclar URL de CivitAI y Hugging Face / ModelScope en el mismo lote.",
                 "noModelFiles": "No se encontraron archivos de modelo en este repositorio."
             },
@@ -2195,7 +2221,8 @@
             "copyReport": "Copiar informe",
             "downloadCsv": "Descargar CSV",
             "columnModelName": "Nombre del modelo",
-            "columnError": "Error"
+            "columnError": "Error",
+            "rateLimitedNotice": "[TODO: Translate] Fetch aborted: the metadata provider rate limit was reached. Re-run \"Fetch from Civitai\" later to retry the remaining models."
         },
         "downloadBatchSummary": {
             "title": "Resumen de descarga por lotes",
@@ -2280,6 +2307,52 @@
                 "description": "Presiona Ctrl+F (Cmd+F en Mac) para buscar rápidamente dentro de tu vista actual.",
                 "alt": "Búsqueda rápida"
             }
+        },
+        "error": {
+            "title": "[TODO: Translate] Initialization failed",
+            "message": "[TODO: Translate] Something went wrong while scanning your model library.",
+            "retry": "[TODO: Translate] Retry"
+        }
+    },
+    "firstRun": {
+        "title": "[TODO: Translate] Welcome to LoRA Manager",
+        "description": "[TODO: Translate] Before you start, LoRA Manager needs to scan your model libraries and generate metadata sidecar files. This is a one-time step; how long it takes depends on the size of your library and the speed of your disk.",
+        "libraries": {
+            "loras": "[TODO: Translate] LoRAs",
+            "checkpoints": "[TODO: Translate] Checkpoints",
+            "embeddings": "[TODO: Translate] Embeddings",
+            "other": "[TODO: Translate] Other Models"
+        },
+        "language": {
+            "label": "[TODO: Translate] Language"
+        },
+        "libraryStats": "[TODO: Translate] {count} models · {size}",
+        "rootMissing": "[TODO: Translate] Directory not found",
+        "estimate": "[TODO: Translate] About {count} models ({size}) — estimated scan time ~{minutes} min, depending on library size and disk speed.",
+        "noRoots": {
+            "plugin": "[TODO: Translate] No accessible model folders were found. Open Settings to configure your model directories, then reload this page.",
+            "standalone": "[TODO: Translate] No accessible model folders were found. Edit folder_paths in settings.json, then restart the server."
+        },
+        "sidecar": {
+            "title": "[TODO: Translate] Metadata storage",
+            "alongside": {
+                "label": "[TODO: Translate] Next to model files (recommended)",
+                "description": "[TODO: Translate] Metadata .json files are stored next to each model file, so they move together with the model."
+            },
+            "centralized": {
+                "label": "[TODO: Translate] Centralized directory",
+                "description": "[TODO: Translate] Metadata is stored in a separate directory, keeping your model folders clean.",
+                "pathPlaceholder": "[TODO: Translate] Directory for centralized metadata storage"
+            }
+        },
+        "actions": {
+            "start": "[TODO: Translate] Start Scan",
+            "defer": "[TODO: Translate] Later"
+        },
+        "errors": {
+            "loadFailed": "[TODO: Translate] Failed to load library information.",
+            "pathRequired": "[TODO: Translate] Please enter a storage directory for centralized metadata.",
+            "startFailed": "[TODO: Translate] Failed to start the scan."
         }
     },
     "duplicates": {
@@ -2320,7 +2393,8 @@
             "embeddingAdded": "Embedding añadido al workflow",
             "embeddingFailed": "Error al añadir el embedding",
             "promptSent": "Prompt enviado al workflow",
-            "promptFailed": "Error al enviar el prompt"
+            "promptFailed": "Error al enviar el prompt",
+            "nodeTypeExcluded": "Tipo de nodo \"{type}\" excluido de los destinos de envío"
         },
         "nodeSelector": {
             "recipe": "Receta",
@@ -2330,7 +2404,8 @@
             "replace": "Reemplazar",
             "append": "Añadir",
             "selectTargetNode": "Seleccionar nodo de destino",
-            "sendToAll": "Enviar a todos"
+            "sendToAll": "Enviar a todos",
+            "excludeNodeType": "No volver a sugerir este tipo de nodo"
         },
         "exampleImages": {
             "opened": "Carpeta de imágenes de ejemplo abierta",
@@ -2792,7 +2867,9 @@
             "noItemsSelected": "No hay {type} seleccionados para eliminar",
             "deleteError": "Error: {message}",
             "deleteSuccess": "{count} {type} eliminados exitosamente",
-            "deleteFailed": "Error al eliminar {type}: {message}"
+            "deleteFailed": "Error al eliminar {type}: {message}",
+            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
+            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
         },
         "controls": {
             "reloadFailed": "Error al recargar {pageType}: {message}",
@@ -2852,6 +2929,7 @@
             "metadataUpdateComplete": "Actualización de metadatos completada",
             "operationCancelled": "Operación cancelada por el usuario",
             "operationCancelledPartial": "Operación cancelada. {success} elementos procesados.",
+            "metadataFetchRateLimited": "[TODO: Translate] Metadata fetch aborted due to rate limiting — updated {success} of {total}, {failed} failed, {skipped} skipped. Re-run Fetch from Civitai later to retry the rest.",
             "metadataFetchFailed": "Error al obtener metadatos: {message}",
             "bulkMetadataCompleteAll": "Actualizados exitosamente todos los {count} {type}s",
             "bulkMetadataCompletePartial": "Actualizados {success} de {total} {type}s",

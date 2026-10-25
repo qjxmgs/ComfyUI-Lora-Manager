@@ -57,6 +57,27 @@ from ..utils.tag_priorities import (
 logger = logging.getLogger(__name__)
 
 
+def _get_supported_base_models() -> Set[str]:
+    """Return the best-known base-model vocabulary for settings validation.
+
+    Prefers the merged CivitAI vocabulary (hardcoded list plus the last
+    fetched remote snapshot) so newly released base models are accepted;
+    falls back to the hardcoded constant when the service is unavailable.
+    """
+    try:
+        from .civitai_base_model_service import get_known_base_models
+
+        known = get_known_base_models()
+        if known:
+            return known
+    except Exception:
+        logger.debug(
+            "Falling back to hardcoded base model list for settings validation",
+            exc_info=True,
+        )
+    return set(SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS)
+
+
 CORE_USER_SETTING_KEYS: Tuple[str, ...] = (
     "civitai_api_key",
     "folder_paths",
@@ -77,6 +98,9 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "language": "en",
     "show_only_sfw": False,
     "onboarding_completed": False,
+    # First-run gate: until the user confirms the welcome page, the initial
+    # library scan is deferred (see py/services/first_run_manager.py).
+    "initial_scan_completed": False,
     "dismissed_banners": [],
     "enable_metadata_archive_db": False,
     "enable_civarchive_api": True,
@@ -130,6 +154,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "lora_syntax_format": "legacy",
     "model_card_footer_action": "replace_preview",
     "show_version_on_card": True,
+    "show_quantization_on_card": True,
     "version_grouping": "same_base",
     # Buzz price tracking for paid/early-access versions. Opt-in because reading a
     # price costs one extra (public) model-page request per gated model.
@@ -139,6 +164,10 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "price_check_ttl_hours": 24,
     "auto_organize_exclusions": [],
     "metadata_refresh_skip_paths": [],
+    # Send-to-Workflow target filtering: candidate nodes whose comfy class or
+    # title matches these lists are hidden from the target selector. Nodes
+    # explicitly marked via right-click ("Mark as") are exempt.
+    "send_to_workflow_exclusions": {"node_classes": [], "title_patterns": []},
     "skip_previously_downloaded_model_versions": False,
     "download_skip_base_models": [],
     # Ordered per-type rules routing downloads to a non-default root by base
@@ -1491,11 +1520,12 @@ class SettingsManager:
 
         base_models: List[str] = []
         seen = set()
+        allowed = _get_supported_base_models()
         for raw in candidates:
             if not isinstance(raw, str):
                 continue
             token = raw.strip()
-            if not token or token not in SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS:
+            if not token or token not in allowed:
                 continue
             if token in seen:
                 continue
@@ -1520,17 +1550,20 @@ class SettingsManager:
 
         Fault-tolerant like the other settings normalizers: unknown type keys,
         malformed entries and unknown match types are dropped silently;
-        ``base_model`` rules keep only whitelisted base model values while
-        ``tag`` rules accept any free-text tag (trimmed, case-insensitively
-        deduplicated); a rule whose root is not one of the configured roots
-        for its type (folder_paths + extra_folder_paths) is dropped with a
-        warning.
+        ``base_model`` rules keep only values from the merged CivitAI
+        base-model vocabulary (hardcoded list plus the last fetched remote
+        snapshot) while ``tag`` rules accept any free-text tag (trimmed,
+        case-insensitively deduplicated); a rule whose root is not one of the
+        configured roots for its type (folder_paths + extra_folder_paths) is
+        dropped with a warning.
         """
         normalized: Dict[str, List[Dict[str, Any]]] = {
             key: [] for key in DOWNLOAD_ROOT_RULE_FOLDER_KEYS
         }
         if not isinstance(value, Mapping):
             return normalized
+
+        supported_base_models: Optional[Set[str]] = None
 
         for key, raw_rules in value.items():
             if key not in DOWNLOAD_ROOT_RULE_FOLDER_KEYS:
@@ -1565,7 +1598,9 @@ class SettingsManager:
                     if not token:
                         continue
                     if match_type == "base_model":
-                        if token not in SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS:
+                        if supported_base_models is None:
+                            supported_base_models = _get_supported_base_models()
+                        if token not in supported_base_models:
                             continue
                         dedupe_key = token
                     else:
