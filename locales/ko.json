@@ -156,7 +156,9 @@
             "embeddingNameCopied": "Embedding 구문 복사됨",
             "modelNameCopied": "모델 이름 복사됨",
             "sendCheckpointToWorkflow": "ComfyUI로 전송",
-            "sendEmbeddingToWorkflow": "ComfyUI로 전송"
+            "sendEmbeddingToWorkflow": "ComfyUI로 전송",
+            "openInComfyUI": "ComfyUI에서 열기",
+            "copyWorkflowToClipboard": "워크플로를 클립보드에 복사"
         },
         "nsfw": {
             "matureContent": "성인 콘텐츠",
@@ -244,6 +246,7 @@
             "checkpoints": "Checkpoint",
             "embeddings": "Embedding",
             "other": "기타",
+            "workflows": "워크플로",
             "statistics": "통계"
         },
         "search": {
@@ -609,8 +612,8 @@
             "cardBlurAmountHelp": "모델 및 레시피 카드의 헤더와 푸터 오버레이 흐림 강도를 조정합니다 (0 = 흐림 없음, 20 = 최대 흐림)."
         },
         "folderSettings": {
-            "activeLibrary": "활성 라이브러리",
-            "activeLibraryHelp": "구성된 라이브러리를 전환하여 기본 폴더를 업데이트합니다. 선택을 변경하면 페이지가 다시 로드됩니다.",
+            "activeLibrary": "활성 라이브러리 (사용 중단 예정)",
+            "activeLibraryHelp": "구성된 라이브러리를 전환하여 기본 폴더를 업데이트합니다. 선택을 변경하면 페이지가 다시 로드됩니다. 사용 중단 예정: 다중 라이브러리 지원은 향후 릴리스에서 제거됩니다. 단일 라이브러리 내의 여러 폴더 루트는 계속 완전히 지원됩니다.",
             "loadingLibraries": "라이브러리를 불러오는 중...",
             "noLibraries": "구성된 라이브러리가 없습니다",
             "defaultLoraRoot": "LoRA 루트",
@@ -633,6 +636,11 @@
             "defaultControlnetRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 ControlNet 루트 디렉토리를 설정합니다",
             "enableOtherModels": "기타 모델 관리",
             "enableOtherModelsHelp": "끄면 VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet 폴더를 스캔하지 않으며, 기타 모델 페이지가 비활성화된 상태로 유지되고 이러한 모델 유형은 다운로드할 수 없습니다.",
+            "enableWorkflows": "워크플로 관리",
+            "enableWorkflowsHelp": "끄면 워크플로 라이브러리 폴더를 스캔하지 않으며, 워크플로 페이지가 비활성화된 상태로 유지되고 CivitAI의 Workflow 리소스를 연결하거나 다운로드할 수 없습니다.",
+            "workflowFolder": "워크플로 라이브러리 폴더",
+            "workflowFolderHelp": "ComfyUI 워크플로 JSON 파일을 스캔하는 단일 폴더입니다. LoRA Manager에서만 관리하며(ComfyUI와 공유되지 않음), 변경 사항은 즉시 적용됩니다.",
+            "workflowFolderPlaceholder": "/path/to/workflows",
             "otherSubTypes": "관리할 모델 유형",
             "otherSubTypesHelp": "기타 모델 페이지에서 스캔하고 표시할 카테고리를 선택합니다.",
             "subTypeVae": "VAE",
@@ -1099,11 +1107,25 @@
     "recipes": {
         "title": "LoRA 레시피",
         "filter": {
+            "title": "레시피 필터",
             "countTitle": "{name} —— 레시피 {count}개"
+        },
+        "bulk": {
+            "noSelection": "선택된 레시피가 없습니다"
+        },
+        "move": {
+            "failed": "레시피 이동 실패: {message}"
+        },
+        "deleteModal": {
+            "message": "이 레시피를 삭제하시겠습니까?",
+            "note": "이 레시피를 삭제해도 사용된 LoRA 파일에는 영향을 주지 않습니다.",
+            "deleting": "삭제 중..."
         },
         "actions": {
             "sendCheckpoint": "ComfyUI로 보내기",
             "sendRecipe": "ComfyUI로 보내기",
+            "sendRecipeModes": "워크플로로 레시피 보내기 (클릭: 추가, Shift+클릭: 교체)",
+            "shareRecipe": "레시피 공유",
             "copyRecipeSyntax": "레시피 문법 복사",
             "deleteRecipeWithShortcut": "레시피 삭제(Del)"
         },
@@ -1447,6 +1469,82 @@
             "openSettingsFolder": "설정 폴더 열기"
         }
     },
+    "workflows": {
+        "title": "워크플로",
+        "itemLabel": "워크플로",
+        "filter": {
+            "title": "워크플로 필터"
+        },
+        "bulk": {
+            "noSelection": "선택된 워크플로가 없습니다"
+        },
+        "contextMenu": {
+            "sendToComfy": "ComfyUI에서 열기",
+            "updateFromComfy": "ComfyUI에서 업데이트",
+            "copyWorkflow": "워크플로 복사",
+            "restoreDownloaded": "다운로드한 버전 복원",
+            "moveWorkflow": "워크플로를 폴더로 이동",
+            "deleteWorkflow": "워크플로 삭제"
+        },
+        "modals": {
+            "delete": {
+                "title": "워크플로 삭제",
+                "message": "이 워크플로와 모든 관련 파일을 삭제하시겠습니까?",
+                "failed": "워크플로 삭제 실패: {message}"
+            },
+            "move": {
+                "title": "워크플로 이동",
+                "bulkTitle": "{count}개의 워크플로 이동",
+                "selectRoot": "워크플로 루트 선택:",
+                "targetHint": "워크플로 루트 디렉토리를 선택하세요",
+                "noRoots": "워크플로 루트를 찾을 수 없습니다",
+                "failed": "워크플로 이동 실패: {message}"
+            },
+            "bulkDelete": {
+                "title": "여러 워크플로 삭제",
+                "message": "선택된 모든 워크플로와 관련 파일을 삭제하시겠습니까?",
+                "countMessage": "개의 워크플로가 영구적으로 삭제됩니다."
+            }
+        },
+        "relink": {
+            "success": "워크플로가 CivitAI에 성공적으로 다시 연결되었습니다",
+            "civArchiveSuccess": "워크플로가 CivitArchive을 통해 성공적으로 다시 연결되었습니다"
+        },
+        "sendToComfy": {
+            "success": "워크플로를 ComfyUI로 보냈습니다",
+            "failed": "워크플로 전송 실패: {message}"
+        },
+        "restoreDownloaded": {
+            "title": "다운로드한 버전을 복원할까요?",
+            "message": "로컬 편집 내용이 삭제되고 워크플로가 다운로드한 버전으로 복원됩니다.",
+            "confirmButton": "복원",
+            "restoring": "워크플로 복원 중...",
+            "success": "워크플로를 다운로드한 버전으로 복원했습니다",
+            "failed": "워크플로 복원 실패: {message}"
+        },
+        "updateFromComfy": {
+            "success": "ComfyUI에서 워크플로를 업데이트했습니다",
+            "noChanges": "ComfyUI에 다시 기록할 변경 사항이 없습니다",
+            "cancelled": "업데이트가 취소되었습니다",
+            "failed": "ComfyUI에서 업데이트 실패: {message}"
+        },
+        "copyWorkflow": {
+            "failed": "워크플로 복사 실패: {message}"
+        },
+        "disabled": {
+            "title": "워크플로 관리가 꺼져 있습니다",
+            "description": "활성화하면 ComfyUI 워크플로 파일을 스캔하고 관리하며, CivitAI 메타데이터와 미리보기를 유지하고 실행 중인 ComfyUI로 전송할 수 있습니다.",
+            "enableButton": "워크플로 활성화",
+            "hint": "나중에 설정 > 라이브러리에서 이 기능을 다시 끌 수 있습니다.",
+            "enableFailed": "워크플로 활성화 실패"
+        },
+        "noPaths": {
+            "title": "설정된 워크플로 폴더가 없습니다",
+            "description": "워크플로 관리가 켜져 있지만, 설정된 워크플로 폴더가 없습니다. 설정 → 라이브러리에서 워크플로 폴더를 설정한 뒤 이 페이지를 새로 고침하세요.",
+            "hint": "워크플로 라이브러리 폴더는 ComfyUI에 내장된 워크플로 목록과 별개입니다.",
+            "openSettings": "설정 열기"
+        }
+    },
     "sidebar": {
         "modelRoot": "루트",
         "collapseAll": "모든 폴더 접기",
@@ -1722,8 +1820,8 @@
             "errors": {
                 "invalidUrl": "잘못된 모델 URL 형식",
                 "noVersions": "이 모델에 사용 가능한 버전이 없습니다",
-                "linkedFileNotFound": "[TODO: Translate] File {fileId} was not found in the requested model version.",
-                "linkedFileNotWeightFile": "[TODO: Translate] File {fileId} is not a downloadable model file.",
+                "linkedFileNotFound": "요청한 모델 버전에서 파일 {fileId}을(를) 찾을 수 없습니다.",
+                "linkedFileNotWeightFile": "파일 {fileId}은(는) 다운로드 가능한 모델 파일이 아닙니다.",
                 "mixedSources": "동일한 배치에서 CivitAI와 Hugging Face / ModelScope URL을 혼합할 수 없습니다.",
                 "noModelFiles": "이 저장소에서 모델 파일을 찾을 수 없습니다."
             },
@@ -2222,7 +2320,7 @@
             "downloadCsv": "CSV 다운로드",
             "columnModelName": "모델 이름",
             "columnError": "오류",
-            "rateLimitedNotice": "[TODO: Translate] Fetch aborted: the metadata provider rate limit was reached. Re-run \"Fetch from Civitai\" later to retry the remaining models."
+            "rateLimitedNotice": "가져오기를 중단했습니다: 메타데이터 제공자의 속도 제한에 도달했습니다. 나머지 모델을 다시 시도하려면 나중에 'CivitAI에서 메타데이터 가져오기'를 다시 실행하세요."
         },
         "downloadBatchSummary": {
             "title": "일괄 다운로드 요약",
@@ -2272,6 +2370,10 @@
             "title": "기타 모델 관리자 초기화 중",
             "message": "모델 캐시를 스캔하고 구축하고 있습니다. 몇 분이 걸릴 수 있습니다..."
         },
+        "workflows": {
+            "title": "워크플로 매니저 초기화 중",
+            "message": "워크플로 캐시를 스캔하고 구축하고 있습니다. 몇 분이 걸릴 수 있습니다..."
+        },
         "recipes": {
             "title": "레시피 매니저 초기화 중",
             "message": "레시피를 로딩하고 처리하고 있습니다. 몇 분이 걸릴 수 있습니다..."
@@ -2309,50 +2411,50 @@
             }
         },
         "error": {
-            "title": "[TODO: Translate] Initialization failed",
-            "message": "[TODO: Translate] Something went wrong while scanning your model library.",
-            "retry": "[TODO: Translate] Retry"
+            "title": "초기화 실패",
+            "message": "모델 라이브러리를 스캔하는 중 문제가 발생했습니다.",
+            "retry": "다시 시도"
         }
     },
     "firstRun": {
-        "title": "[TODO: Translate] Welcome to LoRA Manager",
-        "description": "[TODO: Translate] Before you start, LoRA Manager needs to scan your model libraries and generate metadata sidecar files. This is a one-time step; how long it takes depends on the size of your library and the speed of your disk.",
+        "title": "LoRA Manager에 오신 것을 환영합니다",
+        "description": "시작하기 전에 LoRA Manager가 모델 라이브러리를 스캔하고 메타데이터 사이드카 파일을 생성합니다. 이 작업은 한 번만 수행되며, 소요 시간은 라이브러리 크기와 디스크 속도에 따라 달라집니다.",
         "libraries": {
-            "loras": "[TODO: Translate] LoRAs",
-            "checkpoints": "[TODO: Translate] Checkpoints",
-            "embeddings": "[TODO: Translate] Embeddings",
-            "other": "[TODO: Translate] Other Models"
+            "loras": "LoRA",
+            "checkpoints": "Checkpoint",
+            "embeddings": "Embedding",
+            "other": "기타 모델"
         },
         "language": {
-            "label": "[TODO: Translate] Language"
+            "label": "언어"
         },
-        "libraryStats": "[TODO: Translate] {count} models · {size}",
-        "rootMissing": "[TODO: Translate] Directory not found",
-        "estimate": "[TODO: Translate] About {count} models ({size}) — estimated scan time ~{minutes} min, depending on library size and disk speed.",
+        "libraryStats": "모델 {count}개 · {size}",
+        "rootMissing": "폴더를 찾을 수 없습니다",
+        "estimate": "모델 약 {count}개({size}) — 예상 스캔 시간 약 {minutes}분이며, 라이브러리 크기와 디스크 속도에 따라 달라집니다.",
         "noRoots": {
-            "plugin": "[TODO: Translate] No accessible model folders were found. Open Settings to configure your model directories, then reload this page.",
-            "standalone": "[TODO: Translate] No accessible model folders were found. Edit folder_paths in settings.json, then restart the server."
+            "plugin": "접근 가능한 모델 폴더를 찾을 수 없습니다. 설정을 열어 모델 디렉터리를 구성한 다음 이 페이지를 새로고침하세요.",
+            "standalone": "접근 가능한 모델 폴더를 찾을 수 없습니다. settings.json의 folder_paths를 편집한 다음 서버를 다시 시작하세요."
         },
         "sidecar": {
-            "title": "[TODO: Translate] Metadata storage",
+            "title": "메타데이터 저장",
             "alongside": {
-                "label": "[TODO: Translate] Next to model files (recommended)",
-                "description": "[TODO: Translate] Metadata .json files are stored next to each model file, so they move together with the model."
+                "label": "모델 파일 옆 (권장)",
+                "description": "메타데이터 .json 파일을 각 모델 파일 옆에 저장하므로 모델과 함께 이동합니다."
             },
             "centralized": {
-                "label": "[TODO: Translate] Centralized directory",
-                "description": "[TODO: Translate] Metadata is stored in a separate directory, keeping your model folders clean.",
-                "pathPlaceholder": "[TODO: Translate] Directory for centralized metadata storage"
+                "label": "중앙 집중식 디렉터리",
+                "description": "메타데이터가 별도 디렉터리에 저장되어 모델 폴더를 깔끔하게 유지합니다.",
+                "pathPlaceholder": "중앙 집중식 메타데이터 저장 디렉터리"
             }
         },
         "actions": {
-            "start": "[TODO: Translate] Start Scan",
-            "defer": "[TODO: Translate] Later"
+            "start": "스캔 시작",
+            "defer": "나중에"
         },
         "errors": {
-            "loadFailed": "[TODO: Translate] Failed to load library information.",
-            "pathRequired": "[TODO: Translate] Please enter a storage directory for centralized metadata.",
-            "startFailed": "[TODO: Translate] Failed to start the scan."
+            "loadFailed": "라이브러리 정보를 불러오지 못했습니다.",
+            "pathRequired": "중앙 집중식 메타데이터 저장 디렉터리를 입력하세요.",
+            "startFailed": "스캔을 시작하지 못했습니다."
         }
     },
     "duplicates": {
@@ -2868,8 +2970,8 @@
             "deleteError": "오류: {message}",
             "deleteSuccess": "{count}개의 {type}이(가) 성공적으로 삭제되었습니다",
             "deleteFailed": "{type} 삭제 실패: {message}",
-            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
-            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
+            "deletePartialFailed": "선택한 {type} {failed}개 삭제 실패: {message}",
+            "cacheUpdateFailed": "파일은 삭제되었지만 라이브러리 캐시를 업데이트하지 못했습니다. 목록을 새로 고치려면 '캐시 재구성'을 실행하세요."
         },
         "controls": {
             "reloadFailed": "{pageType} 다시 로딩 실패: {message}",
@@ -2882,7 +2984,7 @@
             "contentRatingFailed": "콘텐츠 등급 설정 실패: {message}",
             "relinkSuccess": "모델이 CivitAI에 성공적으로 다시 연결되었습니다",
             "relinkFailed": "오류: {message}",
-            "linkHfSuccess": "모델이 HuggingFace에 연결되었습니다",
+            "linkHfSuccess": "모델이 모델 소스에 연결되었습니다",
             "linkHfFailed": "오류: {message}",
             "linkCivArchSuccess": "모델이 CivitArchive을 통해 성공적으로 다시 연결되었습니다",
             "fetchMetadataFirst": "먼저 CivitAI에서 메타데이터를 가져와주세요",
@@ -2929,7 +3031,7 @@
             "metadataUpdateComplete": "메타데이터 업데이트 완료",
             "operationCancelled": "사용자에 의해 작업이 취소되었습니다",
             "operationCancelledPartial": "작업이 취소되었습니다. {success}개 항목이 처리되었습니다.",
-            "metadataFetchRateLimited": "[TODO: Translate] Metadata fetch aborted due to rate limiting — updated {success} of {total}, {failed} failed, {skipped} skipped. Re-run Fetch from Civitai later to retry the rest.",
+            "metadataFetchRateLimited": "속도 제한으로 메타데이터 가져오기가 중단되었습니다 — {total}개 중 {success}개 업데이트, {failed}개 실패, {skipped}개 건너뜀. 나머지를 다시 시도하려면 나중에 CivitAI에서 메타데이터를 다시 가져오세요.",
             "metadataFetchFailed": "메타데이터 가져오기 실패: {message}",
             "bulkMetadataCompleteAll": "모든 {count}개 {type}이(가) 성공적으로 새로고침되었습니다",
             "bulkMetadataCompletePartial": "{total}개 중 {success}개 {type}이(가) 새로고침되었습니다",
@@ -3060,6 +3162,12 @@
             "content": "전용 페이지에서 VAE, Upscaler, Text Encoder, CLIP Vision, ControlNet 파일을 스캔 및 관리하고 CivitAI에서 다운로드할 수 있습니다.",
             "enable": "기타 모델 활성화",
             "openSettings": "설정 열기"
+        },
+        "bulkFetchPrompt": {
+            "title": "라이브러리에 생기를 불어넣으세요",
+            "content": "첫 스캔에서 메타데이터가 없는 모델이 {count}개 발견되었습니다. CivitAI에서 정보를 가져오면 미리보기 이미지, 설명, 트리거 단어를 얻을 수 있습니다.",
+            "fetch": "메타데이터 가져오기",
+            "later": "나중에 하기"
         },
         "pager": {
             "previous": "이전 알림",

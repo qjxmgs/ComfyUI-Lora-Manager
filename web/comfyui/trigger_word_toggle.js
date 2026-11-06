@@ -775,25 +775,29 @@ app.registerExtension({
       result.widget.serializeValue = function() {
         const value = this.value || [];
         return value.map((tag) => {
+          // `highlighted` is transient UI state recomputed after load from the
+          // current selection; persisting it makes an untouched workflow
+          // compare dirty against the saved JSON. Strip it on serialize.
+          const { highlighted, ...serializableTag } = tag;
           if (Array.isArray(tag.items)) {
             return {
-              ...tag,
+              ...serializableTag,
               text:
                 tag.strength !== undefined && tag.strength !== null
                   ? `(${tag.text}:${tag.strength.toFixed(2)})`
                   : tag.text,
-              items: tag.items.map((item) => ({ ...item })),
+              items: tag.items.map(({ highlighted: _itemHighlighted, ...item }) => item),
             };
           }
 
           if (tag.strength !== undefined && tag.strength !== null) {
             return {
-              ...tag,
+              ...serializableTag,
               text: `(${tag.text}:${tag.strength.toFixed(2)})`,
             };
           }
 
-          return tag;
+          return serializableTag;
         });
       };
     });

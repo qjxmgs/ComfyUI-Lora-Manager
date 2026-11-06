@@ -3,12 +3,14 @@ import { getModelSourceInfo, getModelSourceGroupKey, getModelSourceViewTitle, op
 import { state, getCurrentPageState } from '../../state/index.js';
 import { showModelModal } from './ModelModal.js';
 import { hasCivitaiSource } from './utils.js';
+import { isVideoPreviewUrl } from '../../utils/mediaTypes.js';
 import { bulkManager } from '../../managers/BulkManager.js';
 import { modalManager } from '../../managers/ModalManager.js';
 import { NSFW_LEVELS, getBaseModelAbbreviation, getSubTypeAbbreviation, getMatureBlurThreshold, MODEL_SUBTYPE_DISPLAY_NAMES, MODEL_CARD_DRAG_MIME_TYPE } from '../../utils/constants.js';
 import { MODEL_TYPES } from '../../api/apiConfig.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { showDeleteModal } from '../../utils/modalUtils.js';
+import { copyWorkflowToClipboard, sendWorkflowToComfy } from '../../utils/workflowActions.js';
 import { translate } from '../../utils/i18nHelpers.js';
 import { eventManager } from '../../utils/EventManager.js';
 
@@ -239,6 +241,9 @@ function handleSendToWorkflow(card, replaceMode, modelType) {
         const name = card.dataset.file_name || '';
         const embeddingCode = folder ? `embedding:${folder}/${name}` : `embedding:${name}`;
         sendEmbeddingToWorkflow(embeddingCode);
+    } else if (modelType === MODEL_TYPES.WORKFLOW) {
+        // Workflow send loads the whole graph document; no append/replace modes.
+        sendWorkflowToComfy(card.dataset.filepath);
     } else {
         showToast('modelCard.sendToWorkflow.checkpointNotImplemented', {}, 'info');
     }
@@ -258,6 +263,8 @@ function handleCopyAction(card, modelType) {
         const embeddingCode = folder ? `embedding:${folder}/${name}` : `embedding:${name}`;
         const message = translate('modelCard.actions.embeddingNameCopied', {}, 'Embedding syntax copied');
         copyToClipboard(embeddingCode, message);
+    } else if (modelType === MODEL_TYPES.WORKFLOW) {
+        copyWorkflowToClipboard(card.dataset.filepath);
     } else {
         // Other model types (VAE, upscalers, ...) - copy the file name
         const fileName = card.dataset.file_name;
@@ -596,7 +603,9 @@ export function createModelCard(model, modelType) {
 
     // Check if autoplayOnHover is enabled for video previews
     const autoplayOnHover = state.global?.settings?.autoplay_on_hover || false;
-    const isVideo = previewUrl.endsWith('.mp4') || previewUrl.endsWith('.webm');
+    // Preview URLs are versioned (`&v=<mtime>`), so the extension has to come
+    // from the decoded `path` parameter rather than the end of the URL.
+    const isVideo = isVideoPreviewUrl(previewUrl);
     const videoAttrs = [
         'controls',
         'muted',
@@ -640,6 +649,9 @@ export function createModelCard(model, modelType) {
         // Embedding send always appends to the prompt; no replace mode.
         sendTitle = translate('modelCard.actions.sendEmbeddingToWorkflow', {}, 'Send to ComfyUI');
         copyTitle = translate('modelCard.actions.copyEmbeddingName', {}, 'Copy embedding name');
+    } else if (modelType === MODEL_TYPES.WORKFLOW) {
+        sendTitle = translate('modelCard.actions.openInComfyUI', {}, 'Open in ComfyUI');
+        copyTitle = translate('modelCard.actions.copyWorkflowToClipboard', {}, 'Copy workflow to clipboard');
     } else {
         sendTitle = translate('modelCard.actions.sendToWorkflow', {}, 'Send to ComfyUI');
         copyTitle = translate('modelCard.actions.copyLoRASyntax', {}, 'Copy value');
@@ -647,6 +659,12 @@ export function createModelCard(model, modelType) {
 
     const updateBadgeLabel = translate('modelCard.badges.update', {}, 'Update');
     const updateBadgeTooltip = translate('modelCard.badges.updateAvailable', {}, 'Update available');
+    // Standalone has no running ComfyUI graph to push a workflow into.
+    const hideSendIcon = modelType === MODEL_TYPES.WORKFLOW && state.global.settings.standalone_mode;
+    const sendIcon = hideSendIcon ? '' : `
+        <i class="fas fa-paper-plane"
+           title="${sendTitle}">
+        </i>`;
     const actionIcons = `
         <i class="${isFavorite ? 'fas fa-star favorite-active' : 'far fa-star'}" 
            title="${favoriteTitle}">
@@ -654,10 +672,7 @@ export function createModelCard(model, modelType) {
         <i class="fas fa-globe" 
            title="${globeTitle}"
            ${!globeEnabled ? 'style="opacity: 0.5; cursor: not-allowed"' : ''}>
-        </i>
-        <i class="fas fa-paper-plane" 
-           title="${sendTitle}">
-        </i>
+        </i>${sendIcon}
         <i class="fas fa-copy" 
            title="${copyTitle}">
         </i>`;

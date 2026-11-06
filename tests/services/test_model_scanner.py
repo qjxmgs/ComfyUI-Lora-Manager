@@ -33,7 +33,8 @@ from py.services.pending_delete_service import (
 )
 from py.services.persistent_model_cache import PersistentModelCache, DEFAULT_LICENSE_FLAGS
 from py.utils.civitai_utils import build_license_flags
-from py.utils.models import BaseModelMetadata
+from py.utils.models import BaseModelMetadata, LoraMetadata
+from py.utils.sidecar_paths import get_metadata_path
 
 
 class RecordingWebSocketManager:
@@ -268,6 +269,23 @@ async def test_initialize_cache_populates_cache(tmp_path: Path):
 
 
 @pytest.mark.asyncio
+async def test_force_refresh_without_cache_falls_back_to_full_initialization(tmp_path: Path):
+    """A scan fired before background init has run has no cache to reconcile
+    against; it must initialize from scratch instead of crashing."""
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    assert scanner._cache is None
+
+    cache = await scanner.get_cached_data(force_refresh=True)
+
+    assert scanner._cache is not None
+    assert {item["file_path"] for item in cache.raw_data} == {
+        _normalize_path(tmp_path / "one.txt"),
+        _normalize_path(tmp_path / "nested" / "two.txt"),
+    }
+
+
+@pytest.mark.asyncio
 async def test_initialize_cache_sync_returns_result_without_mutating_state(tmp_path: Path, monkeypatch):
     _create_files(tmp_path)
     scanner = DummyScanner(tmp_path)
@@ -278,7 +296,8 @@ async def test_initialize_cache_sync_returns_result_without_mutating_state(tmp_p
     scanner._cache = ModelCache(raw_data=[{"file_path": "sentinel", "folder": ""}], folders=["existing"])
 
     loop = asyncio.get_running_loop()
-    result = await loop.run_in_executor(None, scanner._initialize_cache_sync, 2, "dummy")
+    collected = scanner._collect_model_files()
+    result = await loop.run_in_executor(None, scanner._initialize_cache_sync, collected, "dummy")
 
     assert isinstance(result, CacheBuildResult)
     assert {item["file_path"] for item in result.raw_data} == {
@@ -290,6 +309,80 @@ async def test_initialize_cache_sync_returns_result_without_mutating_state(tmp_p
 
     assert scanner._cache.raw_data == [{"file_path": "sentinel", "folder": ""}]
     assert scanner._hash_index.get_path("hash-one") is None
+
+
+@pytest.mark.asyncio
+async def test_collect_model_files_records_files_folders_and_bytes(tmp_path: Path):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+
+    collected = scanner._collect_model_files()
+
+    assert {Path(item.file_path).name for item in collected.files} == {
+        "one.txt",
+        "two.txt",
+        "skip-file.txt",
+    }
+    assert collected.folders == ["nested"]
+    expected_bytes = sum(
+        (tmp_path / name).stat().st_size
+        for name in ("one.txt", "skip-file.txt")
+    ) + (tmp_path / "nested" / "two.txt").stat().st_size
+    assert collected.total_bytes == expected_bytes
+    assert scanner._count_model_files() == len(collected.files)
+
+
+@pytest.mark.asyncio
+async def test_gather_model_data_consumes_collected_without_rewalking(tmp_path: Path, monkeypatch):
+    """The processing phase must not walk the tree a second time."""
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    collected = scanner._collect_model_files()
+
+    def fail_collect(*_args, **_kwargs):
+        pytest.fail("_gather_model_data re-walked the tree instead of reusing the collected scan")
+
+    monkeypatch.setattr(scanner, "_collect_model_files", fail_collect)
+
+    result = await scanner._gather_model_data(collected=collected)
+
+    assert {item["file_path"] for item in result.raw_data} == {
+        _normalize_path(tmp_path / "one.txt"),
+        _normalize_path(tmp_path / "nested" / "two.txt"),
+    }
+    assert result.all_folders == ["nested"]
+
+
+@pytest.mark.asyncio
+async def test_initialize_cache_sync_broadcasts_structured_progress(tmp_path: Path, monkeypatch):
+    """Progress broadcasts carry processed/total/bytes fields for the UI."""
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+
+    ws_stub = RecordingWebSocketManager()
+    monkeypatch.setattr(model_scanner, "ws_manager", ws_stub)
+
+    collected = scanner._collect_model_files()
+    loop = asyncio.get_running_loop()
+    result = await loop.run_in_executor(
+        None, scanner._initialize_cache_sync, collected, "dummy"
+    )
+
+    assert isinstance(result, CacheBuildResult)
+    progress_payloads = [
+        payload
+        for payload in ws_stub.payloads
+        if payload.get("stage") == "process_models"
+    ]
+    assert progress_payloads, "expected process_models progress broadcasts"
+    for payload in progress_payloads:
+        assert {"processed", "total", "bytes_done", "bytes_total"} <= payload.keys()
+
+    # The throttling always lets the final update through.
+    final = progress_payloads[-1]
+    assert final["processed"] == final["total"] == len(collected.files)
+    assert final["bytes_done"] == collected.total_bytes
+    assert final["bytes_total"] == collected.total_bytes
 
 
 @pytest.mark.asyncio
@@ -3550,3 +3643,188 @@ async def test_on_library_changed_schedules_refreeze_after_reinit(tmp_path: Path
     await asyncio.sleep(0)
 
     assert calls == [("init", True), ("freeze", "dummy library change")]
+
+
+class PluginScanner(ModelScanner):
+    """Keeps the production ``_process_model_file`` (DummyScanner overrides it)."""
+
+    def __init__(self, root: Path):
+        self._root = str(root)
+        super().__init__(
+            model_type="dummy",
+            model_class=LoraMetadata,
+            file_extensions={".safetensors"},
+            hash_index=ModelHashIndex(),
+        )
+
+    def get_model_roots(self) -> List[str]:
+        return [self._root]
+
+
+@pytest.mark.asyncio
+async def test_process_model_file_skips_zero_byte_files(tmp_path: Path):
+    """An empty model file must stay unmanaged: no sidecar, no cache entry.
+
+    Regression test for issue #1162 — hashing it would store the empty-string
+    SHA256 placeholder, which every unread file shares.
+    """
+    scanner = PluginScanner(tmp_path)
+    empty_file = tmp_path / "Emilia(RE0).safetensors"
+    empty_file.write_bytes(b"")
+
+    assert await scanner._process_model_file(str(empty_file), str(tmp_path)) is None
+    assert not Path(get_metadata_path(str(empty_file))).exists()
+
+
+@pytest.mark.asyncio
+async def test_process_model_file_still_accepts_non_empty_files(tmp_path: Path):
+    """Guard against over-skipping: a file with content is processed normally."""
+    scanner = PluginScanner(tmp_path)
+    model_file = tmp_path / "model.safetensors"
+    model_file.write_bytes(b"x" * 64)
+
+    result = await scanner._process_model_file(str(model_file), str(tmp_path))
+
+    assert result is not None
+    assert len(result["sha256"]) == 64
+    assert Path(get_metadata_path(str(model_file))).exists()
+
+
+@pytest.mark.asyncio
+async def test_process_model_file_rehashes_the_empty_file_placeholder(tmp_path: Path):
+    """A sidecar poisoned with the empty-string hash heals during the scan.
+
+    Regression test for issue #1162: existing libraries must recover without
+    the user re-clicking "Verify Hashes" on every duplicate group.
+    """
+    import hashlib
+
+    from py.utils.constants import EMPTY_HASH_SHA256
+    from py.utils.metadata_manager import MetadataManager
+
+    scanner = PluginScanner(tmp_path)
+    model_file = tmp_path / "model.safetensors"
+    content = b"real model bytes"
+    model_file.write_bytes(content)
+    expected = hashlib.sha256(content).hexdigest()
+
+    metadata = await MetadataManager.create_default_metadata(str(model_file))
+    assert metadata is not None and metadata.sha256 == expected
+    sidecar = Path(get_metadata_path(str(model_file)))
+    payload = json.loads(sidecar.read_text(encoding="utf-8"))
+    payload["sha256"] = EMPTY_HASH_SHA256
+    sidecar.write_text(json.dumps(payload), encoding="utf-8")
+
+    result = await scanner._process_model_file(str(model_file), str(tmp_path))
+
+    assert result is not None
+    assert result["sha256"] == expected
+    assert json.loads(sidecar.read_text(encoding="utf-8"))["sha256"] == expected
+
+
+@pytest.mark.asyncio
+async def test_process_model_file_keeps_a_zero_byte_placeholder_on_empty_files(
+    tmp_path: Path,
+):
+    """An empty file stays unmanaged instead of being "repaired" to the placeholder."""
+    from py.utils.constants import EMPTY_HASH_SHA256
+    from py.utils.metadata_manager import MetadataManager
+
+    scanner = PluginScanner(tmp_path)
+    model_file = tmp_path / "empty.safetensors"
+    model_file.write_bytes(b"")
+    sidecar = Path(get_metadata_path(str(model_file)))
+    sidecar.write_text(json.dumps({"sha256": EMPTY_HASH_SHA256}), encoding="utf-8")
+
+    assert await scanner._process_model_file(str(model_file), str(tmp_path)) is None
+    assert json.loads(sidecar.read_text(encoding="utf-8"))["sha256"] == EMPTY_HASH_SHA256
+
+
+async def test_add_model_to_cache_slims_civitai_payload(tmp_path: Path, monkeypatch):
+    """Downloaded/imported entries must match the slim scan-path shape.
+
+    The full source payload (images, files, description, ...) stays with the
+    caller; the cache keeps only the frequently used keys, and license flags
+    are derived before slimming drops the model-level license fields
+    (issue #1161).
+    """
+    scanner = DummyScanner(tmp_path)
+    scanner._cache = ModelCache(raw_data=[], folders=[])
+    scheduled: List[str] = []
+    monkeypatch.setattr(
+        model_scanner, "schedule_refreeze", lambda reason: scheduled.append(reason)
+    )
+
+    full_payload = {
+        "id": 123,
+        "modelId": 456,
+        "name": "v1",
+        "creator": {"username": "alice", "image": "avatar.png"},
+        "trainedWords": ["trigger"],
+        "model": {
+            "type": "LORA",
+            "allowNoCredit": True,
+            "allowCommercialUse": ["Image"],
+            "description": "long text",
+        },
+        "images": [{"url": "u", "meta": {"prompt": "p"}}],
+        "files": [{"name": "f"}],
+        "stats": {"downloadCount": 1},
+    }
+    metadata = {
+        "file_path": "x.txt",
+        "folder": "",
+        "sha256": "abc",
+        "tags": [],
+        "civitai": full_payload,
+    }
+
+    ok = await scanner.add_model_to_cache(metadata, "")
+
+    assert ok is True
+    entry = scanner._cache.raw_data[0]
+    assert entry["civitai"] == {
+        "id": 123,
+        "modelId": 456,
+        "name": "v1",
+        "creator": {"username": "alice"},
+        "trainedWords": ["trigger"],
+        "model": {"type": "LORA"},
+    }
+    assert entry["license_flags"] == build_license_flags(
+        {"allowNoCredit": True, "allowCommercialUse": ["Image"]}
+    )
+    # The caller's dict keeps the full payload for downstream use
+    # (e.g. the filename-template flow).
+    assert "images" in metadata["civitai"]
+    assert scheduled == ["dummy model added to cache"]
+
+
+async def test_update_single_model_cache_schedules_refreeze(tmp_path: Path, monkeypatch):
+    scanner = DummyScanner(tmp_path)
+    scanner._cache = ModelCache(
+        raw_data=[
+            {
+                "file_path": "old.txt",
+                "folder": "",
+                "sha256": "abc",
+                "tags": [],
+                "model_name": "m",
+                "file_name": "old",
+            }
+        ],
+        folders=[],
+    )
+    scheduled: List[str] = []
+    monkeypatch.setattr(
+        model_scanner, "schedule_refreeze", lambda reason: scheduled.append(reason)
+    )
+
+    result = await scanner.update_single_model_cache(
+        "old.txt",
+        "old.txt",
+        {"file_path": "old.txt", "sha256": "abc", "tags": [], "model_name": "m"},
+    )
+
+    assert result
+    assert "dummy cache update" in scheduled

@@ -84,9 +84,6 @@ function createStrengthBadge() {
     padding: "1px 6px",
     borderRadius: "999px",
     letterSpacing: "0.2px",
-    backgroundColor: "rgba(255,255,255,0.08)",
-    color: "rgba(255,255,255,0.95)",
-    border: "1px solid rgba(255,255,255,0.25)",
     lineHeight: "normal",
     minWidth: "34px",
     textAlign: "center",
@@ -296,11 +293,9 @@ function createTagElement({
     fontSize: `${roundScaled(group ? 12 : 13, styleScale)}px`,
     cursor: "pointer",
     transition: "all 0.2s ease",
-    border: "1px solid transparent",
     display: "inline-flex",
     alignItems: "center",
     gap: `${roundScaled(6, styleScale)}px`,
-    boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
     margin: "1px",
     userSelect: "none",
     WebkitUserSelect: "none",
@@ -315,42 +310,16 @@ function createTagElement({
     textAlign: "center",
   };
 
-  const highlightStyles = highlighted
-    ? {
-        boxShadow: "0 0 0 2px rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0,0,0,0.15)",
-        borderColor: "rgba(246, 224, 94, 0.8)",
-        backgroundImage: "linear-gradient(120deg, rgba(255,255,255,0.08), rgba(255,255,255,0))",
-      }
-    : {
-        boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
-        backgroundImage: "none",
-      };
+  Object.assign(tagEl.style, baseStyles);
 
-  Object.assign(tagEl.style, {
-    ...baseStyles,
-    ...(active
-      ? {
-          backgroundColor: "rgba(66, 153, 225, 0.9)",
-          color: "white",
-          borderColor: "rgba(66, 153, 225, 0.9)",
-        }
-      : {
-          backgroundColor: "rgba(45, 55, 72, 0.7)",
-          color: "rgba(226, 232, 240, 0.8)",
-          borderColor: "rgba(226, 232, 240, 0.2)",
-        }),
-    ...highlightStyles,
-  });
-
+  // Colour, border and elevation come from `.comfy-tag[data-*]` rules in
+  // lm_styles.css so the chips follow the active ComfyUI theme.
   tagEl.onmouseenter = () => {
     tagEl.style.transform = "translateY(-1px)";
-    tagEl.dataset.prevBoxShadow = tagEl.style.boxShadow || "";
-    tagEl.style.boxShadow = "0 2px 4px rgba(0,0,0,0.2)";
   };
 
   tagEl.onmouseleave = () => {
     tagEl.style.transform = "translateY(0)";
-    tagEl.style.boxShadow = tagEl.dataset.prevBoxShadow || "0 1px 2px rgba(0,0,0,0.1)";
   };
 
   tagEl.dataset.active = active ? "true" : "false";
@@ -479,7 +448,7 @@ function renderGroupEditor(widget, tagData, index) {
 
   const panel = document.createElement("div");
   panel.id = GROUP_EDITOR_ID;
-  panel.className = "lm-trigger-group-editor";
+  panel.className = "lm-popover lm-trigger-group-editor";
   Object.assign(panel.style, {
     position: "fixed",
     zIndex: "10001",
@@ -489,10 +458,6 @@ function renderGroupEditor(widget, tagData, index) {
     overflowY: "auto",
     padding: `${metrics.panelPadding}px`,
     borderRadius: `${metrics.panelRadius}px`,
-    border: "1px solid rgba(255,255,255,0.15)",
-    background: "rgba(22, 26, 32, 0.96)",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
-    backdropFilter: "blur(8px)",
     display: "flex",
     flexDirection: "column",
     gap: `${metrics.panelGap}px`,
@@ -511,7 +476,6 @@ function renderGroupEditor(widget, tagData, index) {
   title.className = "lm-trigger-group-editor__title";
   title.textContent = tagData.text;
   Object.assign(title.style, {
-    color: "rgba(255,255,255,0.96)",
     fontSize: `${metrics.titleFontSize}px`,
     fontWeight: "600",
     whiteSpace: "nowrap",
@@ -524,7 +488,6 @@ function renderGroupEditor(widget, tagData, index) {
   subtitle.className = "lm-trigger-group-editor__subtitle";
   subtitle.textContent = `${groupState.activeChildren}/${groupState.totalChildren} active`;
   Object.assign(subtitle.style, {
-    color: "rgba(226,232,240,0.72)",
     fontSize: `${metrics.subtitleFontSize}px`,
   });
   header.appendChild(title);
@@ -569,7 +532,6 @@ function renderGroupEditor(widget, tagData, index) {
       fontSize: `${metrics.titleFontSize}px`,
       opacity: "0.7",
       fontStyle: "italic",
-      color: "rgba(226,232,240,0.75)",
     });
     itemsWrap.appendChild(emptyHint);
   }
@@ -614,7 +576,7 @@ function showTagContextMenu(event, tagData, index, widget, anchorEl) {
   }
 
   const menu = document.createElement('div');
-  menu.className = 'lm-lora-context-menu';
+  menu.className = 'lm-popover lm-lora-context-menu';
   menu.style.left = `${event.clientX}px`;
   menu.style.top = `${event.clientY}px`;
 
@@ -684,7 +646,7 @@ function installTagWheelCaptureHook() {
 
 export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.02, options = {}) {
   const container = document.createElement("div");
-  container.className = "comfy-tags-container";
+  container.className = "lm-widget-root comfy-tags-container";
 
   const { allowStrengthAdjustment = true } = options;
 
@@ -719,7 +681,6 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
     flexWrap: "wrap",
     gap: "6px",
     padding: "6px",
-    backgroundColor: "rgba(40, 44, 52, 0.6)",
     borderRadius: "6px",
     width: "100%",
     height: "100%",
@@ -818,8 +779,6 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
         fontSize: "11px",
         padding: "1px 6px",
         borderRadius: "999px",
-        backgroundColor: "rgba(255,255,255,0.12)",
-        color: "inherit",
         flexShrink: "0",
         boxSizing: "border-box",
         minWidth: "42px",
@@ -831,10 +790,6 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
       });
       if (groupState.hasInactiveChildren) {
         countBadge.classList.add("lm-trigger-count-badge--edited");
-        Object.assign(countBadge.style, {
-          backgroundColor: "rgba(255,255,255,0.08)",
-          boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.28)",
-        });
       }
       groupChip.appendChild(countBadge);
     }
@@ -942,18 +897,8 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
     if (visibleTags.length === 0) {
       closeGroupEditor(widget);
       const emptyMessage = document.createElement("div");
+      emptyMessage.className = "lm-tags-empty";
       emptyMessage.textContent = "No trigger words detected";
-      Object.assign(emptyMessage.style, {
-        textAlign: "center",
-        padding: "20px 0",
-        color: "rgba(226, 232, 240, 0.8)",
-        fontStyle: "italic",
-        userSelect: "none",
-        WebkitUserSelect: "none",
-        MozUserSelect: "none",
-        msUserSelect: "none",
-        width: "100%",
-      });
       container.appendChild(emptyMessage);
       return;
     }

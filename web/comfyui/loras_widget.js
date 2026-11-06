@@ -8,6 +8,7 @@ import {
   getAvailableLoras,
   getAvailableLorasSync,
   getLoraStrengthRange,
+  getLoraDisplayName,
   applyStrengthRangeCue,
   isLoraNameAvailable,
   onLibraryChanged
@@ -18,7 +19,7 @@ import { applySelectionHighlight } from "./trigger_word_highlight.js";
 import { updateConnectedLoraInfoNodes } from "./lora_info.js";
 import { PreviewTooltip } from "./preview_tooltip.js";
 import { ensureLmStyles } from "./lm_styles_loader.js";
-import { getStrengthStepPreference } from "./settings.js";
+import { getStrengthStepPreference, getNodeLoraNameDisplayPreference, onNodeLoraNameDisplayChanged } from "./settings.js";
 
 export function addLorasWidget(node, name, opts, callback) {
   ensureLmStyles();
@@ -41,8 +42,12 @@ export function addLorasWidget(node, name, opts, callback) {
 
   if (!container) {
     container = document.createElement("div");
-    container.className = "lm-loras-container";
+    container.className = "lm-widget-root lm-loras-container";
   }
+
+  // Containers reused from a previous mount (undo/redo) may predate the
+  // theme context class, so always make sure it is present.
+  container.classList.add("lm-widget-root");
 
   if (!reuseExisting) {
     forwardMiddleMouseToCanvas(container);
@@ -477,10 +482,18 @@ export function addLorasWidget(node, name, opts, callback) {
         }
       });
 
-      // Create name display
+      // Create name display. The row is labelled with the library model name
+      // when ComfyUI's node label setting asks for it (read at render time, so
+      // the setting needs no caching); the stored LoRA name (the file name)
+      // stays in the dataset and the value, and the hover preview tooltip keeps
+      // showing it.
+      const displayName = getLoraDisplayName(name, getNodeLoraNameDisplayPreference());
       const nameEl = document.createElement("div");
-      nameEl.textContent = name;
+      nameEl.textContent = displayName;
       nameEl.className = "lm-lora-name";
+      if (displayName !== name) {
+        nameEl.dataset.loraFileName = name;
+      }
       if (missing) {
         nameEl.title = "LoRA not found in local library";
       }
@@ -662,7 +675,7 @@ export function addLorasWidget(node, name, opts, callback) {
 
         // Create clip name display
         const clipNameEl = document.createElement("div");
-        clipNameEl.textContent = "[clip] " + name;
+        clipNameEl.textContent = "[clip] " + displayName;
         clipNameEl.className = "lm-lora-name";
         if (missing) {
           clipNameEl.title = "LoRA not found in local library";
@@ -910,6 +923,14 @@ export function addLorasWidget(node, name, opts, callback) {
     }
   });
 
+  // Relabel open rows when the node label preference changes, so switching
+  // between file names and model names does not need a workflow reload.
+  const unsubscribeNodeLabelChange = onNodeLoraNameDisplayChanged(() => {
+    if (!widget.__dragActive && container.isConnected) {
+      renderLoras(widget.value, widget);
+    }
+  });
+
   // Fetch the local library and re-render once available so missing entries
   // get their visual cue and the node error flag as soon as the data lands.
   getAvailableLoras().then(() => {
@@ -920,6 +941,7 @@ export function addLorasWidget(node, name, opts, callback) {
 
   widget.onRemove = () => {
     unsubscribeLibraryChange();
+    unsubscribeNodeLabelChange();
     if (errorFlagTimer !== null) {
       clearTimeout(errorFlagTimer);
       errorFlagTimer = null;

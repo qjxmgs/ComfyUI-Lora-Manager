@@ -1,6 +1,10 @@
+import { positionFixedMenu, positionSubmenu } from '../../utils/menuPosition.js';
+import { closeContextMenus, registerContextMenuCloser } from '../../utils/contextMenuCoordinator.js';
+
 export class BaseContextMenu {
     constructor(menuId, cardSelector) {
         this.menu = document.getElementById(menuId);
+        this.menuId = menuId;
         this.cardSelector = cardSelector;
         this.currentCard = null;
         this.submenuTimeout = null;
@@ -10,6 +14,10 @@ export class BaseContextMenu {
             console.error(`Context menu element with ID ${menuId} not found`);
             return;
         }
+
+        // Nothing else may stay open while this menu is visible (another page
+        // menu or a sidebar menu).
+        registerContextMenuCloser(menuId, () => this.hideMenu());
 
         this.init();
     }
@@ -93,6 +101,9 @@ export class BaseContextMenu {
         const submenu = trigger.querySelector('.context-submenu');
         if (submenu) {
             submenu.style.display = 'none';
+            submenu.style.top = '';
+            submenu.style.maxHeight = '';
+            submenu.style.overflowY = '';
             submenu.classList.remove('flip-left');
         }
         if (this.openSubmenu === trigger) {
@@ -101,14 +112,7 @@ export class BaseContextMenu {
     }
 
     _positionSubmenu(submenu) {
-        const submenuRect = submenu.getBoundingClientRect();
-        const viewportWidth = document.documentElement.clientWidth;
-
-        if (submenuRect.right > viewportWidth) {
-            submenu.classList.add('flip-left');
-        } else {
-            submenu.classList.remove('flip-left');
-        }
+        positionSubmenu(submenu);
     }
 
     handleMenuAction(action, menuItem) {
@@ -116,34 +120,26 @@ export class BaseContextMenu {
         console.warn('handleMenuAction not implemented');
     }
 
+    /**
+     * Hook for subclasses whose entries depend on the right-clicked card
+     * (excluded state, AI enrichment availability, missing-LoRA entry, ...).
+     *
+     * Runs while the menu is displayed but before it is measured, so entries
+     * toggled or re-labelled here are accounted for when the menu is placed
+     * against the viewport. Doing this after `showMenu` meant the flip decision
+     * used the height of the *previous* menu content.
+     */
+    prepareMenu(card) { }
+
     showMenu(x, y, card) {
+        // Context menus are mutually exclusive: drop whatever is open (another
+        // page menu or a sidebar menu) before showing this one.
+        closeContextMenus(this.menuId);
+
         this.currentCard = card;
         this.menu.style.display = 'block';
-
-        // Get menu dimensions
-        const menuRect = this.menu.getBoundingClientRect();
-
-        // Get viewport dimensions
-        const viewportWidth = document.documentElement.clientWidth;
-        const viewportHeight = document.documentElement.clientHeight;
-
-        // Calculate position
-        let finalX = x;
-        let finalY = y;
-
-        // Ensure menu doesn't go offscreen right
-        if (x + menuRect.width > viewportWidth) {
-            finalX = x - menuRect.width;
-        }
-
-        // Ensure menu doesn't go offscreen bottom
-        if (y + menuRect.height > viewportHeight) {
-            finalY = y - menuRect.height;
-        }
-
-        // Position menu
-        this.menu.style.left = `${finalX}px`;
-        this.menu.style.top = `${finalY}px`;
+        this.prepareMenu(card);
+        positionFixedMenu(this.menu, x, y);
     }
 
     hideMenu() {

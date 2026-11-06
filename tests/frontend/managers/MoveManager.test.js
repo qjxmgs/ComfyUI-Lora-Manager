@@ -37,12 +37,14 @@ vi.mock('../../../static/js/utils/storageHelpers.js', () => ({
     setStorageItem: vi.fn()
 }));
 
+const { showToastMock } = vi.hoisted(() => ({ showToastMock: vi.fn() }));
+
 vi.mock('../../../static/js/utils/uiHelpers.js', () => ({
-    showToast: vi.fn()
+    showToast: showToastMock
 }));
 
 vi.mock('../../../static/js/utils/i18nHelpers.js', () => ({
-    translate: vi.fn(key => key)
+    translate: vi.fn((key, params = {}, fallback = null) => fallback || key)
 }));
 
 describe('MoveManager', () => {
@@ -50,6 +52,8 @@ describe('MoveManager', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        state.currentPageType = 'loras';
+        state.selectedModels.clear();
         
         // Setup DOM
         document.body.innerHTML = `
@@ -97,6 +101,57 @@ describe('MoveManager', () => {
         await moveManager.initializeFolderTree();
 
         expect(mockApiClient.fetchUnifiedFolderTree).toHaveBeenCalledWith({ includeEmpty: true });
+    });
+
+    it('should name workflows in the move dialog on the workflows page', async () => {
+        state.currentPageType = 'workflows';
+        mockApiClient.modelType = 'workflows';
+        mockApiClient.apiConfig.config.displayName = 'Workflow';
+
+        try {
+            await moveManager.showMoveModal('/library/workflows/flow.json');
+
+            expect(document.getElementById('moveModalTitle').textContent).toBe('Move Workflow');
+            expect(document.getElementById('moveRootLabel').textContent).toBe('Select Workflow Root:');
+        } finally {
+            state.currentPageType = 'loras';
+            mockApiClient.modelType = 'loras';
+            mockApiClient.apiConfig.config.displayName = 'LoRA';
+        }
+    });
+
+    it('should keep the model wording in the move dialog on model pages', async () => {
+        await moveManager.showMoveModal('/models/loras/a.safetensors');
+
+        expect(document.getElementById('moveModalTitle').textContent).toBe('Move LoRA');
+        expect(document.getElementById('moveRootLabel').textContent).toBe('Select LoRA Root:');
+    });
+
+    it('should use page-specific copy for move toasts', () => {
+        state.currentPageType = 'recipes';
+        expect(moveManager._moveFailedKey()).toBe('recipes.move.failed');
+        expect(moveManager._noSelectionKey()).toBe('recipes.bulk.noSelection');
+
+        state.currentPageType = 'workflows';
+        expect(moveManager._moveFailedKey()).toBe('workflows.modals.move.failed');
+        expect(moveManager._noSelectionKey()).toBe('workflows.bulk.noSelection');
+
+        state.currentPageType = 'loras';
+        expect(moveManager._moveFailedKey()).toBe('toast.models.moveFailed');
+        expect(moveManager._noSelectionKey()).toBe('toast.models.noModelsSelected');
+    });
+
+    it('should use the page-specific warning when bulk-moving with nothing selected', async () => {
+        state.currentPageType = 'workflows';
+        state.selectedModels.clear();
+
+        try {
+            await moveManager.showMoveModal('bulk');
+            expect(showToastMock).toHaveBeenCalledWith('workflows.bulk.noSelection', {}, 'warning');
+            expect(mockApiClient.fetchModelRoots).not.toHaveBeenCalled();
+        } finally {
+            state.currentPageType = 'loras';
+        }
     });
 
     it('should ignore manual folder selection when useDefaultPath is true', async () => {

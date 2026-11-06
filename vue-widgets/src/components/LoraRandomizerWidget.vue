@@ -92,6 +92,16 @@ const areLorasEqual = (a: LoraEntry[], b: LoraEntry[]): boolean => {
   )
 }
 
+// After the displayed loras are replaced outside the seed chain (manual roll
+// or reuse-last), drop the stale seeds and the executed flag so the next queue
+// takes the first-execution path and runs the displayed loras instead of
+// regenerating a stale seeded roll.
+const resetSeedChain = () => {
+  state.resetSeeds()
+  delete (props.widget as any)[HAS_EXECUTED]
+  props.widget.value = state.buildConfig()
+}
+
 // Handle "Generate Fixed" button click
 const handleGenerateFixed = async () => {
   try {
@@ -113,6 +123,7 @@ const handleGenerateFixed = async () => {
 
     // Set roll mode to fixed
     state.rollMode.value = 'fixed'
+    resetSeedChain()
   } catch (error) {
     console.error('[LoraRandomizerWidget] Error generating fixed LoRAs:', error)
     alert('Failed to generate LoRAs: ' + (error as Error).message)
@@ -140,6 +151,7 @@ const handleAlwaysRandomize = async () => {
 
     // Set roll mode to always
     state.rollMode.value = 'always'
+    resetSeedChain()
   } catch (error) {
     console.error('[LoraRandomizerWidget] Error generating random LoRAs:', error)
     alert('Failed to generate LoRAs: ' + (error as Error).message)
@@ -159,6 +171,7 @@ const handleReuseLast = () => {
 
     // Switch to fixed mode
     state.rollMode.value = 'fixed'
+    resetSeedChain()
   }
 }
 
@@ -338,7 +351,8 @@ onMounted(async () => {
 <style scoped>
 .lora-randomizer-widget {
   padding: 6px;
-  background: rgba(40, 44, 52, 0.6);
+  /* Let the node surface show through; only inner controls are painted. */
+  background: transparent;
   border-radius: 6px;
   height: 100%;
   display: flex;

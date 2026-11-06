@@ -1412,6 +1412,9 @@ export class SettingsManager {
         await this.loadOtherRoots();
         this.updateOtherModelsControls();
 
+        // Reflect the opt-in Workflow management toggle
+        this.updateWorkflowsControls();
+
         // Load extra folder paths
         this.loadExtraFolderPaths();
 
@@ -1438,6 +1441,9 @@ export class SettingsManager {
         // safe to call on every modal open).
         this.attachPathField('recipesPath', {
             onAfterSelect: () => this.saveInputSetting('recipesPath', 'recipes_path'),
+        });
+        this.attachPathField('workflowPath', {
+            onAfterSelect: () => this.saveInputSetting('workflowPath', 'workflow_path'),
         });
         this.attachPathField('exampleImagesPath', {
             onAfterSelect: (pickedPath) => {
@@ -2585,7 +2591,11 @@ export class SettingsManager {
     async updateModelFolderPaths(changedKey, { fromRemoval = false } = {}) {
         this._clearAllModelFolderPathErrors();
 
-        const folderPaths = {};
+        // Start from the stored map so keys whose editor is not rendered
+        // (disabled other-model sub-types, workflows while the feature is
+        // off) survive a save instead of being wiped from the library.
+        const currentPaths = state.global.settings.folder_paths || {};
+        const folderPaths = { ...currentPaths };
 
         const section = document.getElementById('section-modelPaths');
         if (!section) return;
@@ -2624,7 +2634,6 @@ export class SettingsManager {
             return;
         }
 
-        const currentPaths = state.global.settings.folder_paths || {};
         const pathsChanged = JSON.stringify(currentPaths) !== JSON.stringify(folderPaths);
 
         if (!pathsChanged) {
@@ -3283,6 +3292,11 @@ export class SettingsManager {
                 this.removeOtherModelsAnnouncement(value);
             }
 
+            if (settingKey === 'enable_workflows') {
+                this.updateWorkflowsControls();
+                this.updateWorkflowsNavVisibility(value);
+            }
+
             showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
 
             // Apply frontend settings immediately
@@ -3394,6 +3408,31 @@ export class SettingsManager {
     }
 
     /**
+     * Reflect the opt-in Workflow management state in the settings UI: the
+     * master toggle gates the single workflow library folder input
+     * (workflow_path, LoRA-Manager-owned in both plugin and standalone mode,
+     * applied live without a restart).
+     */
+    updateWorkflowsControls() {
+        const enabled = !!state.global.settings.enable_workflows;
+
+        const toggle = document.getElementById('enableWorkflows');
+        if (toggle) {
+            toggle.checked = enabled;
+        }
+
+        const group = document.getElementById('workflowPathSetting');
+        if (group) {
+            group.style.display = enabled ? '' : 'none';
+        }
+
+        const input = document.getElementById('workflowPath');
+        if (input) {
+            input.value = state.global.settings.workflow_path || '';
+        }
+    }
+
+    /**
      * Reflect the opt-in Other Models state in the settings UI: the master
      * toggle gates every sub_type checkbox, and a switched-off sub_type has
      * its default-root select disabled. Never force-enables a select (the
@@ -3410,7 +3449,6 @@ export class SettingsManager {
         if (masterToggle) {
             masterToggle.checked = enableOtherModels;
         }
-
         document.querySelectorAll('[data-other-subtype-toggle]').forEach((input) => {
             input.checked = enabledSubTypes.has(input.value);
             input.disabled = !enableOtherModels;
@@ -3458,10 +3496,32 @@ export class SettingsManager {
      * the settings modal (no reload needed).
      */
     updateOtherModelsNavVisibility(enabled) {
-        const navItem = document.getElementById('otherNavItem');
+        this.setNavEntryVisible('other', enabled);
+    }
+
+    /**
+     * Show or hide the Workflows nav entry. The nav is server-rendered, so
+     * toggling the class here keeps it in sync when the switch is flipped from
+     * the settings modal (no reload needed).
+     */
+    updateWorkflowsNavVisibility(enabled) {
+        this.setNavEntryVisible('workflows', enabled);
+    }
+
+    /**
+     * Update both copies of an opt-in nav entry: the main nav link
+     * (`#otherNavItem` / `#workflowsNavItem`) and the copy inside the
+     * hamburger menu, which is the only nav a phone-width viewport shows.
+     */
+    setNavEntryVisible(key, enabled) {
+        const navItem = document.getElementById(`${key}NavItem`);
         if (navItem) {
             navItem.classList.toggle('nav-item--hidden', !enabled);
         }
+        document.querySelectorAll(`.hamburger-nav-item[data-nav-key="${key}"]`)
+            .forEach((item) => {
+                item.hidden = !enabled;
+            });
     }
 
     /**

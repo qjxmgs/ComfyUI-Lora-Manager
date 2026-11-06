@@ -8,6 +8,7 @@ import { FolderTreeManager } from '../components/FolderTreeManager.js';
 import { sidebarManager } from '../components/SidebarManager.js';
 import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
 import { translate } from '../utils/i18nHelpers.js';
+import { MODEL_TYPES } from '../api/apiConfig.js';
 
 class MoveManager {
     constructor() {
@@ -54,6 +55,25 @@ class MoveManager {
         this.initialized = true;
     }
 
+    /**
+     * Toast key for a failed move, named for whatever the current page holds
+     * (models / recipes / workflows).
+     */
+    _moveFailedKey() {
+        if (state.currentPageType === MODEL_TYPES.WORKFLOW) return 'workflows.modals.move.failed';
+        if (state.currentPageType === 'recipes') return 'recipes.move.failed';
+        return 'toast.models.moveFailed';
+    }
+
+    /**
+     * Toast key for "nothing selected" while starting a bulk move.
+     */
+    _noSelectionKey() {
+        if (state.currentPageType === MODEL_TYPES.WORKFLOW) return 'workflows.bulk.noSelection';
+        if (state.currentPageType === 'recipes') return 'recipes.bulk.noSelection';
+        return 'toast.models.noModelsSelected';
+    }
+
     async showMoveModal(filePath, modelType = null) {
         // Reset state
         this.currentFilePath = null;
@@ -61,25 +81,41 @@ class MoveManager {
 
         const apiClient = this._getApiClient(modelType);
         const modelConfig = apiClient.apiConfig.config;
+        // Workflows are a separate library, so their copy must say "workflow"
+        // rather than reusing the model wording. The recipe client has no
+        // modelType, so the page type is the authority here.
+        const isWorkflow = state.currentPageType === MODEL_TYPES.WORKFLOW;
 
         // Handle bulk mode
         if (filePath === 'bulk') {
             const selectedPaths = Array.from(state.selectedModels);
             if (selectedPaths.length === 0) {
-                showToast('toast.models.noModelsSelected', {}, 'warning');
+                showToast(this._noSelectionKey(), {}, 'warning');
                 return;
             }
             this.bulkFilePaths = selectedPaths;
-            document.getElementById('moveModalTitle').textContent = `Move ${selectedPaths.length} ${modelConfig.displayName}s`;
+            const title = `Move ${selectedPaths.length} ${modelConfig.displayName}s`;
+            document.getElementById('moveModalTitle').textContent = isWorkflow
+                ? translate('workflows.modals.move.bulkTitle', { count: selectedPaths.length }, title)
+                : title;
         } else {
             // Single file mode
             this.currentFilePath = filePath;
-            document.getElementById('moveModalTitle').textContent = `Move ${modelConfig.displayName}`;
+            const title = `Move ${modelConfig.displayName}`;
+            document.getElementById('moveModalTitle').textContent = isWorkflow
+                ? translate('workflows.modals.move.title', {}, title)
+                : title;
         }
 
         // Update UI labels based on model type
-        document.getElementById('moveRootLabel').textContent = `Select ${modelConfig.displayName} Root:`;
-        document.getElementById('moveTargetPathDisplay').querySelector('.path-text').textContent = `Select a ${modelConfig.displayName.toLowerCase()} root directory`;
+        const rootLabel = `Select ${modelConfig.displayName} Root:`;
+        const targetHint = `Select a ${modelConfig.displayName.toLowerCase()} root directory`;
+        document.getElementById('moveRootLabel').textContent = isWorkflow
+            ? translate('workflows.modals.move.selectRoot', {}, rootLabel)
+            : rootLabel;
+        document.getElementById('moveTargetPathDisplay').querySelector('.path-text').textContent = isWorkflow
+            ? translate('workflows.modals.move.targetHint', {}, targetHint)
+            : targetHint;
 
         // Clear folder path input
         const folderPathInput = document.getElementById('moveFolderPath');
@@ -103,7 +139,9 @@ class MoveManager {
             }
 
             if (!rootsData.roots || rootsData.roots.length === 0) {
-                throw new Error(`No ${modelConfig.displayName.toLowerCase()} roots found`);
+                throw new Error(isWorkflow
+                    ? translate('workflows.modals.move.noRoots', {}, 'No workflow roots found')
+                    : `No ${modelConfig.displayName.toLowerCase()} roots found`);
             }
 
             // Populate model root selector
@@ -136,7 +174,7 @@ class MoveManager {
             await this.initializeFolderTree();
 
             // Load default path setting
-            this.loadDefaultPathSetting(apiClient.modelType);
+            this.loadDefaultPathSetting(apiClient.modelType || state.currentPageType);
 
             this.updateTargetPath();
             modalManager.showModal('moveModal', null, () => {
@@ -148,7 +186,7 @@ class MoveManager {
 
         } catch (error) {
             console.error(`Error fetching ${modelConfig.displayName.toLowerCase()} roots or folders:`, error);
-            showToast('toast.models.moveFailed', { message: error.message }, 'error');
+            showToast(this._moveFailedKey(), { message: error.message }, 'error');
         }
     }
 
@@ -166,10 +204,9 @@ class MoveManager {
     handleToggleDefaultPath(event) {
         this.useDefaultPath = event.target.checked;
 
-        // Save to localStorage per model type
+        // Save to localStorage per page type (the recipe client has no modelType)
         const apiClient = this._getApiClient();
-        const modelType = apiClient.modelType;
-        const storageKey = `use_default_path_${modelType}`;
+        const storageKey = `use_default_path_${apiClient.modelType || state.currentPageType}`;
         setStorageItem(storageKey, this.useDefaultPath);
 
         this.updatePathSelectionUI();
@@ -228,7 +265,11 @@ class MoveManager {
             if (this.useDefaultPath) {
                 // Show actual template path; an empty/absent template means a
                 // flat layout, so keep the root as-is.
-                const singularType = config.singularName || apiClient.modelType.replace(/s$/, '');
+                // The recipe client exposes no modelType; fall back to the page
+                // type so the template lookup stays a miss instead of throwing.
+                const singularType = config.singularName
+                    || (apiClient.modelType || '').replace(/s$/, '')
+                    || state.currentPageType;
                 const templates = state.global?.settings?.download_path_templates;
                 const template = templates?.[singularType];
                 if (template) {
@@ -426,7 +467,7 @@ class MoveManager {
 
         } catch (error) {
             console.error('Error moving model(s):', error);
-            showToast('toast.models.moveFailed', { message: error.message }, 'error');
+            showToast(this._moveFailedKey(), { message: error.message }, 'error');
         }
     }
 }

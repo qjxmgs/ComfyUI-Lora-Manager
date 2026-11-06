@@ -637,4 +637,63 @@ describe('useLoraCyclerState', () => {
       expect(state.isClipStrengthDisabled.value).toBe(false)
     })
   })
+
+  describe('Load-time widget write', () => {
+    it('should not rewrite widget.value during the mount refresh', async () => {
+      resetFetchMock()
+      setupFetchMock({
+        success: true,
+        loras: [
+          { file_name: 'lora1.safetensors', model_name: 'LoRA 1' },
+          { file_name: 'lora2.safetensors', model_name: 'LoRA 2' },
+          { file_name: 'lora3.safetensors', model_name: 'LoRA 3' }
+        ]
+      })
+
+      // Saved state: two LoRAs with the first one current (as in a saved
+      // workflow), while the live library now holds three.
+      const saved = createMockCyclerConfig({
+        total_count: 2,
+        current_lora_name: 'lora1.safetensors',
+        current_lora_filename: 'lora1.safetensors'
+      })
+      const widget = createMockWidget(saved)
+      const state = useLoraCyclerState(widget)
+
+      // LoraCyclerWidget.onMounted(): restore → refreshList({ write: false })
+      state.restoreFromConfig(saved)
+      await state.refreshList(null, { write: false })
+
+      // The derived state is refreshed for the UI...
+      expect(state.totalCount.value).toBe(3)
+      expect(state.currentLoraFilename.value).toBe('lora1.safetensors')
+      // ...but the saved widget value is left untouched.
+      expect(widget.value).toBe(saved)
+    })
+
+    it('should sync widget.value again on user changes after the mount refresh', async () => {
+      resetFetchMock()
+      setupFetchMock({
+        success: true,
+        loras: [
+          { file_name: 'lora1.safetensors', model_name: 'LoRA 1' },
+          { file_name: 'lora2.safetensors', model_name: 'LoRA 2' }
+        ]
+      })
+
+      const saved = createMockCyclerConfig({ total_count: 2 })
+      const widget = createMockWidget(saved)
+      const state = useLoraCyclerState(widget)
+
+      state.restoreFromConfig(saved)
+      await state.refreshList(null, { write: false })
+      expect(widget.value).toBe(saved)
+
+      state.currentIndex.value = 2
+
+      await vi.waitFor(() => {
+        expect(widget.value?.current_index).toBe(2)
+      })
+    })
+  })
 })

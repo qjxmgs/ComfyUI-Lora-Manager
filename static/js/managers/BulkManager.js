@@ -122,6 +122,24 @@ export class BulkManager {
                 unfavorite: true,
                 reimportMetadata: true,
                 rematchMetadata: true
+            },
+            [MODEL_TYPES.WORKFLOW]: {
+                addTags: true,
+                sendToWorkflow: false,
+                copyAll: false,
+                refreshAll: true,
+                checkUpdates: true,
+                moveAll: true,
+                // Workflows have no base-model/tag folder routing.
+                autoOrganize: false,
+                deleteAll: true,
+                setContentRating: true,
+                skipMetadataRefresh: true,
+                setFavorite: true,
+                unfavorite: true,
+                // Metadata re-import/rematch are model-source concepts.
+                reimportMetadata: false,
+                rematchMetadata: false
             }
         };
 
@@ -171,6 +189,16 @@ export class BulkManager {
             return { displayName: 'Recipe' };
         }
         return MODEL_CONFIG[state.currentPageType] || { displayName: 'Model' };
+    }
+
+    /**
+     * Toast key for "nothing selected" guards, named for the current page's
+     * items (models / recipes / workflows).
+     */
+    _noSelectionKey() {
+        if (state.currentPageType === MODEL_TYPES.WORKFLOW) return 'workflows.bulk.noSelection';
+        if (state.currentPageType === 'recipes') return 'recipes.bulk.noSelection';
+        return 'toast.models.noModelsSelected';
     }
 
     setBulkContextMenu(bulkContextMenu) {
@@ -632,7 +660,7 @@ export class BulkManager {
 
     async sendAllModelsToWorkflow(replaceMode = false) {
         if (state.selectedModels.size === 0) {
-            showToast('toast.models.noModelsSelected', {}, 'warning');
+            showToast(this._noSelectionKey(), {}, 'warning');
             return;
         }
 
@@ -700,13 +728,16 @@ export class BulkManager {
 
     showBulkDeleteModal() {
         if (state.selectedModels.size === 0) {
-            showToast('toast.models.noModelsSelected', {}, 'warning');
+            showToast(this._noSelectionKey(), {}, 'warning');
             return;
         }
 
         const count = state.selectedModels.size;
         const isRecipes = state.currentPageType === 'recipes';
-        const keyPrefix = isRecipes ? 'modals.bulkDeleteRecipes' : 'modals.bulkDelete';
+        const isWorkflows = state.currentPageType === MODEL_TYPES.WORKFLOW;
+        const keyPrefix = isRecipes
+            ? 'modals.bulkDeleteRecipes'
+            : (isWorkflows ? 'workflows.modals.bulkDelete' : 'modals.bulkDelete');
 
         const titleEl = document.querySelector('#bulkDeleteModal h2');
         if (titleEl) {
@@ -728,7 +759,7 @@ export class BulkManager {
 
     async confirmBulkDelete() {
         if (state.selectedModels.size === 0) {
-            showToast('toast.models.noModelsSelected', {}, 'warning');
+            showToast(this._noSelectionKey(), {}, 'warning');
             modalManager.closeModal('bulkDeleteModal');
             return;
         }
@@ -1084,7 +1115,7 @@ export class BulkManager {
 
     async refreshAllMetadata() {
         if (state.selectedModels.size === 0) {
-            showToast('toast.models.noModelsSelected', {}, 'warning');
+            showToast(this._noSelectionKey(), {}, 'warning');
             return;
         }
 
@@ -1122,7 +1153,7 @@ export class BulkManager {
 
     async checkUpdatesForSelectedModels() {
         if (state.selectedModels.size === 0) {
-            showToast('toast.models.noModelsSelected', {}, 'warning');
+            showToast(this._noSelectionKey(), {}, 'warning');
             return;
         }
 
@@ -1186,7 +1217,7 @@ export class BulkManager {
 
     showBulkAddTagsModal() {
         if (state.selectedModels.size === 0) {
-            showToast('toast.models.noModelsSelected', {}, 'warning');
+            showToast(this._noSelectionKey(), {}, 'warning');
             return;
         }
 
@@ -1456,7 +1487,7 @@ export class BulkManager {
         }
 
         if (state.selectedModels.size === 0) {
-            showToast('toast.models.noModelsSelected', {}, 'warning');
+            showToast(this._noSelectionKey(), {}, 'warning');
             return;
         }
 
@@ -1589,7 +1620,7 @@ export class BulkManager {
 
     async setBulkFavorites(value) {
         if (state.selectedModels.size === 0) {
-            showToast('toast.models.noModelsSelected', {}, 'warning');
+            showToast(this._noSelectionKey(), {}, 'warning');
             return;
         }
 
@@ -1648,7 +1679,7 @@ export class BulkManager {
      */
     showBulkBaseModelModal() {
         if (state.selectedModels.size === 0) {
-            showToast('toast.models.noModelsSelected', {}, 'warning');
+            showToast(this._noSelectionKey(), {}, 'warning');
             return;
         }
 
@@ -1667,7 +1698,7 @@ export class BulkManager {
 
     showBulkContentRatingSelector() {
         if (state.selectedModels.size === 0) {
-            showToast('toast.models.noModelsSelected', {}, 'warning');
+            showToast(this._noSelectionKey(), {}, 'warning');
             return;
         }
 
@@ -1722,7 +1753,7 @@ export class BulkManager {
         const targets = Array.isArray(filePaths) ? filePaths : Array.from(state.selectedModels);
 
         if (!targets || targets.length === 0) {
-            showToast('toast.models.noModelsSelected', {}, 'warning');
+            showToast(this._noSelectionKey(), {}, 'warning');
             return false;
         }
 
@@ -1780,7 +1811,7 @@ export class BulkManager {
 
     async setSkipMetadataRefresh(value) {
         if (state.selectedModels.size === 0) {
-            showToast('toast.models.noModelsSelected', {}, 'warning');
+            showToast(this._noSelectionKey(), {}, 'warning');
             return;
         }
 
@@ -1869,7 +1900,7 @@ export class BulkManager {
         const selectedCount = state.selectedModels.size;
 
         if (selectedCount === 0) {
-            showToast('toast.models.noModelsSelected', {}, 'warning');
+            showToast(this._noSelectionKey(), {}, 'warning');
             return;
         }
 

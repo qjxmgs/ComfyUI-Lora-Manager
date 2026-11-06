@@ -34,6 +34,10 @@ from ...services.metadata_service import (
     update_metadata_providers,
 )
 from ...services.service_registry import ServiceRegistry
+from ...services.model_scanner import PAGE_TYPE_MAP
+from ...services.use_cases.bulk_metadata_refresh_use_case import (
+    count_fetch_candidates,
+)
 from ...services.model_lifecycle_service import delete_model_artifacts
 from ...services.settings_manager import get_settings_manager
 from ...services.first_run_manager import get_first_run_manager
@@ -712,6 +716,7 @@ class HealthCheckHandler:
             "checkpoint": ServiceRegistry.get_checkpoint_scanner,
             "embedding": ServiceRegistry.get_embedding_scanner,
             "other": ServiceRegistry.get_other_scanner,
+            "workflow": ServiceRegistry.get_workflow_scanner,
             "recipe": ServiceRegistry.get_recipe_scanner,
         }
         self._first_run_manager = first_run_manager
@@ -719,13 +724,14 @@ class HealthCheckHandler:
     def _active_scanner_getters(
         self,
     ) -> Mapping[str, Callable[[], Awaitable[Any]]]:
-        """Drop the opt-in other scanner while Other Models is disabled."""
-        getters = self._scanner_getters
-        if "other" not in getters:
-            return getters
-        if get_settings_manager().is_other_models_enabled():
-            return getters
-        return {name: getter for name, getter in getters.items() if name != "other"}
+        """Drop the opt-in scanners while their features are disabled."""
+        settings = get_settings_manager()
+        active = dict(self._scanner_getters)
+        if not settings.is_other_models_enabled():
+            active.pop("other", None)
+        if not settings.is_workflows_enabled():
+            active.pop("workflow", None)
+        return active
 
     async def health_check(self, request: web.Request) -> web.Response:
         return web.json_response({"status": "ok"})
@@ -739,6 +745,7 @@ class HealthCheckHandler:
         "checkpoints": ("checkpoint",),
         "embeddings": ("embedding",),
         "other": ("other",),
+        "workflows": ("workflow",),
         "recipes": ("recipe",),
     }
 
@@ -815,6 +822,37 @@ class HealthCheckHandler:
                 "details": "Initialization complete",
             }
         )
+
+    async def get_metadata_fetch_candidates(
+        self, request: web.Request
+    ) -> web.Response:
+        """GET /api/lm/metadata-fetch-candidates.
+
+        Count of cached models eligible for a bulk metadata fetch, per page
+        type. Backs the one-shot post-first-scan fetch prompt, so the numbers
+        must match what the refresh use case would actually process (both
+        share ``count_fetch_candidates``). Read-only: only inspects the
+        in-memory cache and never triggers a scan — a scanner without a cache
+        yet simply contributes zero. Recipes are excluded (no bulk fetch).
+        """
+        settings = get_settings_manager()
+        counts: Dict[str, int] = {}
+        for name, getter in self._active_scanner_getters().items():
+            page_type = PAGE_TYPE_MAP.get(name)
+            if page_type is None:
+                continue
+            try:
+                scanner = await getter()
+            except Exception:
+                counts[page_type] = 0
+                continue
+            cache = getattr(scanner, "_cache", None)
+            raw_data = getattr(cache, "raw_data", None) if cache is not None else None
+            if not raw_data:
+                counts[page_type] = 0
+                continue
+            counts[page_type] = count_fetch_candidates(raw_data, settings=settings)
+        return web.json_response({"success": True, "counts": counts})
 
 
 class FirstRunHandler:
@@ -930,6 +968,7 @@ class DoctorHandler:
                 ("checkpoint", "Checkpoints", ServiceRegistry.get_checkpoint_scanner),
                 ("embedding", "Embeddings", ServiceRegistry.get_embedding_scanner),
                 ("other", "Other Models", ServiceRegistry.get_other_scanner),
+                ("workflow", "Workflows", ServiceRegistry.get_workflow_scanner),
             )
         )
         self._app_version_getter = app_version_getter
@@ -937,10 +976,13 @@ class DoctorHandler:
     def _active_scanner_factories(
         self,
     ) -> Sequence[tuple[str, str, Callable[[], Awaitable[Any]]]]:
-        """Drop the opt-in other scanner while Other Models is disabled."""
-        if self._settings.is_other_models_enabled():
-            return self._scanner_factories
-        return tuple(entry for entry in self._scanner_factories if entry[0] != "other")
+        """Drop the opt-in scanners while their features are disabled."""
+        factories = self._scanner_factories
+        if not self._settings.is_other_models_enabled():
+            factories = tuple(entry for entry in factories if entry[0] != "other")
+        if not self._settings.is_workflows_enabled():
+            factories = tuple(entry for entry in factories if entry[0] != "workflow")
+        return factories
 
     async def get_doctor_diagnostics(self, request: web.Request) -> web.Response:
         try:
@@ -1817,6 +1859,24 @@ class SettingsHandler:
                 response_data["other_models_paths_available"] = None
             standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1"
             response_data["standalone_mode"] = standalone_mode
+            # The workflow library path is LoRA-Manager-only in BOTH modes
+            # (the ComfyUI host has no such folder category), so expose it to
+            # the settings UI regardless of standalone_mode. Prefer the
+            # accessor so the value is normalized consistently.
+            get_workflow_path = getattr(self._settings, "get_workflow_path", None)
+            if get_workflow_path is not None:
+                response_data["workflow_path"] = get_workflow_path()
+            elif "workflow_path" not in response_data:
+                response_data["workflow_path"] = ""
+            # Compatibility for the companion browser extension, which probes a
+            # list field to decide whether a workflow root is configured.
+            # Workflow management stores one folder; expose it as a one-item
+            # list so older extension builds can keep pre-flighting downloads.
+            response_data["workflow_folder_paths"] = (
+                [response_data["workflow_path"]]
+                if response_data["workflow_path"]
+                else []
+            )
             if standalone_mode:
                 # Standalone reads its model roots exclusively from
                 # settings.json, so the Model Paths settings UI needs the
@@ -2383,6 +2443,7 @@ class ServiceRegistryAdapter:
     get_downloaded_version_history_service: Callable[[], Awaitable[Any]]
     get_backup_service: Callable[[], Awaitable[Any]] = _noop_backup_service
     get_other_scanner: Callable[[], Awaitable[Any]] = ServiceRegistry.get_other_scanner
+    get_workflow_scanner: Callable[[], Awaitable[Any]] = ServiceRegistry.get_workflow_scanner
 
 
 class ModelLibraryHandler:
@@ -2409,6 +2470,8 @@ class ModelLibraryHandler:
             return "embedding"
         if normalized in VALID_OTHER_CIVITAI_TYPES:
             return "other"
+        if normalized in {"workflow", "workflows", "comfyworkflows"}:
+            return "workflow"
         return None
 
     async def _get_scanner_for_type(self, model_type: str | None):
@@ -2426,6 +2489,11 @@ class ModelLibraryHandler:
             if not get_settings_manager().is_other_models_enabled():
                 return None, None
             return normalized_type, await self._service_registry.get_other_scanner()
+        if normalized_type == "workflow":
+            # Same opt-in posture as other models.
+            if not get_settings_manager().is_workflows_enabled():
+                return None, None
+            return normalized_type, await self._service_registry.get_workflow_scanner()
         return None, None
 
     async def _get_download_history_service(self):
@@ -2517,11 +2585,15 @@ class ModelLibraryHandler:
             lora_scanner = await self._service_registry.get_lora_scanner()
             checkpoint_scanner = await self._service_registry.get_checkpoint_scanner()
             embedding_scanner = await self._service_registry.get_embedding_scanner()
-            # Opt-in: probe the other scanner only while Other Models is enabled,
-            # so the disabled behaviour stays byte-identical to the legacy one.
+            # Opt-in: probe the other / workflow scanners only while their
+            # features are enabled, so disabled behaviour stays byte-identical
+            # to the legacy one.
             other_scanner = None
             if get_settings_manager().is_other_models_enabled():
                 other_scanner = await self._service_registry.get_other_scanner()
+            workflow_scanner = None
+            if get_settings_manager().is_workflows_enabled():
+                workflow_scanner = await self._service_registry.get_workflow_scanner()
 
             if model_version_id_str:
                 try:
@@ -2567,6 +2639,15 @@ class ModelLibraryHandler:
                     exists = True
                     model_type = "other"
                     matched_scanner = other_scanner
+                elif (
+                    workflow_scanner
+                    and await workflow_scanner.check_model_version_exists(
+                        model_version_id
+                    )
+                ):
+                    exists = True
+                    model_type = "workflow"
+                    matched_scanner = workflow_scanner
 
                 if exists:
                     return web.json_response(
@@ -2584,7 +2665,13 @@ class ModelLibraryHandler:
                 history_service = await self._get_download_history_service()
                 has_been_downloaded = False
                 history_type = None
-                for candidate_type in ("lora", "checkpoint", "embedding", "other"):
+                for candidate_type in (
+                    "lora",
+                    "checkpoint",
+                    "embedding",
+                    "other",
+                    "workflow",
+                ):
                     if await history_service.has_been_downloaded(
                         candidate_type,
                         model_version_id,
@@ -2607,6 +2694,7 @@ class ModelLibraryHandler:
             checkpoint_versions = []
             embedding_versions = []
             other_versions = []
+            workflow_versions = []
             if not lora_versions and checkpoint_scanner:
                 checkpoint_versions = await checkpoint_scanner.get_model_versions_by_id(
                     model_id
@@ -2622,6 +2710,16 @@ class ModelLibraryHandler:
                 and other_scanner
             ):
                 other_versions = await other_scanner.get_model_versions_by_id(model_id)
+            if (
+                not lora_versions
+                and not checkpoint_versions
+                and not embedding_versions
+                and not other_versions
+                and workflow_scanner
+            ):
+                workflow_versions = await workflow_scanner.get_model_versions_by_id(
+                    model_id
+                )
 
             model_type = None
             versions = []
@@ -2662,9 +2760,24 @@ class ModelLibraryHandler:
                         "downloadedVersionIds": [],
                     }
                 )
+            if workflow_versions:
+                return web.json_response(
+                    {
+                        "success": True,
+                        "modelType": "workflow",
+                        "versions": self._with_downloaded_flag(workflow_versions),
+                        "downloadedVersionIds": [],
+                    }
+                )
 
             history_service = await self._get_download_history_service()
-            for candidate_type in ("lora", "checkpoint", "embedding", "other"):
+            for candidate_type in (
+                "lora",
+                "checkpoint",
+                "embedding",
+                "other",
+                "workflow",
+            ):
                 candidate_downloaded_version_ids = (
                     await history_service.get_downloaded_version_ids(
                         candidate_type,
@@ -2719,11 +2832,15 @@ class ModelLibraryHandler:
             lora_scanner = await self._service_registry.get_lora_scanner()
             checkpoint_scanner = await self._service_registry.get_checkpoint_scanner()
             embedding_scanner = await self._service_registry.get_embedding_scanner()
-            # Opt-in: keep the other probe last so model cards for lora /
-            # checkpoint / embedding ids are unaffected by the extra scanner.
+            # Opt-in: keep the other / workflow probes last so model cards for
+            # lora / checkpoint / embedding ids are unaffected by the extra
+            # scanners.
             other_scanner = None
             if get_settings_manager().is_other_models_enabled():
                 other_scanner = await self._service_registry.get_other_scanner()
+            workflow_scanner = None
+            if get_settings_manager().is_workflows_enabled():
+                workflow_scanner = await self._service_registry.get_workflow_scanner()
 
             results: list[dict[str, Any]] = []
             for model_id in model_ids:
@@ -2766,6 +2883,17 @@ class ModelLibraryHandler:
                             "modelId": model_id,
                             "modelType": "other",
                             "versions": self._with_downloaded_flag(other_versions),
+                            "downloadedVersionIds": [],
+                        })
+                        continue
+
+                if workflow_scanner:
+                    workflow_versions = await workflow_scanner.get_model_versions_by_id(model_id)
+                    if workflow_versions:
+                        results.append({
+                            "modelId": model_id,
+                            "modelType": "workflow",
+                            "versions": self._with_downloaded_flag(workflow_versions),
                             "downloadedVersionIds": [],
                         })
                         continue
@@ -3038,19 +3166,22 @@ class ModelLibraryHandler:
 
             normalized_type, scanner = await self._get_scanner_for_type(model_type)
             if not normalized_type:
-                # The lookup cannot be served as a fully interactive list. Two
+                # The lookup cannot be served as a fully interactive list. Three
                 # cases share this branch: a CivitAI type with no scanner at all
-                # (Wildcards, Workflows, Hypernetwork, Poses, AestheticGradient)
-                # and an Other-model type while the opt-in master switch is off.
-                # Answer 200 with the CivitAI list marked read-only plus a
-                # machine-readable reason, so clients can still show the
-                # versions and explain why the actions are missing. Legacy
-                # clients keep working: they only read `success`/`versions`.
-                reason = (
-                    "other_models_disabled"
-                    if self._normalize_model_type(model_type) == "other"
-                    else "model_type_unsupported"
-                )
+                # (Wildcards, Hypernetwork, Poses, AestheticGradient), an
+                # Other-model type while its opt-in master switch is off, and a
+                # Workflow type while Workflow management is off. Answer 200 with
+                # the CivitAI list marked read-only plus a machine-readable
+                # reason, so clients can still show the versions and explain why
+                # the actions are missing. Legacy clients keep working: they only
+                # read `success`/`versions`.
+                normalized_opt_in_type = self._normalize_model_type(model_type)
+                if normalized_opt_in_type == "other":
+                    reason = "other_models_disabled"
+                elif normalized_opt_in_type == "workflow":
+                    reason = "workflows_disabled"
+                else:
+                    reason = "model_type_unsupported"
                 return web.json_response(
                     {
                         "success": True,
@@ -4571,6 +4702,7 @@ class MiscHandlerSet:
         return {
             "health_check": self.health.health_check,
             "get_init_status": self.health.get_init_status,
+            "get_metadata_fetch_candidates": self.health.get_metadata_fetch_candidates,
             "get_settings": self.settings.get_settings,
             "update_settings": self.settings.update_settings,
             "get_doctor_diagnostics": self.doctor.get_doctor_diagnostics,

@@ -1,4 +1,4 @@
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, nextTick } from 'vue'
 import type { ComponentWidget, CyclerConfig, LoraPoolConfig } from './types'
 import { lmApiUrl } from '@/utils/basePath'
 
@@ -12,6 +12,12 @@ export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
   // Flag to prevent infinite loops during config restoration
   // callback → restoreFromConfig → watch → widget.value = config → callback → ...
   let isRestoring = false
+
+  // Set while a load-time list refresh applies derived values (total count,
+  // current LoRA name). Those must update the UI but not the widget value:
+  // rewriting it on load makes an untouched workflow compare dirty against the
+  // saved JSON. The value is resynced on the next user change or queue.
+  let suspendWidgetWrite = false
 
   // State refs
   const currentIndex = ref(1)  // 1-based
@@ -202,8 +208,18 @@ export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
     }
   }
 
-  // Refresh list and update state
-  const refreshList = async (poolConfig: LoraPoolConfig | null) => {
+  // Refresh list and update state.
+  // Pass `{ write: false }` for the mount-time refresh: the derived values are
+  // applied to the UI but the widget value is left untouched, so loading a
+  // workflow does not mark it modified.
+  const refreshList = async (
+    poolConfig: LoraPoolConfig | null,
+    options: { write?: boolean } = {}
+  ) => {
+    const { write = true } = options
+    if (!write) {
+      suspendWidgetWrite = true
+    }
     try {
       const newHash = hashPoolConfig(poolConfig)
       const hashChanged = newHash !== poolConfigHash.value
@@ -243,6 +259,13 @@ export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
     } catch (error) {
       console.error('[LoraCyclerState] Error refreshing list:', error)
       throw error
+    } finally {
+      if (!write) {
+        // The state watcher flushes on the next tick, after this function has
+        // returned; keep the guard until then.
+        await nextTick()
+        suspendWidgetWrite = false
+      }
     }
   }
 
@@ -296,6 +319,9 @@ export function useLoraCyclerState(widget: ComponentWidget<CyclerConfig>) {
     isPaused,
     includeNoLora,
   ], () => {
+    if (suspendWidgetWrite) {
+      return
+    }
     widget.value = buildConfig()
   }, { deep: true })
 

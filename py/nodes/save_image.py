@@ -40,6 +40,14 @@ CIVITAI_SAMPLER_MAP = {
     "lcm": "LCM",
 }
 
+# Civitai infers the image's "Tools" field from a lowercase `engine` detail key
+# when the image is uploaded: post.addImage resolves it with getToolByAlias /
+# getToolByName, and a Tool named "ComfyUI" exists, so this value tags every
+# saved image as ComfyUI. Techniques are intentionally NOT written: the detail
+# keys are `process`/`type`/`workflow` and the graph alone cannot tell txt2img
+# from img2img reliably, while a wrong value is user-visible on Civitai.
+CIVITAI_ENGINE = "ComfyUI"
+
 # Base model display name → AIR URN slug
 # Sourced from civitai source: src/shared/constants/basemodel.constants.ts
 BASE_MODEL_AIR_SLUG = {
@@ -166,6 +174,23 @@ BASE_MODEL_AIR_SLUG = {
     "Other": "other",
 }
 
+# Embeddings referenced in a prompt as `embedding:<name>` (ComfyUI's SDTokenizer
+# syntax). ComfyUI splits on `embedding:` only after whitespace and tokenizes
+# parenthesized segments separately, so a token glued to a word or a comma is
+# not an embedding; the lookbehind mirrors that. The name ends at whitespace or
+# a token delimiter, and weight syntax (`embedding:name:1.2`) stops at the colon.
+EMBEDDING_REF_PATTERN = re.compile(r"(?<![^\s(\[{])embedding:([^\s:<>\[\]{}()]+)")
+
+# Extensions ComfyUI's load_embed tries. Stripped from a prompt reference so the
+# Hashes key is the embedding's file stem, which is what A1111 writes.
+EMBEDDING_FILE_EXTENSIONS = frozenset(
+    {".ckpt", ".pt", ".pt2", ".bin", ".pth", ".safetensors", ".pkl", ".sft"}
+)
+
+# AIR type for embeddings. The Civitai model type is "TextualInversion", but the
+# AIR vocabulary uses "embedding" (civitai src/shared/utils/air.ts).
+EMBEDDING_AIR_TYPE = "embedding"
+
 logger = logging.getLogger(__name__)
 
 
@@ -204,6 +229,12 @@ class SaveImageLM:
                 ),
             },
             "optional": {
+                "metadata": (
+                    "METADATA",
+                    {
+                        "tooltip": "Optional metadata input from a Metadata Overwrite (LoraManager) node. When connected, that node's values override the automatically collected metadata for this Save node only.",
+                    },
+                ),
                 "lossless_webp": (
                     "BOOLEAN",
                     {
@@ -336,6 +367,29 @@ class SaveImageLM:
         return hash_val, civitai, base_model
 
     @staticmethod
+    def _extract_embedding_names(*texts: str) -> list[str]:
+        """Return the embedding names referenced as `embedding:<name>` in prompts.
+
+        Mirrors ComfyUI's SDTokenizer (``comfy/sd1_clip.py::_try_get_embedding``):
+        the token must not be glued to a preceding word, and the name ends at
+        whitespace or a token delimiter. Names are reduced to the file stem so
+        the Hashes key is the A1111 embedding name.
+        """
+        names: list[str] = []
+        for text in texts:
+            if not text:
+                continue
+            for match in EMBEDDING_REF_PATTERN.finditer(text):
+                raw = match.group(1).replace("\\", "/").strip(",;")
+                name = os.path.basename(raw)
+                stem, extension = os.path.splitext(name)
+                if extension.lower() in EMBEDDING_FILE_EXTENSIONS:
+                    name = stem
+                if name and name not in names:
+                    names.append(name)
+        return names
+
+    @staticmethod
     def _get_civitai_sampler_name(sampler_name: str, scheduler: str) -> str:
         if sampler_name in CIVITAI_SAMPLER_MAP:
             civitai_name = CIVITAI_SAMPLER_MAP[sampler_name]
@@ -409,6 +463,25 @@ class SaveImageLM:
                 "base_model": lora_base_model,
             })
 
+        # Resolve embeddings referenced by the final prompts. Only names present
+        # in the local library are recorded: ComfyUI can only load an embedding
+        # that exists on disk, so an unresolved name is not a resource this image
+        # used. Resolution reads the scanner cache only -- no Civitai API call.
+        embedding_entries: list[dict[str, Any]] = []
+        for embedding_name in self._extract_embedding_names(prompt, negative_prompt):
+            embedding_hash, embedding_civitai, embedding_base_model = (
+                self._resolve_model_cache_entry("embedding_scanner", embedding_name)
+            )
+            if not embedding_hash and not embedding_civitai:
+                continue
+            embedding_entries.append({
+                "name": embedding_name,
+                "hash": embedding_hash,
+                "civitai": embedding_civitai,
+                "base_model": embedding_base_model,
+                "version_id": int(embedding_civitai.get("id", 0) or 0),
+            })
+
         # Build Hashes JSON (A1111 / Civitai standard format)
         hashes: dict[str, str] = {}
         if ckpt_hash:
@@ -416,6 +489,17 @@ class SaveImageLM:
         for lora in loras_data:
             if lora["hash"]:
                 hashes[f"LORA:{lora['name']}"] = lora["hash"][:10].upper()
+        for embedding in embedding_entries:
+            # A known version id is the exact resource, so it is emitted alone
+            # below. The hash is only the fallback: Civitai matches it against
+            # every version whose file shares those bytes and dedupes the group
+            # to the OLDEST published one, which can be a different version of
+            # the same model and shows up as a second row next to the AIR.
+            if embedding["hash"] and embedding["version_id"] <= 0:
+                # Lowercase `embed:`: Civitai's client-side metadata parser
+                # matches `lora:`/`lycoris:`/`embed:` case-sensitively; the
+                # server lowercases the key before reading the role.
+                hashes[f"embed:{embedding['name']}"] = embedding["hash"][:10].upper()
 
         # Build Civitai resources JSON array
         civitai_resources: list[dict[str, Any]] = []
@@ -452,6 +536,30 @@ class SaveImageLM:
             if lora_civitai.get("name"):
                 lora_resource["versionName"] = lora_civitai["name"]
             civitai_resources.append(lora_resource)
+
+        for embedding in embedding_entries:
+            embedding_civitai = embedding["civitai"]
+            version_id = embedding["version_id"]
+            if version_id <= 0:
+                continue
+            embedding_resource: dict[str, Any] = {"type": EMBEDDING_AIR_TYPE}
+            model_id = int(embedding_civitai.get("modelId", 0) or 0)
+            if model_id > 0 and embedding["base_model"] in BASE_MODEL_AIR_SLUG:
+                # The AIR vocabulary names this type "embedding"; the Civitai
+                # model type is "TextualInversion".
+                embedding_resource["air"] = self._build_air_string(
+                    embedding["base_model"],
+                    EMBEDDING_AIR_TYPE,
+                    model_id,
+                    version_id,
+                )
+            else:
+                # No known ecosystem to put in an AIR; the version id alone is
+                # what Civitai's detection actually consumes.
+                embedding_resource["modelVersionId"] = version_id
+            if embedding_civitai.get("name"):
+                embedding_resource["versionName"] = embedding_civitai["name"]
+            civitai_resources.append(embedding_resource)
 
         sampler_name = CIVITAI_SAMPLER_MAP.get(sampler, sampler) if sampler else None
 
@@ -491,6 +599,10 @@ class SaveImageLM:
                 params.append(f"Clip skip: {abs(int(clip_skip))}")
             except (ValueError, TypeError):
                 pass
+        # Tells Civitai which Tool generated the image. Emitted before
+        # additional_data on purpose: duplicate detail keys are last-one-wins,
+        # so a user-supplied `engine:` in additional_data still overrides this.
+        params.append(f"engine: {CIVITAI_ENGINE}")
         additional_data = metadata_dict.get("additional_data", "")
         if additional_data:
             params.append(additional_data)
@@ -825,6 +937,7 @@ class SaveImageLM:
         id,
         prompt=None,
         extra_pnginfo=None,
+        metadata=None,
         lossless_webp=True,
         quality=100,
         webp_method=6,
@@ -842,7 +955,14 @@ class SaveImageLM:
         raw_metadata = get_metadata()
         metadata_dict = MetadataProcessor.to_dict(raw_metadata, id)
 
-        metadata = self.format_metadata(metadata_dict, add_loras_to_prompt)
+        # A Metadata Overwrite node wired directly into this Save node applies
+        # its values on top of the collected metadata for this node only.
+        if metadata:
+            metadata_dict = MetadataProcessor.apply_overwrite_params(
+                metadata_dict, metadata
+            )
+
+        metadata_text = self.format_metadata(metadata_dict, add_loras_to_prompt)
 
         # Process filename_prefix with pattern substitution
         filename_prefix = self.format_filename(filename_prefix, metadata_dict)
@@ -922,8 +1042,8 @@ class SaveImageLM:
             try:
                 if file_format == "png":
                     assert pnginfo is not None
-                    if save_with_metadata and metadata:
-                        pnginfo.add_text("parameters", metadata)
+                    if save_with_metadata and metadata_text:
+                        pnginfo.add_text("parameters", metadata_text)
                     if embed_workflow and extra_pnginfo is not None:
                         workflow_json = json.dumps(extra_pnginfo["workflow"])
                         pnginfo.add_text("workflow", workflow_json)
@@ -931,12 +1051,12 @@ class SaveImageLM:
                     img.save(file_path, format="PNG", **save_kwargs)
                 elif file_format == "jpeg":
                     # For JPEG, use piexif
-                    if save_with_metadata and metadata:
+                    if save_with_metadata and metadata_text:
                         try:
                             exif_dict = {
                                 "Exif": {
                                     piexif.ExifIFD.UserComment: b"UNICODE\0"
-                                    + metadata.encode("utf-16be")
+                                    + metadata_text.encode("utf-16be")
                                 }
                             }
                             exif_bytes = piexif.dump(exif_dict)
@@ -949,10 +1069,10 @@ class SaveImageLM:
                         # For WebP, use piexif for metadata
                         exif_dict = {}
 
-                        if save_with_metadata and metadata:
+                        if save_with_metadata and metadata_text:
                             exif_dict["Exif"] = {
                                 piexif.ExifIFD.UserComment: b"UNICODE\0"
-                                + metadata.encode("utf-16be")
+                                + metadata_text.encode("utf-16be")
                             }
 
                         # Add workflow if needed
@@ -995,6 +1115,7 @@ class SaveImageLM:
         file_format="png",
         prompt=None,
         extra_pnginfo=None,
+        metadata=None,
         lossless_webp=True,
         quality=100,
         webp_method=6,
@@ -1027,6 +1148,7 @@ class SaveImageLM:
             id,
             prompt,
             extra_pnginfo,
+            metadata,
             lossless_webp,
             quality,
             webp_method,

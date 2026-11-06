@@ -152,6 +152,8 @@ def folder_path_schema() -> List[Dict[str, Any]]:
         {"key": key, "category": "core", "sub_type": None}
         for key in CORE_FOLDER_PATH_KEYS
     ]
+    # The workflow library is a single top-level setting (workflow_path), not
+    # a folder_paths category, so it is edited in Settings > Library instead.
     schema.extend(
         {"key": folder_key, "category": "other", "sub_type": sub_type}
         for folder_key, sub_type in OTHER_MODEL_FOLDER_SUBTYPES.items()
@@ -187,6 +189,9 @@ VALID_OTHER_CIVITAI_TYPES = {
     "controlnet",
     "other",
 }
+# CivitAI model.type values that map onto the workflow library (lowercased).
+# ComfyWorkflows is retired on CivitAI but grandfathered models still carry it.
+WORKFLOW_CIVITAI_TYPES = frozenset({"workflows", "comfyworkflows"})
 # CivitAI model.type -> internal sub_type for the "other" model page.
 CIVITAI_TYPE_TO_OTHER_SUB_TYPE = {
     "vae": "vae",

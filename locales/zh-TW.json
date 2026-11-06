@@ -156,7 +156,9 @@
             "embeddingNameCopied": "已複製 Embedding 語法",
             "modelNameCopied": "模型名稱已複製",
             "sendCheckpointToWorkflow": "傳送到 ComfyUI",
-            "sendEmbeddingToWorkflow": "傳送到 ComfyUI"
+            "sendEmbeddingToWorkflow": "傳送到 ComfyUI",
+            "openInComfyUI": "在 ComfyUI 中開啟",
+            "copyWorkflowToClipboard": "複製工作流到剪貼簿"
         },
         "nsfw": {
             "matureContent": "成熟內容",
@@ -244,6 +246,7 @@
             "checkpoints": "Checkpoint",
             "embeddings": "Embedding",
             "other": "其他",
+            "workflows": "工作流",
             "statistics": "統計"
         },
         "search": {
@@ -609,8 +612,8 @@
             "cardBlurAmountHelp": "調整模型和配方卡片上頁首和頁尾疊加層的模糊強度（0 = 無模糊，20 = 最大模糊）。"
         },
         "folderSettings": {
-            "activeLibrary": "使用中的資料庫",
-            "activeLibraryHelp": "在已設定的資料庫之間切換以更新預設資料夾。變更選項會重新載入頁面。",
+            "activeLibrary": "使用中的資料庫（已棄用）",
+            "activeLibraryHelp": "在已設定的資料庫之間切換以更新預設資料夾。變更選項將重新載入頁面。已棄用：多資料庫支援將在即將推出的版本中移除。單一資料庫內的多個資料夾根目錄仍完全受支援。",
             "loadingLibraries": "正在載入資料庫...",
             "noLibraries": "尚未設定任何資料庫",
             "defaultLoraRoot": "LoRA 根目錄",
@@ -633,6 +636,11 @@
             "defaultControlnetRootHelp": "設定下載、匯入和移動時的預設 ControlNet 根目錄",
             "enableOtherModels": "其他模型管理",
             "enableOtherModelsHelp": "關閉後，不會掃描 VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet 資料夾，其他模型頁面會保持停用，且無法下載這些模型類型。",
+            "enableWorkflows": "工作流管理",
+            "enableWorkflowsHelp": "關閉後，不會掃描工作流庫資料夾，工作流頁面會保持停用，且無法連結或下載 CivitAI 的 Workflow 資源。",
+            "workflowFolder": "工作流庫資料夾",
+            "workflowFolderHelp": "用於掃描 ComfyUI 工作流 JSON 檔案的單一資料夾。僅由 LoRA Manager 管理（不與 ComfyUI 共用）；變更立即生效。",
+            "workflowFolderPlaceholder": "/path/to/workflows",
             "otherSubTypes": "管理的模型類型",
             "otherSubTypesHelp": "選擇要在其他模型頁面中掃描和顯示的其他模型類別。",
             "subTypeVae": "VAE",
@@ -1099,11 +1107,25 @@
     "recipes": {
         "title": "LoRA 配方",
         "filter": {
+            "title": "篩選配方",
             "countTitle": "{name} —— {count} 個配方"
+        },
+        "bulk": {
+            "noSelection": "未選擇配方"
+        },
+        "move": {
+            "failed": "移動配方失敗：{message}"
+        },
+        "deleteModal": {
+            "message": "您確定要刪除此配方嗎？",
+            "note": "刪除此配方不會影響其中使用的 LoRA 檔案。",
+            "deleting": "正在刪除..."
         },
         "actions": {
             "sendCheckpoint": "傳送到 ComfyUI",
             "sendRecipe": "傳送到 ComfyUI",
+            "sendRecipeModes": "傳送配方到工作流（點擊：附加，Shift+點擊：取代）",
+            "shareRecipe": "分享配方",
             "copyRecipeSyntax": "複製配方語法",
             "deleteRecipeWithShortcut": "刪除配方（Del）"
         },
@@ -1447,6 +1469,82 @@
             "openSettingsFolder": "開啟設定資料夾"
         }
     },
+    "workflows": {
+        "title": "工作流",
+        "itemLabel": "工作流",
+        "filter": {
+            "title": "篩選工作流"
+        },
+        "bulk": {
+            "noSelection": "未選擇工作流"
+        },
+        "contextMenu": {
+            "sendToComfy": "在 ComfyUI 中開啟",
+            "updateFromComfy": "從 ComfyUI 更新",
+            "copyWorkflow": "複製工作流",
+            "restoreDownloaded": "還原已下載版本",
+            "moveWorkflow": "將工作流移動到資料夾",
+            "deleteWorkflow": "刪除工作流"
+        },
+        "modals": {
+            "delete": {
+                "title": "刪除工作流",
+                "message": "您確定要刪除此工作流及所有相關檔案嗎？",
+                "failed": "刪除工作流失敗：{message}"
+            },
+            "move": {
+                "title": "移動工作流",
+                "bulkTitle": "移動 {count} 個工作流",
+                "selectRoot": "選擇工作流根目錄：",
+                "targetHint": "選擇工作流根目錄",
+                "noRoots": "找不到工作流根目錄",
+                "failed": "移動工作流失敗：{message}"
+            },
+            "bulkDelete": {
+                "title": "刪除多個工作流",
+                "message": "您確定要刪除所有選取的工作流及其相關檔案嗎？",
+                "countMessage": "工作流將被永久刪除。"
+            }
+        },
+        "relink": {
+            "success": "工作流已成功重新連結至 CivitAI",
+            "civArchiveSuccess": "工作流已成功透過 CivitArchive 重新連結"
+        },
+        "sendToComfy": {
+            "success": "工作流已傳送到 ComfyUI",
+            "failed": "傳送工作流失敗：{message}"
+        },
+        "restoreDownloaded": {
+            "title": "要還原已下載版本嗎？",
+            "message": "這會捨棄本機修改，並將工作流還原為下載時的版本。",
+            "confirmButton": "還原",
+            "restoring": "正在還原工作流...",
+            "success": "工作流已還原為已下載版本",
+            "failed": "還原工作流失敗：{message}"
+        },
+        "updateFromComfy": {
+            "success": "已從 ComfyUI 更新工作流",
+            "noChanges": "ComfyUI 中沒有需要寫回的變更",
+            "cancelled": "更新已取消",
+            "failed": "從 ComfyUI 更新失敗：{message}"
+        },
+        "copyWorkflow": {
+            "failed": "複製工作流失敗：{message}"
+        },
+        "disabled": {
+            "title": "工作流管理已關閉",
+            "description": "啟用後可掃描和管理 ComfyUI 工作流檔案，保留其 CivitAI 中繼資料和預覽，並將它們傳送到執行中的 ComfyUI 中。",
+            "enableButton": "啟用工作流",
+            "hint": "您稍後可以在「設定 > 模型庫」中再次關閉此功能。",
+            "enableFailed": "啟用工作流失敗"
+        },
+        "noPaths": {
+            "title": "未設定工作流資料夾",
+            "description": "工作流管理已開啟，但未設定工作流資料夾。請在「設定 > 模型庫」中設定工作流資料夾，然後重新載入此頁面。",
+            "hint": "工作流庫資料夾獨立於 ComfyUI 內建的工作流清單。",
+            "openSettings": "開啟設定"
+        }
+    },
     "sidebar": {
         "modelRoot": "根目錄",
         "collapseAll": "全部摺疊資料夾",
@@ -1722,8 +1820,8 @@
             "errors": {
                 "invalidUrl": "模型網址格式無效",
                 "noVersions": "此模型無可用版本",
-                "linkedFileNotFound": "[TODO: Translate] File {fileId} was not found in the requested model version.",
-                "linkedFileNotWeightFile": "[TODO: Translate] File {fileId} is not a downloadable model file.",
+                "linkedFileNotFound": "未在所要求的模型版本中找到檔案 {fileId}。",
+                "linkedFileNotWeightFile": "檔案 {fileId} 不是可下載的模型檔案。",
                 "mixedSources": "無法在同一批次中混合使用 CivitAI 和 Hugging Face / ModelScope URL。",
                 "noModelFiles": "在此倉庫中未找到模型檔案。"
             },
@@ -2222,7 +2320,7 @@
             "downloadCsv": "下載 CSV",
             "columnModelName": "模型名稱",
             "columnError": "錯誤",
-            "rateLimitedNotice": "[TODO: Translate] Fetch aborted: the metadata provider rate limit was reached. Re-run \"Fetch from Civitai\" later to retry the remaining models."
+            "rateLimitedNotice": "取得已中止：已達到中繼資料提供者的速率限制。請稍後重新執行「從 CivitAI 取得 metadata」，以重試剩餘的模型。"
         },
         "downloadBatchSummary": {
             "title": "批次下載摘要",
@@ -2272,6 +2370,10 @@
             "title": "正在初始化其他模型管理器",
             "message": "正在掃描並建立模型快取。這可能需要幾分鐘..."
         },
+        "workflows": {
+            "title": "初始化工作流管理器",
+            "message": "正在掃描並建立工作流快取。這可能需要幾分鐘..."
+        },
         "recipes": {
             "title": "初始化配方管理器",
             "message": "正在載入並處理配方，可能需要幾分鐘..."
@@ -2309,50 +2411,50 @@
             }
         },
         "error": {
-            "title": "[TODO: Translate] Initialization failed",
-            "message": "[TODO: Translate] Something went wrong while scanning your model library.",
-            "retry": "[TODO: Translate] Retry"
+            "title": "初始化失敗",
+            "message": "掃描您的模型庫時發生錯誤。",
+            "retry": "重試"
         }
     },
     "firstRun": {
-        "title": "[TODO: Translate] Welcome to LoRA Manager",
-        "description": "[TODO: Translate] Before you start, LoRA Manager needs to scan your model libraries and generate metadata sidecar files. This is a one-time step; how long it takes depends on the size of your library and the speed of your disk.",
+        "title": "歡迎使用 LoRA 管理器",
+        "description": "開始之前，LoRA Manager 需要掃描您的模型庫並產生中繼資料附屬檔案。這是單次步驟；所需時間取決於模型庫的大小與磁碟速度。",
         "libraries": {
-            "loras": "[TODO: Translate] LoRAs",
-            "checkpoints": "[TODO: Translate] Checkpoints",
-            "embeddings": "[TODO: Translate] Embeddings",
-            "other": "[TODO: Translate] Other Models"
+            "loras": "LoRA",
+            "checkpoints": "Checkpoint",
+            "embeddings": "Embedding",
+            "other": "其他模型"
         },
         "language": {
-            "label": "[TODO: Translate] Language"
+            "label": "語言"
         },
-        "libraryStats": "[TODO: Translate] {count} models · {size}",
-        "rootMissing": "[TODO: Translate] Directory not found",
-        "estimate": "[TODO: Translate] About {count} models ({size}) — estimated scan time ~{minutes} min, depending on library size and disk speed.",
+        "libraryStats": "{count} 個模型 · {size}",
+        "rootMissing": "找不到目錄",
+        "estimate": "約 {count} 個模型（{size}），預計掃描時間約 {minutes} 分鐘，視模型庫大小與磁碟速度而定。",
         "noRoots": {
-            "plugin": "[TODO: Translate] No accessible model folders were found. Open Settings to configure your model directories, then reload this page.",
-            "standalone": "[TODO: Translate] No accessible model folders were found. Edit folder_paths in settings.json, then restart the server."
+            "plugin": "找不到可存取的模型資料夾。開啟設定以設定模型目錄，然後重新載入此頁面。",
+            "standalone": "找不到可存取的模型資料夾。請編輯 settings.json 中的 folder_paths，然後重新啟動伺服器。"
         },
         "sidecar": {
-            "title": "[TODO: Translate] Metadata storage",
+            "title": "中繼資料儲存",
             "alongside": {
-                "label": "[TODO: Translate] Next to model files (recommended)",
-                "description": "[TODO: Translate] Metadata .json files are stored next to each model file, so they move together with the model."
+                "label": "與模型檔案放在一起（建議）",
+                "description": "中繼資料 .json 檔案與每個模型檔案存放在一起，因此會隨模型一起移動。"
             },
             "centralized": {
-                "label": "[TODO: Translate] Centralized directory",
-                "description": "[TODO: Translate] Metadata is stored in a separate directory, keeping your model folders clean.",
-                "pathPlaceholder": "[TODO: Translate] Directory for centralized metadata storage"
+                "label": "集中目錄",
+                "description": "中繼資料儲存在獨立的目錄中，讓模型資料夾保持整潔。",
+                "pathPlaceholder": "集中中繼資料儲存目錄"
             }
         },
         "actions": {
-            "start": "[TODO: Translate] Start Scan",
-            "defer": "[TODO: Translate] Later"
+            "start": "開始掃描",
+            "defer": "稍後"
         },
         "errors": {
-            "loadFailed": "[TODO: Translate] Failed to load library information.",
-            "pathRequired": "[TODO: Translate] Please enter a storage directory for centralized metadata.",
-            "startFailed": "[TODO: Translate] Failed to start the scan."
+            "loadFailed": "載入模型庫資訊失敗。",
+            "pathRequired": "請輸入集中儲存中繼資料的目錄。",
+            "startFailed": "無法開始掃描。"
         }
     },
     "duplicates": {
@@ -2868,8 +2970,8 @@
             "deleteError": "錯誤：{message}",
             "deleteSuccess": "成功刪除 {count} 個 {type}",
             "deleteFailed": "刪除 {type} 失敗：{message}",
-            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
-            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
+            "deletePartialFailed": "刪除 {failed} 個已選取的 {type} 失敗：{message}",
+            "cacheUpdateFailed": "檔案已刪除，但無法更新模型庫快取。請執行「重建快取」以重新整理清單。"
         },
         "controls": {
             "reloadFailed": "重新載入 {pageType} 失敗：{message}",
@@ -2882,7 +2984,7 @@
             "contentRatingFailed": "設定內容分級失敗：{message}",
             "relinkSuccess": "模型已成功重新連結至 CivitAI",
             "relinkFailed": "錯誤：{message}",
-            "linkHfSuccess": "模型已成功連結到 HuggingFace",
+            "linkHfSuccess": "模型已成功連結至其模型來源",
             "linkHfFailed": "錯誤：{message}",
             "linkCivArchSuccess": "模型已成功透過 CivitArchive 重新連結",
             "fetchMetadataFirst": "請先從 CivitAI 取得 metadata",
@@ -2929,7 +3031,7 @@
             "metadataUpdateComplete": "metadata 更新完成",
             "operationCancelled": "操作已由用戶取消",
             "operationCancelledPartial": "操作已取消。已處理 {success} 個項目。",
-            "metadataFetchRateLimited": "[TODO: Translate] Metadata fetch aborted due to rate limiting — updated {success} of {total}, {failed} failed, {skipped} skipped. Re-run Fetch from Civitai later to retry the rest.",
+            "metadataFetchRateLimited": "因速率限制，中繼資料取得已中止——已更新 {total} 個中的 {success} 個，失敗 {failed} 個，跳過 {skipped} 個。請稍後重新從 CivitAI 取得中繼資料，以重試其餘模型。",
             "metadataFetchFailed": "取得 metadata 失敗：{message}",
             "bulkMetadataCompleteAll": "已成功刷新全部 {count} 個 {type}",
             "bulkMetadataCompletePartial": "已刷新 {success} / {total} 個 {type}",
@@ -3060,6 +3162,12 @@
             "content": "在專屬頁面中掃描和管理 VAE、Upscaler、Text Encoder、CLIP Vision 和 ControlNet 檔案，並從 CivitAI 下載。",
             "enable": "啟用其他模型",
             "openSettings": "開啟設定"
+        },
+        "bulkFetchPrompt": {
+            "title": "讓您的模型庫煥發生機",
+            "content": "首次掃描發現 {count} 個模型缺少中繼資料。從 CivitAI 取得這些模型的資訊，即可獲得預覽圖片、描述與觸發詞。",
+            "fetch": "取得中繼資料",
+            "later": "稍後再說"
         },
         "pager": {
             "previous": "上一則通知",

@@ -554,19 +554,36 @@ export function collectConfiguredLorasFromChain(node, visited = new Set()) {
     return configuredLoraNames;
 }
 
+const TRIGGER_WORD_SYNC_TIMER = "__lmTriggerWordSyncTimer";
+const TRIGGER_WORD_SYNC_DELAY_MS = 50;
+
 // Update trigger words for connected toggle nodes
 export function updateConnectedTriggerWords(node, loraNames, configuredLoraNames = null) {
     const connectedNodes = getConnectedTriggerToggleNodes(node);
-    if (connectedNodes.length > 0) {
-        const nodeIds = connectedNodes
-            .map((connectedNode) => getNodeReference(connectedNode))
-            .filter((reference) => reference !== null);
+    if (connectedNodes.length === 0) {
+        return;
+    }
 
-        if (nodeIds.length === 0) {
-            return;
-        }
+    const nodeIds = connectedNodes
+        .map((connectedNode) => getNodeReference(connectedNode))
+        .filter((reference) => reference !== null);
 
-        const activeNames = Array.from(loraNames || []).filter(Boolean);
+    if (nodeIds.length === 0) {
+        return;
+    }
+
+    const pendingTimer = node[TRIGGER_WORD_SYNC_TIMER];
+    if (pendingTimer) {
+        clearTimeout(pendingTimer);
+    }
+
+    const loraNamesSnapshot = Array.from(loraNames || []);
+    const configuredNamesSnapshot = Array.from(configuredLoraNames || loraNames || []);
+
+    node[TRIGGER_WORD_SYNC_TIMER] = setTimeout(() => {
+        delete node[TRIGGER_WORD_SYNC_TIMER];
+
+        const activeNames = loraNamesSnapshot.filter(Boolean);
         const configuredNames = Array.from(configuredLoraNames || loraNames || [])
             .filter(Boolean);
         const signatureActiveNames = [...activeNames]
@@ -611,7 +628,7 @@ export function updateConnectedTriggerWords(node, loraNames, configuredLoraNames
             }
             console.error("Error fetching trigger words:", err);
         });
-    }
+    }, TRIGGER_WORD_SYNC_DELAY_MS);
 }
 
 export function refreshConnectedTriggerWords(node) {
@@ -647,6 +664,7 @@ export function mergeLoras(lorasText, lorasArr) {
         expanded: lora.expanded !== undefined ? lora.expanded : false,
         clipStrength: lora.clipStrength !== undefined ? lora.clipStrength : parsedLoras[lora.name].clipStrength,
         selected: !!lora.selected,
+        locked: lora.locked !== undefined ? lora.locked : false,
       });
       usedNames.add(lora.name);
     }

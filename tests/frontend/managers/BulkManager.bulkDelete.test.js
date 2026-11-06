@@ -63,7 +63,7 @@ vi.mock('../../../static/js/api/recipeApi.js', () => ({
 }));
 
 vi.mock('../../../static/js/api/apiConfig.js', () => ({
-  MODEL_TYPES: { LORA: 'loras', CHECKPOINT: 'checkpoints', EMBEDDING: 'embeddings' },
+  MODEL_TYPES: { LORA: 'loras', CHECKPOINT: 'checkpoints', EMBEDDING: 'embeddings', WORKFLOW: 'workflows' },
   MODEL_CONFIG: {},
 }));
 
@@ -301,6 +301,66 @@ describe('BulkManager.confirmBulkDelete undo flows', () => {
 
     expect(showToastMock).toHaveBeenCalledWith('toast.api.operationCancelled', {}, 'info');
     expect(showActionToastMock).not.toHaveBeenCalled();
+  });
+
+  it('shows the workflow wording in the bulk delete dialog on the workflows page', async () => {
+    stateStub.currentPageType = 'workflows';
+    document.body.innerHTML = `
+      <div id="bulkDeleteModal">
+        <h2></h2>
+        <p class="delete-message"></p>
+        <div class="delete-model-info"><p></p></div>
+      </div>
+    `;
+
+    const bulk = await createBulkManager();
+    bulk.showBulkDeleteModal();
+
+    expect(document.querySelector('#bulkDeleteModal h2').textContent).toBe(
+      'workflows.modals.bulkDelete.title'
+    );
+    expect(document.querySelector('#bulkDeleteModal .delete-message').textContent).toBe(
+      'workflows.modals.bulkDelete.message'
+    );
+  });
+
+  it('configures the workflow bulk menu for workflow items', async () => {
+    const bulk = await createBulkManager();
+    const config = bulk.actionConfig.workflows;
+
+    // Model-only actions stay hidden; workflow-capable actions are enabled.
+    expect(config).toEqual(expect.objectContaining({
+      addTags: true,
+      sendToWorkflow: false,
+      copyAll: false,
+      refreshAll: true,
+      checkUpdates: true,
+      moveAll: true,
+      autoOrganize: false,
+      deleteAll: true,
+      setContentRating: true,
+      skipMetadataRefresh: true,
+      setFavorite: true,
+      reimportMetadata: false,
+      rematchMetadata: false,
+    }));
+  });
+
+  it('names the page items in the nothing-selected warning', async () => {
+    stateStub.selectedModels.clear();
+    const bulk = await createBulkManager();
+
+    stateStub.currentPageType = 'workflows';
+    bulk.showBulkDeleteModal();
+    expect(showToastMock).toHaveBeenCalledWith('workflows.bulk.noSelection', {}, 'warning');
+
+    stateStub.currentPageType = 'recipes';
+    bulk.showBulkDeleteModal();
+    expect(showToastMock).toHaveBeenCalledWith('recipes.bulk.noSelection', {}, 'warning');
+
+    stateStub.currentPageType = 'loras';
+    bulk.showBulkDeleteModal();
+    expect(showToastMock).toHaveBeenCalledWith('toast.models.noModelsSelected', {}, 'warning');
   });
 
   it('refreshes recipes through window.recipeManager when undoing a recipe bulk delete', async () => {

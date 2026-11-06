@@ -10,7 +10,14 @@ import { modalManager } from '../managers/ModalManager.js';
 import { showToast, showActionToast } from '../utils/uiHelpers.js';
 import { performFolderUpdateCheck } from '../utils/updateCheckHelpers.js';
 import { escapeHtml, escapeAttribute } from './shared/utils.js';
+import { positionFixedMenu } from '../utils/menuPosition.js';
+import { closeContextMenus, registerContextMenuCloser } from '../utils/contextMenuCoordinator.js';
 import { MODEL_CARD_DRAG_MIME_TYPE } from '../utils/constants.js';
+
+// Sidebar menu elements. They are also the ids used to keep these menus
+// mutually exclusive with the page-side context menus.
+const SIDEBAR_FOLDER_MENU_ID = 'sidebarFolderContextMenu';
+const SIDEBAR_VIEW_OPTIONS_MENU_ID = 'sidebarViewOptionsMenu';
 
 // Pages whose folder sidebar starts hidden. "other" downloads default to a flat
 // layout (no subfolders are created), so on a fresh library the tree is empty
@@ -705,7 +712,7 @@ export class SidebarManager {
 
         if (this.apiClient?.apiConfig?.config?.supportsMove === false) {
             console.log('[SidebarManager] performDragMove returning false - supportsMove is false');
-            showToast('toast.models.moveFailed', { message: translate('sidebar.dragDrop.moveUnsupported', {}, 'Move not supported for this page') }, 'error');
+            showToast(this._moveFailedKey(), { message: translate('sidebar.dragDrop.moveUnsupported', {}, 'Move not supported for this page') }, 'error');
             return false;
         }
 
@@ -714,7 +721,7 @@ export class SidebarManager {
         if (!rootPath) {
             console.log('[SidebarManager] performDragMove returning false - no rootPath');
             showToast(
-                'toast.models.moveFailed',
+                this._moveFailedKey(),
                 { message: translate('sidebar.dragDrop.unableToResolveRoot', {}, 'Unable to determine destination path for move.') },
                 'error'
             );
@@ -797,7 +804,7 @@ export class SidebarManager {
             return true;
         } catch (error) {
             console.error('[SidebarManager] Error moving model(s) via drag-and-drop:', error);
-            showToast('toast.models.moveFailed', { message: error.message || 'Unknown error' }, 'error');
+            showToast(this._moveFailedKey(), { message: error.message || 'Unknown error' }, 'error');
             console.log('[SidebarManager] performDragMove returning false due to error');
             return false;
         }
@@ -2399,7 +2406,7 @@ export class SidebarManager {
         }
 
         // View options menu items
-        const viewOptionsMenu = document.getElementById('sidebarViewOptionsMenu');
+        const viewOptionsMenu = document.getElementById(SIDEBAR_VIEW_OPTIONS_MENU_ID);
         if (viewOptionsMenu) {
             viewOptionsMenu.addEventListener('click', (e) => {
                 const item = e.target.closest('.context-menu-item');
@@ -2458,7 +2465,7 @@ export class SidebarManager {
         window.addEventListener('resize', this.updateContainerMargin);
 
         // Sidebar folder context menu click handler
-        const sidebarFolderMenu = document.getElementById('sidebarFolderContextMenu');
+        const sidebarFolderMenu = document.getElementById(SIDEBAR_FOLDER_MENU_ID);
         if (sidebarFolderMenu) {
             sidebarFolderMenu.addEventListener('click', (e) => {
                 const item = e.target.closest('.context-menu-item');
@@ -2647,6 +2654,16 @@ export class SidebarManager {
 
     _supportsFolderManagement() {
         return Boolean(this.apiClient?.apiConfig?.config?.supportsFolderManagement);
+    }
+
+    /**
+     * Toast key for a failed drag-and-drop move, named for whatever the
+     * current page holds (models / recipes / workflows).
+     */
+    _moveFailedKey() {
+        if (this.pageType === 'workflows') return 'workflows.modals.move.failed';
+        if (this.pageType === 'recipes') return 'recipes.move.failed';
+        return 'toast.models.moveFailed';
     }
 
     // The models-only folder list only contains directories that directly
@@ -2906,9 +2923,12 @@ export class SidebarManager {
 
     _showFolderContextMenu(x, y, path) {
         this._closeFolderContextMenu();
-        this._closeViewOptionsMenu();
+        // A folder menu never shares the screen with another context menu, so
+        // any menu opened from the card area (or the view options dropdown) is
+        // dismissed first.
+        closeContextMenus(SIDEBAR_FOLDER_MENU_ID);
 
-        const menu = document.getElementById('sidebarFolderContextMenu');
+        const menu = document.getElementById(SIDEBAR_FOLDER_MENU_ID);
         if (!menu) return;
 
         // The folder operations are only available on pages backed by model
@@ -2924,9 +2944,10 @@ export class SidebarManager {
         }
         this._updateContextMenuSeparators(menu);
 
-        menu.style.left = `${x}px`;
-        menu.style.top = `${y}px`;
-        menu.style.display = 'block';
+        // Place against the viewport: the tree continues to the bottom edge, so
+        // a raw cursor position leaves the menu below the window with no way to
+        // scroll it into view.
+        positionFixedMenu(menu, x, y);
         menu.dataset.folderPath = path;
 
         this._folderContextOpen = true;
@@ -2977,7 +2998,7 @@ export class SidebarManager {
     }
 
     _closeFolderContextMenu() {
-        const menu = document.getElementById('sidebarFolderContextMenu');
+        const menu = document.getElementById(SIDEBAR_FOLDER_MENU_ID);
         if (menu) {
             menu.style.display = 'none';
             delete menu.dataset.folderPath;
@@ -2990,7 +3011,7 @@ export class SidebarManager {
     }
 
     handleFolderContextMenuAction(action) {
-        const menu = document.getElementById('sidebarFolderContextMenu');
+        const menu = document.getElementById(SIDEBAR_FOLDER_MENU_ID);
         if (!menu) return;
 
         const path = menu.dataset.folderPath;
@@ -3182,7 +3203,7 @@ export class SidebarManager {
     handleViewOptionsButton(event) {
         event.stopPropagation();
 
-        const menu = document.getElementById('sidebarViewOptionsMenu');
+        const menu = document.getElementById(SIDEBAR_VIEW_OPTIONS_MENU_ID);
         if (!menu) return;
 
         if (menu.style.display === 'block') {
@@ -3190,15 +3211,15 @@ export class SidebarManager {
             return;
         }
 
-        this._closeFolderContextMenu();
+        // Opening the dropdown dismisses any open context menu.
+        closeContextMenus(SIDEBAR_VIEW_OPTIONS_MENU_ID);
         this.updateViewOptionsMenu();
 
         const anchor = event.currentTarget;
         const rect = anchor.getBoundingClientRect();
-        menu.style.display = 'block';
-        // Right-align the menu under the button so it stays within the sidebar
-        menu.style.left = `${Math.max(8, rect.right - menu.offsetWidth)}px`;
-        menu.style.top = `${rect.bottom + 4}px`;
+        // Right-align the menu under the button, keeping it inside the viewport
+        // when the button sits near the bottom of a short window.
+        positionFixedMenu(menu, rect.right, rect.bottom + 4, { alignX: 'right' });
 
         this._viewOptionsCloseHandler = (e) => {
             if (!menu.contains(e.target)) {
@@ -3211,7 +3232,7 @@ export class SidebarManager {
     }
 
     _closeViewOptionsMenu() {
-        const menu = document.getElementById('sidebarViewOptionsMenu');
+        const menu = document.getElementById(SIDEBAR_VIEW_OPTIONS_MENU_ID);
         if (menu) {
             menu.style.display = 'none';
         }
@@ -3259,7 +3280,7 @@ export class SidebarManager {
     }
 
     updateViewOptionsMenu() {
-        const menu = document.getElementById('sidebarViewOptionsMenu');
+        const menu = document.getElementById(SIDEBAR_VIEW_OPTIONS_MENU_ID);
         if (!menu) return;
 
         const setCheck = (action, checked) => {
@@ -3563,7 +3584,7 @@ export class SidebarManager {
     _migrateOldSettings() {
         if (getStorageItem('_sidebar_migration_done')) return;
 
-        const PAGES = ['loras', 'recipes', 'checkpoints', 'embeddings', 'other'];
+        const PAGES = ['loras', 'recipes', 'checkpoints', 'embeddings', 'other', 'workflows'];
 
         // 1. Migrate global hide setting to per-page
         if (state?.global?.settings?.show_folder_sidebar === false) {
@@ -3647,3 +3668,9 @@ export class SidebarManager {
 
 // Create and export global instance
 export const sidebarManager = new SidebarManager();
+
+// The sidebar menus share the screen with the page-side context menus, so they
+// join the same coordination: opening a card/bulk/global menu closes these, and
+// opening one of these closes those.
+registerContextMenuCloser(SIDEBAR_FOLDER_MENU_ID, () => sidebarManager._closeFolderContextMenu());
+registerContextMenuCloser(SIDEBAR_VIEW_OPTIONS_MENU_ID, () => sidebarManager._closeViewOptionsMenu());

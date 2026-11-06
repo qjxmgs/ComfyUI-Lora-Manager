@@ -316,10 +316,16 @@ const checkPoolConfigChanges = async () => {
   const newHash = state.hashPoolConfig(poolConfig)
 
   if (newHash !== lastPoolConfigHash.value) {
+    // The widget mounts while the graph is still being configured, so the
+    // connected pool may only become resolvable a moment after the mount
+    // refresh. The first non-empty hash is therefore part of loading the
+    // workflow: refresh the display but keep the saved value untouched, or
+    // merely opening the workflow would mark it modified.
+    const isInitialResolution = lastPoolConfigHash.value === ''
     console.log('[LoraCyclerWidget] Pool config changed, refreshing list')
     lastPoolConfigHash.value = newHash
     try {
-      await state.refreshList(poolConfig)
+      await state.refreshList(poolConfig, { write: !isInitialResolution })
       // Update cached list when pool config changes
       const loraList = await state.fetchCyclerList(poolConfig)
       cachedLoraList.value = loraList
@@ -415,11 +421,14 @@ onMounted(async () => {
   // Mark component as mounted
   isMounted.value = true
 
-  // Initial load
+  // Initial load.
+  // `write: false`: refresh the displayed count / current LoRA from the live
+  // library without rewriting the saved widget value, otherwise merely opening
+  // the workflow would mark it modified.
   try {
     const poolConfig = getPoolConfig()
     lastPoolConfigHash.value = state.hashPoolConfig(poolConfig)
-    await state.refreshList(poolConfig)
+    await state.refreshList(poolConfig, { write: false })
     // Cache the initial LoRA list for modal
     const loraList = await state.fetchCyclerList(poolConfig)
     cachedLoraList.value = loraList
@@ -564,7 +573,8 @@ onMounted(async () => {
 <style scoped>
 .lora-cycler-widget {
   padding: 6px;
-  background: rgba(40, 44, 52, 0.6);
+  /* Let the node surface show through; only inner controls are painted. */
+  background: transparent;
   border-radius: 6px;
   height: 100%;
   display: flex;

@@ -38,30 +38,41 @@ export function useLoraPoolState(widget: ComponentWidget<LoraPoolConfig>) {
   const matchCount = ref(0)
   const isLoading = computed(() => api.isLoading.value)
 
+  // Filters as last restored from / written to the widget value. `preview`
+  // (match count + timestamp) is derived cache data, not user intent: rewriting
+  // it after a load makes an untouched workflow compare dirty against the saved
+  // JSON (ComfyUI diffs the serialized `widget.value`), so the widget value is
+  // only synced when the filters themselves changed.
+  let syncedFilters = ''
+
+  const buildFilters = (): LoraPoolConfig['filters'] => ({
+    baseModels: selectedBaseModels.value,
+    tags: {
+      include: includeTags.value,
+      exclude: excludeTags.value
+    },
+    folders: {
+      include: includeFolders.value,
+      exclude: excludeFolders.value
+    },
+    license: {
+      noCreditRequired: noCreditRequired.value,
+      allowSelling: allowSelling.value
+    },
+    namePatterns: {
+      include: includePatterns.value,
+      exclude: excludePatterns.value,
+      useRegex: useRegex.value
+    }
+  })
+
   // Build config from current state
   const buildConfig = (): LoraPoolConfig => {
+    const filters = buildFilters()
+    const serializedFilters = JSON.stringify(filters)
     const config: LoraPoolConfig = {
       version: 2,
-      filters: {
-        baseModels: selectedBaseModels.value,
-        tags: {
-          include: includeTags.value,
-          exclude: excludeTags.value
-        },
-        folders: {
-          include: includeFolders.value,
-          exclude: excludeFolders.value
-        },
-        license: {
-          noCreditRequired: noCreditRequired.value,
-          allowSelling: allowSelling.value
-        },
-        namePatterns: {
-          include: includePatterns.value,
-          exclude: excludePatterns.value,
-          useRegex: useRegex.value
-        }
-      },
+      filters,
       preview: {
         matchCount: matchCount.value,
         lastUpdated: Date.now()
@@ -71,7 +82,10 @@ export function useLoraPoolState(widget: ComponentWidget<LoraPoolConfig>) {
     // Update widget value (this triggers callback for UI sync)
     // Skip during restoration to prevent infinite loops:
     // callback → restoreFromConfig → watch → refreshPreview → buildConfig → widget.value = config → callback → ...
-    if (!isRestoring) {
+    // Also skip when only the preview was refreshed: load-time refreshes must
+    // not rewrite widget_values, otherwise an untouched workflow turns dirty.
+    if (!isRestoring && serializedFilters !== syncedFilters) {
+      syncedFilters = serializedFilters
       widget.value = config
     }
     return config
@@ -108,6 +122,11 @@ export function useLoraPoolState(widget: ComponentWidget<LoraPoolConfig>) {
 
       // matchCount doesn't trigger watchers, so direct assignment is fine
       matchCount.value = preview?.matchCount || 0
+
+      // The restored filters are already what the widget value holds, so the
+      // preview refreshes triggered by the watcher below (and on mount) only
+      // recompute the derived preview and never write it back.
+      syncedFilters = JSON.stringify(buildFilters())
     } finally {
       isRestoring = false
     }

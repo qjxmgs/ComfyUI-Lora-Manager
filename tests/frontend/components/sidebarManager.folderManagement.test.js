@@ -1,4 +1,5 @@
 import { describe, it, beforeEach, expect, vi } from 'vitest';
+import { BaseContextMenu } from '../../../static/js/components/ContextMenu/BaseContextMenu.js';
 
 const {
   SIDEBAR_MANAGER_MODULE,
@@ -264,6 +265,30 @@ describe('SidebarManager view options menu', () => {
   beforeEach(() => {
     localStorage.clear();
     document.body.innerHTML = MENU_HTML;
+  });
+
+  it('keeps the menu inside the viewport when the button sits near the bottom', () => {
+    const menu = document.getElementById('sidebarViewOptionsMenu');
+    menu.getBoundingClientRect = () => ({
+      width: 160, height: 300, top: 0, left: 0, right: 160, bottom: 300, x: 0, y: 0,
+      toJSON: () => ({}),
+    });
+    const button = document.createElement('button');
+    button.getBoundingClientRect = () => ({
+      width: 24, height: 24, left: 900, right: 924,
+      top: window.innerHeight - 30, bottom: window.innerHeight - 6,
+      x: 900, y: window.innerHeight - 30, toJSON: () => ({}),
+    });
+    const manager = createManager(createApiClient());
+
+    manager.handleViewOptionsButton({ stopPropagation() {}, currentTarget: button });
+
+    const top = parseFloat(menu.style.top);
+    expect(top).toBeGreaterThanOrEqual(8);
+    expect(top + 300).toBeLessThanOrEqual(window.innerHeight - 8);
+    expect(menu.style.display).toBe('block');
+
+    manager._closeViewOptionsMenu();
   });
 
   it('reflects the current view state with check indicators', () => {
@@ -1735,6 +1760,77 @@ describe('SidebarManager folder rename', () => {
   });
 });
 
+describe('SidebarManager context menu coordination', () => {
+  const FOLDER_MENU_HTML = `
+    <div id="sidebarFolderContextMenu" class="context-menu">
+      <div class="context-menu-item" data-action="check-folder-updates"></div>
+    </div>`;
+
+  function createPageMenu() {
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="pageContextMenuTest" class="context-menu">
+        <div class="context-menu-item" data-action="detail"></div>
+      </div>`);
+    const element = document.getElementById('pageContextMenuTest');
+    return { element, menu: new BaseContextMenu('pageContextMenuTest', '.model-card') };
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    document.body.innerHTML = FOLDER_MENU_HTML;
+    state.global.settings = {};
+    vi.clearAllMocks();
+  });
+
+  it('closes an open page menu when the folder menu opens', () => {
+    const { element: pageMenuElement, menu: pageMenu } = createPageMenu();
+    pageMenu.showMenu(10, 10, document.createElement('div'));
+    expect(pageMenuElement.style.display).toBe('block');
+
+    const manager = createManager(createApiClient());
+    manager._showFolderContextMenu(20, 20, 'empty');
+
+    expect(pageMenuElement.style.display).toBe('none');
+    expect(document.getElementById('sidebarFolderContextMenu').style.display).toBe('block');
+
+    manager._closeFolderContextMenu();
+  });
+
+  it('closes the folder menu when a page menu opens', () => {
+    const manager = createManager(createApiClient());
+    manager._showFolderContextMenu(20, 20, 'empty');
+    const folderMenu = document.getElementById('sidebarFolderContextMenu');
+    expect(folderMenu.style.display).toBe('block');
+
+    const { menu: pageMenu } = createPageMenu();
+    pageMenu.showMenu(10, 10, document.createElement('div'));
+
+    expect(folderMenu.style.display).toBe('none');
+  });
+
+  it('closes the folder menu when the view options dropdown opens', () => {
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="sidebarViewOptionsMenu" class="context-menu">
+        <div class="context-menu-item" data-action="view-mode-tree"></div>
+      </div>`);
+    const manager = createManager(createApiClient());
+    manager._showFolderContextMenu(20, 20, 'empty');
+    const folderMenu = document.getElementById('sidebarFolderContextMenu');
+
+    const anchor = document.createElement('button');
+    anchor.getBoundingClientRect = () => ({
+      width: 24, height: 24, left: 10, right: 34, top: 10, bottom: 34, x: 10, y: 10,
+      toJSON: () => ({}),
+    });
+    manager.handleViewOptionsButton({ stopPropagation() {}, currentTarget: anchor });
+
+    expect(folderMenu.style.display).toBe('none');
+    expect(document.getElementById('sidebarViewOptionsMenu').style.display).toBe('block');
+
+    manager._closeViewOptionsMenu();
+  });
+});
+
 describe('SidebarManager folder context menu layout', () => {
   // Mirrors templates/components/context_menu.html: the update check on top,
   // the folder operations as one group, delete last behind its own divider.
@@ -1785,6 +1881,27 @@ describe('SidebarManager folder context menu layout', () => {
     expect(visible(item('delete-folder'))).toBe(false);
     // Nothing left to divide: the update check stands alone
     expect(separators().map(visible)).toEqual([false, false]);
+
+    manager._closeFolderContextMenu();
+  });
+
+  it('keeps the menu inside the viewport when a folder near the bottom is clicked', () => {
+    const menu = document.getElementById('sidebarFolderContextMenu');
+    menu.getBoundingClientRect = () => ({
+      width: 180, height: 140, top: 0, left: 0, right: 180, bottom: 140, x: 0, y: 0,
+      toJSON: () => ({}),
+    });
+    const manager = createManager(createApiClient());
+
+    // The tree runs to the bottom edge, so a click in the last rows used to
+    // open the menu below the window with no way to scroll it into view.
+    const clickY = window.innerHeight - 30;
+    manager._showFolderContextMenu(40, clickY, 'empty');
+
+    const top = parseFloat(menu.style.top);
+    expect(top).toBeLessThan(clickY);
+    expect(top + 140).toBeLessThanOrEqual(window.innerHeight - 8);
+    expect(parseFloat(menu.style.left)).toBeGreaterThanOrEqual(8);
 
     manager._closeFolderContextMenu();
   });

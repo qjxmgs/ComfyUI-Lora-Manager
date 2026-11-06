@@ -162,13 +162,16 @@ class FirstRunManager:
             "checkpoints": ServiceRegistry.get_checkpoint_scanner,
             "embeddings": ServiceRegistry.get_embedding_scanner,
             "other": ServiceRegistry.get_other_scanner,
+            "workflows": ServiceRegistry.get_workflow_scanner,
         }
 
     def _active_scanner_getters(self) -> Dict[str, Callable[[], Awaitable[Any]]]:
-        """Drop the opt-in other scanner while Other Models is disabled."""
+        """Drop the opt-in scanners while their features are disabled."""
         getters = self._scanner_getters()
         if "other" in getters and not self._settings.is_other_models_enabled():
             getters.pop("other")
+        if "workflows" in getters and not self._settings.is_workflows_enabled():
+            getters.pop("workflows")
         return getters
 
     # ------------------------------------------------------------------
@@ -304,6 +307,13 @@ class FirstRunManager:
             if defer:
                 await self._preset_empty_caches()
                 return {"status": "deferred"}
+
+            # Arm the post-scan "fetch metadata" prompt so the frontend can
+            # offer a one-click bulk fetch once this first scan finishes.
+            # Upgrade shortcuts (check_and_mark_upgrade) and the defer path
+            # skip this: those users either already have metadata or have no
+            # fresh scan to anchor the prompt to.
+            self._settings.set("bulk_fetch_prompt_pending", True)
 
             self._scan_in_progress = True
             try:

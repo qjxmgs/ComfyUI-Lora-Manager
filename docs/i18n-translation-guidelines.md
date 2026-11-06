@@ -4,7 +4,7 @@ This document is the canonical set of conventions for translating LoRA Manager U
 It applies to **human translators and AI agents** alike. Read it before editing anything in
 `locales/`.
 
-Source of truth: `locales/en.json` (10 locales, 2128 leaf keys; all locales share the exact
+Source of truth: `locales/en.json` (10 locales, 2308 leaf keys; all locales share the exact
 same key structure).
 
 Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
@@ -227,6 +227,61 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > `static/js/utils/formatters.js`). The same pass translated the 4 leftover
 > `sidebar.deleteFolder*` placeholders (folder missing on disk → remove from list), so no
 > `[TODO: Translate]` remains in any locale.
+
+> **Status (2026-10, first-run welcome page and fetch status):** the first launch is gated
+> behind a welcome page (`firstRun.*`), which shipped together with the initialization failure
+> state, the bulk-fetch rate-limit copy, the "fetch metadata" post-scan banner, two download
+> link errors and two duplicate-delete follow-ups — 36 keys left behind as
+> `[TODO: Translate]`. All 36 are now translated in all 9 locales (renderings in §2, "First-run
+> welcome page and fetch-status copy"). The same pass re-translated the three keys whose English
+> text had changed without being re-queued: `settings.folderSettings.activeLibrary` /
+> `.activeLibraryHelp` (multi-library deprecation, commit `1a6b0f78`) and
+> `toast.contextMenu.linkHfSuccess` (the toast now says "model source" instead of
+> "HuggingFace", commit `5ab0e88ab`). No `[TODO: Translate]` placeholder remains.
+
+> **Status (2026-10, workflow management):** the Workflows page (`workflows.*`) manages the
+> ComfyUI workflow JSON files in their own library folders and shipped with the settings toggle
+> and folder list (`settings.folderSettings.enableWorkflows*` / `.workflowFolders*`), the folder
+> key label, the two folder-list nav paths and the initialization progress text — 41 keys
+> `[TODO: Translate]` in all 9 locales, now translated (terminology in §2, "Workflows feature").
+> `Workflow` reuses the term already fixed in §5 per locale: Latin in fr/de/es/ru/he (so
+> `header.navigation.workflows` and `workflows.title` stay `Workflows` there), 工作流 in
+> zh-CN/zh-TW, ワークフロー in ja, 워크플로 in ko. The three `workflows.noPaths.open*` buttons are
+> byte-identical to `other.noPaths.open*` (same actions), and the nav-path hints reuse
+> `other.disabled.hint`'s "Settings > Library" / `other.noPaths.descriptionStandalone`'s
+> "Settings → Model Paths" renderings. No `[TODO: Translate]` placeholder remains.
+>
+> **Status (2026-10, single workflow folder):** the library is now a single folder
+> (`settings.folderSettings.workflowFolder*`, backed by `workflow_path`). The renamed label/help
+> and placeholder keys plus `enableWorkflowsHelp` and the `workflows.noPaths.*` copy were
+> re-queued as `[TODO: Translate]` in all 9 locales and are now translated, so no
+> `[TODO: Translate]` placeholder remains. The `workflows.noPaths` split
+> (`descriptionStandalone` / `descriptionComfyUI` / `hintStandalone` / `hintComfyUI`) was
+> collapsed into `description` + `hint`: the folder is edited in Settings → Library in both
+> modes, so the manual settings.json guidance and the standalone `openSettingsFolder` fallback
+> were dropped.
+
+> **Status (2026-10, workflow card actions):** workflow cards, dialogs and toasts stopped
+> borrowing the model copy. The card menu now names the workflow
+> (`workflows.contextMenu.{copyFilename,moveWorkflow,deleteWorkflow}`), the info-box label
+> (`workflows.itemLabel`), and the delete / move / bulk-delete dialogs have their own
+> `workflows.modals.*` strings; relinking reports `workflows.relink.*` and failed moves use
+> `workflows.modals.move.failed` instead of "Failed to move model(s)". The **Exclude Workflow**
+> action was removed — workflows, like recipes, have no exclusion concept (the entry is also
+> hidden from the global context menu and the excluded-view banner) — so there is no
+> `workflows.*.exclude*` copy to translate. All 9 locales are translated (renderings in §2,
+> "Workflows feature"), so no `[TODO: Translate]` placeholder remains.
+
+> **Status (2026-10, page-aware nouns and recipes-page copy):** the pages stopped sharing the
+> model library's plural nouns. The header filter panel is now titled per page
+> (`recipes.filter.title`, `workflows.filter.title`), bulk "nothing selected" guards use
+> `recipes.bulk.noSelection` / `workflows.bulk.noSelection`, and failed moves are reported with
+> `recipes.move.failed` / `workflows.modals.move.failed`. The Recipes page also gained the
+> workflow pass's treatment: the card tooltips and the delete dialog now go through i18n
+> (`recipes.actions.sendRecipeModes`, `.shareRecipe`, `recipes.deleteModal.message` / `.note` /
+> `.deleting`, reusing `loras.contextMenu.deleteRecipe`, `modelCard.nsfw.*` and the
+> `common.actions.*` buttons), and the Workflows page got a bulk-action config so the model-only
+> bulk entries stay hidden. All 9 locales are translated, so no `[TODO: Translate]` remains.
 
 ---
 
@@ -869,6 +924,114 @@ noun; "recipes" uses the R4 noun in its plain plural (fr keeps `Recipes`).
 Both keys are passed a pre-formatted count (`formatCountExact`), so no locale adds its own
 digit grouping; `ko` needs no `의` because the count follows the noun directly, as in
 `rootModels`.
+
+### First-run welcome page and fetch-status copy
+
+The first launch gates the library scan behind a welcome page (`firstRun.*`, 30 keys): it lists
+the scanned libraries with their model counts, offers the sidecar-storage choice, and starts or
+defers the initial scan. The same feature series added the initialization failure state
+(`initialization.error.*`), the bulk metadata fetch's rate-limit copy
+(`modals.metadataFetchSummary.rateLimitedNotice`, `toast.api.metadataFetchRateLimited`), the
+post-scan banner prompting the first fetch (`banners.bulkFetchPrompt.*`), the two download-modal
+link errors (`modals.download.errors.linkedFile*`) and the duplicate-delete follow-ups
+(`toast.duplicates.deletePartialFailed` / `.cacheUpdateFailed`).
+
+Most of these strings are assembled from existing renderings rather than new terms:
+
+| Term | Rendering |
+|---|---|
+| "Welcome to LoRA Manager" (`firstRun.title`) | byte-identical to `onboarding.languageSelection.title` in every locale |
+| `firstRun.libraries.*` | the model-type names of `header.navigation.*` — zh-CN/zh-TW/ja/ko keep the **singular** `LoRA` / `Checkpoint` / `Embedding`, the Latin locales keep the plurals; `other` uses the "Other Models" `other.title` rendering |
+| `firstRun.libraryStats` ("{count} models · {size}") | the "models" count shape of `loras.controls.refresh.rootModels` (ko `모델 {count}개`, ru `{count} модел(ей)`); the middle-dot separator stays verbatim |
+| `estimate` scan time (`~{minutes} min`) | the `common.scanProgress.eta.minutes` abbreviation (de `Min.`, fr `min`, ru `мин`) |
+| "recommended" | zh-CN 推荐 · zh-TW 建議 · ja 推奨 · ko 권장 · fr recommandé · de empfohlen · es recomendado · ru рекомендуется · he מומלץ |
+| `rootMissing` ("Directory not found") | the `recipes.batchImport.directory` noun (zh-CN 目录 · zh-TW 目錄 · ja フォルダ · ko 폴더 · fr dossier · de Verzeichnis · es directorio · ru папка · he תיקייה) with the `sidebar.deleteFolderModal.missingTitle` "not found" shape |
+| directory (of the centralized sidecar path) | zh-CN 目录 · zh-TW 目錄 · ja ディレクトリ · ko 디렉터리 · fr dossier · de Verzeichnis · es directorio · ru каталог · he תיקייה |
+| metadata storage | zh-CN 元数据存储 · zh-TW 中繼資料儲存 · ja メタデータの保存 · ko 메타데이터 저장 · fr Stockage des métadonnées · de Metadaten-Speicherung · es Almacenamiento de metadatos · ru Хранение метаданных · he אחסון מטא-נתונים |
+| rate limit (of the metadata provider) | zh-CN 速率限制 · zh-TW 速率限制 · ja レート制限 · ko 속도 제한 · fr limite de débit · de Ratenlimit · es límite de solicitudes · ru лимит запросов · he מגבלת קצב |
+| "(Deprecated)" (`settings.folderSettings.activeLibrary`) | zh-CN 已弃用 · zh-TW 已棄用 · ja 非推奨 · ko 사용 중단 예정 · fr obsolète · de veraltet · es obsoleto · ru устарело · he מיושן |
+| bulk-fetch banner title | zh-CN 让你的模型库焕发生机 · zh-TW 讓您的模型庫煥發生機 · ja ライブラリに命を吹き込もう · ko 라이브러리에 생기를 불어넣으세요 · fr Donnez vie à votre bibliothèque · de Erwecken Sie Ihre Bibliothek zum Leben · es Dale vida a tu biblioteca · ru Вдохните жизнь в свою библиотеку · he החייה את הספרייה שלך |
+| defer ("Later") / banner ("Maybe Later") | zh-CN 稍后 / 以后再说 · zh-TW 稍後 / 稍後再說 · ja 後で / また今度 · ko 나중에 / 나중에 하기 · fr Plus tard / Peut-être plus tard · de Später / Vielleicht später · es Más tarde / Quizás más tarde · ru Позже / Может быть, позже · he מאוחר יותר / אולי מאוחר יותר |
+
+- The two rate-limit strings name the **Fetch** action in prose. Where `en` quotes it
+  (`Re-run "Fetch from Civitai"`), the locale quotes its own `loras.controls.fetch.title`
+  value verbatim with its UI-label quoting style (zh-CN “ ”, zh-TW/ja 「 」, ko `' '`,
+  fr « … », de „ … “, es/ru/he «…») — zh-TW therefore quotes its existing
+  「從 CivitAI 取得 metadata」 label rather than inventing a second rendering of it.
+  `toast.duplicates.cacheUpdateFailed` quotes `loras.controls.refresh.full` the same way.
+- `toast.api.metadataFetchRateLimited` keeps the en "updated {success} of {total}" clause in
+  each locale's own "N of M" shape; `toast.duplicates.deletePartialFailed` mirrors
+  `toast.duplicates.deleteFailed` with the `{failed}` count inserted before the `{type}` noun
+  (ko puts the count after it, ja puts the count on the selected items).
+- `firstRun.description`, `.sidecar.alongside.description` and `.centralized.description`
+  name the sidecar files, so they use the Sidecar storage row's "sidecar" and "alongside model
+  files" renderings plus the §5 "metadata" noun; the `.json` file suffix stays byte-identical.
+  `firstRun.sidecar.*` is the same choice as `settings.sidecarStorage.modeOptions.*` made
+  before the first scan, so the labels reuse those renderings and only the parenthetical
+  changes (`(recommended)` instead of `(default)` / "centralized storage").
+- `firstRun.language.label` reuses `common.language.select` (zh-CN keeps its 选择语言 verb
+  label rather than introducing a second rendering of "Language").
+
+### Workflows feature (page, folders, restore/update actions)
+
+The Workflows page (`workflows.*`) lists the ComfyUI workflow JSON files kept in their own
+library folders. **Workflow** is the §5 term per locale and never becomes a different noun;
+"workflow management" is the feature name, built from that noun plus the locale's management
+word (`Verwaltung` / `gestion` / `gestión` / `управление` / `ניהול`).
+
+| Term | Rendering |
+|---|---|
+| Workflows (page title / nav) | zh-CN 工作流 · zh-TW 工作流 · ja ワークフロー · ko 워크플로 · fr/de/es/ru/he Workflows |
+| workflow (noun in prose) | zh-CN 工作流 · zh-TW 工作流 · ja ワークフロー · ko 워크플로 · fr workflow · de Workflow · es workflow · ru workflow · he workflow |
+| Workflow Management (settings toggle) | zh-CN 工作流管理 · zh-TW 工作流管理 · ja ワークフロー管理 · ko 워크플로 관리 · fr Gestion des workflows · de Workflow-Verwaltung · es Gestión de workflows · ru Управление workflow · he ניהול workflow |
+| Workflow Folders / Workflow Paths | zh-CN 工作流文件夹 / 工作流路径 · zh-TW 工作流資料夾 / 工作流路徑 · ja ワークフローフォルダー / ワークフローパス · ko 워크플로 폴더 / 워크플로 경로 · fr Dossiers de workflows / Chemins de workflows · de Workflow-Ordner / Workflow-Pfade · es Carpetas de workflows / Rutas de workflows · ru Папки workflow / Пути workflow · he תיקיות workflow / נתיבי workflow |
+| Open in ComfyUI (card action and context menu) | zh-CN 在 ComfyUI 中打开 · zh-TW 在 ComfyUI 中開啟 · ja ComfyUIで開く · ko ComfyUI에서 열기 · fr Ouvrir dans ComfyUI · de In ComfyUI öffnen · es Abrir en ComfyUI · ru Открыть в ComfyUI · he פתח ב-ComfyUI |
+| Update from ComfyUI | zh-CN 从 ComfyUI 更新 · zh-TW 從 ComfyUI 更新 · ja ComfyUIから更新 · ko ComfyUI에서 업데이트 · fr Mettre à jour depuis ComfyUI · de Von ComfyUI aktualisieren · es Actualizar desde ComfyUI · ru Обновить из ComfyUI · he עדכן מ-ComfyUI |
+| Restore Downloaded Version | zh-CN 恢复已下载版本 · zh-TW 還原已下載版本 · ja ダウンロード済みバージョンを復元 · ko 다운로드한 버전 복원 · fr Restaurer la version téléchargée · de Heruntergeladene Version wiederherstellen · es Restaurar versión descargada · ru Восстановить загруженную версию · he שחזר את הגרסה שהורדה |
+
+- "CivitAI Workflow resources" keeps `Workflow` in Latin even in the CJK locales: it names
+  CivitAI's resource type (the §2 "Other Models" rule for model-type names), not this page.
+- `workflow_path` is a JSON key and stays byte-identical in every locale.
+- The workflow library is a single folder (`workflow_path`), so `noPaths.*` copy is
+  singular — "no workflow folder is configured", not "folders".
+- `noPaths.description` points at the **Settings → Library** workflow folder input; the same
+  input exists in plugin and standalone mode, so there is no mode-specific description.
+  `noPaths.hint` notes that the folder is separate from ComfyUI's built-in workflow list.
+  Neither mode shows a settings.json path or asks users to edit the file by hand.
+- `disabled.*` mirrors `other.disabled.*` sentence by sentence ("management is off", "Enable it
+  to …", "Failed to enable …"). `workflows.noPaths` keeps its own `openSettings` action and does
+  not mirror the `other.noPaths.*` standalone/model-path buttons.
+- Failure toasts carry `{message}` verbatim. CJK uses the full-width colon (`：`); ko and the
+  Latin/Cyrillic/Hebrew locales use ASCII (fr with its space, ` : `). The `restoring` loading
+  line follows each locale's existing "… in progress" shape (`recipesPathMigrating`).
+- Card actions name the workflow explicitly.
+  "Move Workflow to Folder": zh-CN 将工作流移动到文件夹 · zh-TW 將工作流移動到資料夾 · ja ワークフローをフォルダに移動 ·
+  ko 워크플로를 폴더로 이동 · fr Déplacer le workflow vers un dossier · de Workflow in Ordner verschieben ·
+  es Mover workflow a carpeta · ru Переместить workflow в папку · he העבר workflow לתיקייה.
+  "Delete Workflow" (menu label *and* delete-dialog title): zh-CN 删除工作流 · zh-TW 刪除工作流 ·
+  ja ワークフローを削除 · ko 워크플로 삭제 · fr Supprimer le workflow · de Workflow löschen ·
+  es Eliminar workflow · ru Удалить workflow · he מחק workflow.
+- The dialogs mirror each locale's model-dialog phrasing with the workflow noun: the delete
+  copy follows `modals.deleteModel.message`, the bulk copy follows `modals.bulkDelete.*`
+  ("Delete Multiple Workflows" / "workflows will be permanently deleted."), and the move root
+  label follows `modals.moveModel.selectModelRoot` + `modals.download.selectRootDirectory`
+  ("Select Workflow Root:" / "Select a workflow root directory"). The bulk move title is
+  "Move {count} Workflows": zh-CN 移动 {count} 个工作流 · zh-TW 移動 {count} 個工作流 ·
+  ja {count} 件のワークフローを移動 · ko {count}개의 워크플로 이동 · fr Déplacer {count} workflows ·
+  de {count} Workflows verschieben · es Mover {count} workflows · ru Переместить {count} workflow ·
+  he העבר {count} workflows.
+- Relink toasts reuse the workflow noun ("Workflow successfully re-linked to CivitAI" /
+  "… via CivitArchive") and keep each locale's existing `toast.contextMenu.relink*` shape.
+- Workflows have no exclusion concept, so there is no `workflows.*` exclude/restore copy: the
+  card menu, the global context menu entry and the excluded-view banner are all absent on that
+  page (recipes are handled the same way).
+- Page chrome names the collection, not models: the header filter panel title is
+  `workflows.filter.title` ("Filter Workflows": zh-CN 筛选工作流 · zh-TW 篩選工作流 ·
+  ja ワークフローをフィルタ · ko 워크플로 필터 · fr Filtrer les workflows · de Workflows filtern ·
+  es Filtrar workflows · ru Фильтр workflow · he סינון workflows) and the bulk guard is
+  `workflows.bulk.noSelection` ("No workflows selected"). The Recipes page mirrors this with
+  `recipes.filter.title` ("Filter Recipes") and `recipes.bulk.noSelection`, following the §4
+  Recipe noun per locale (配方 / 配方 / レシピ / 레시피 / Recipe / Rezept / receta / рецепт / מתכון).
 
 ---
 

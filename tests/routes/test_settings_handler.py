@@ -291,3 +291,60 @@ async def test_get_settings_standalone_filters_template_placeholders(
         "loras": ["/real/loras"],
         "vae": [],
     }
+
+
+@pytest.mark.asyncio
+async def test_get_settings_exposes_workflow_path_in_plugin_mode(
+    monkeypatch, patch_other_models_availability
+):
+    """The workflow library folder is LoRA-Manager-owned in both modes, so it
+    syncs to the frontend even where host-owned folder_paths stay hidden."""
+    monkeypatch.delenv("LORA_MANAGER_STANDALONE", raising=False)
+    handler = make_get_handler({"language": "en"})
+    handler._settings.get_workflow_path = lambda: "/library/workflows"
+
+    response = await handler.get_settings(FakeRequest())
+    payload = json_payload(response)
+
+    assert response.status == 200
+    settings = payload["settings"]
+    assert settings["standalone_mode"] is False
+    assert "folder_paths" not in settings
+    assert settings["workflow_path"] == "/library/workflows"
+    # Companion extension compatibility: a one-item list mirrors the single path.
+    assert settings["workflow_folder_paths"] == ["/library/workflows"]
+
+
+@pytest.mark.asyncio
+async def test_get_settings_workflow_path_fallback_when_stub_lacks_method(
+    monkeypatch, patch_other_models_availability
+):
+    monkeypatch.delenv("LORA_MANAGER_STANDALONE", raising=False)
+    handler = make_get_handler({"language": "en"})
+
+    response = await handler.get_settings(FakeRequest())
+    payload = json_payload(response)
+
+    assert response.status == 200
+    assert payload["settings"]["workflow_path"] == ""
+    assert payload["settings"]["workflow_folder_paths"] == []
+
+
+@pytest.mark.asyncio
+async def test_update_settings_saves_workflow_path_via_generic_set(
+    monkeypatch, patch_other_models_availability
+):
+    """workflow_path is a normal setting; SettingsManager.set() applies the new
+    root live, so the handler must not need a dedicated merge branch."""
+    monkeypatch.delenv("LORA_MANAGER_STANDALONE", raising=False)
+    handler = make_get_handler({"language": "en"})
+
+    response = await handler.update_settings(
+        FakeRequest(json_data={"workflow_path": "/library/workflows"})
+    )
+    payload = json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert handler._settings.set_calls == [("workflow_path", "/library/workflows")]
+    assert handler._settings._values["workflow_path"] == "/library/workflows"

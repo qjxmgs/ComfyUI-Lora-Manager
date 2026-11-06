@@ -156,7 +156,9 @@
             "embeddingNameCopied": "已复制 Embedding 语法",
             "modelNameCopied": "模型名称已复制",
             "sendCheckpointToWorkflow": "发送到 ComfyUI",
-            "sendEmbeddingToWorkflow": "发送到 ComfyUI"
+            "sendEmbeddingToWorkflow": "发送到 ComfyUI",
+            "openInComfyUI": "在 ComfyUI 中打开",
+            "copyWorkflowToClipboard": "复制工作流到剪贴板"
         },
         "nsfw": {
             "matureContent": "成熟内容",
@@ -244,6 +246,7 @@
             "checkpoints": "Checkpoint",
             "embeddings": "Embedding",
             "other": "其他",
+            "workflows": "工作流",
             "statistics": "统计"
         },
         "search": {
@@ -609,8 +612,8 @@
             "cardBlurAmountHelp": "调整模型和配方卡片上页眉和页脚叠加层的模糊强度（0 = 无模糊，20 = 最大模糊）。"
         },
         "folderSettings": {
-            "activeLibrary": "活动库",
-            "activeLibraryHelp": "在已配置的库之间切换以更新默认文件夹。更改选择将重新加载页面。",
+            "activeLibrary": "活动库（已弃用）",
+            "activeLibraryHelp": "在已配置的库之间切换以更新默认文件夹。更改选择将重新加载页面。已弃用：多库支持将在即将发布的版本中移除。单个库内的多个文件夹根目录仍完全受支持。",
             "loadingLibraries": "正在加载库...",
             "noLibraries": "尚未配置库",
             "defaultLoraRoot": "LoRA 根目录",
@@ -633,6 +636,11 @@
             "defaultControlnetRootHelp": "设置下载、导入和移动时的默认 ControlNet 根目录",
             "enableOtherModels": "其他模型管理",
             "enableOtherModelsHelp": "关闭后，不会扫描 VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet 文件夹，其他模型页面保持禁用，且无法下载这些模型类型。",
+            "enableWorkflows": "工作流管理",
+            "enableWorkflowsHelp": "关闭后，不会扫描工作流库文件夹，工作流页面保持禁用，且无法关联或下载 CivitAI 的 Workflow 资源。",
+            "workflowFolder": "工作流库文件夹",
+            "workflowFolderHelp": "用于扫描 ComfyUI 工作流 JSON 文件的单个文件夹。仅由 LoRA Manager 管理（不与 ComfyUI 共享）；更改立即生效。",
+            "workflowFolderPlaceholder": "/path/to/workflows",
             "otherSubTypes": "管理的模型类型",
             "otherSubTypesHelp": "选择要在其他模型页面中扫描和显示的其他模型类别。",
             "subTypeVae": "VAE",
@@ -1099,11 +1107,25 @@
     "recipes": {
         "title": "LoRA 配方",
         "filter": {
+            "title": "筛选配方",
             "countTitle": "{name} —— {count} 个配方"
+        },
+        "bulk": {
+            "noSelection": "未选择配方"
+        },
+        "move": {
+            "failed": "移动配方失败：{message}"
+        },
+        "deleteModal": {
+            "message": "你确定要删除此配方吗？",
+            "note": "删除此配方不会影响其中使用的 LoRA 文件。",
+            "deleting": "正在删除..."
         },
         "actions": {
             "sendCheckpoint": "发送到 ComfyUI",
             "sendRecipe": "发送到 ComfyUI",
+            "sendRecipeModes": "发送配方到工作流（单击：追加，Shift+单击：替换）",
+            "shareRecipe": "分享配方",
             "copyRecipeSyntax": "复制配方语法",
             "deleteRecipeWithShortcut": "删除配方（Del）"
         },
@@ -1447,6 +1469,82 @@
             "openSettingsFolder": "打开设置文件夹"
         }
     },
+    "workflows": {
+        "title": "工作流",
+        "itemLabel": "工作流",
+        "filter": {
+            "title": "筛选工作流"
+        },
+        "bulk": {
+            "noSelection": "未选中工作流"
+        },
+        "contextMenu": {
+            "sendToComfy": "在 ComfyUI 中打开",
+            "updateFromComfy": "从 ComfyUI 更新",
+            "copyWorkflow": "复制工作流",
+            "restoreDownloaded": "恢复已下载版本",
+            "moveWorkflow": "将工作流移动到文件夹",
+            "deleteWorkflow": "删除工作流"
+        },
+        "modals": {
+            "delete": {
+                "title": "删除工作流",
+                "message": "你确定要删除此工作流及所有相关文件吗？",
+                "failed": "删除工作流失败：{message}"
+            },
+            "move": {
+                "title": "移动工作流",
+                "bulkTitle": "移动 {count} 个工作流",
+                "selectRoot": "选择工作流根目录：",
+                "targetHint": "选择工作流根目录",
+                "noRoots": "未找到工作流根目录",
+                "failed": "移动工作流失败：{message}"
+            },
+            "bulkDelete": {
+                "title": "删除多个工作流",
+                "message": "你确定要删除所有选中的工作流及其相关文件吗？",
+                "countMessage": "工作流将被永久删除。"
+            }
+        },
+        "relink": {
+            "success": "工作流已成功重新关联到 CivitAI",
+            "civArchiveSuccess": "工作流已成功通过 CivitArchive 重新关联"
+        },
+        "sendToComfy": {
+            "success": "工作流已发送到 ComfyUI",
+            "failed": "发送工作流失败：{message}"
+        },
+        "restoreDownloaded": {
+            "title": "恢复已下载版本？",
+            "message": "这会丢弃本地修改，并将工作流恢复到下载时的版本。",
+            "confirmButton": "恢复",
+            "restoring": "正在恢复工作流...",
+            "success": "工作流已恢复到已下载版本",
+            "failed": "恢复工作流失败：{message}"
+        },
+        "updateFromComfy": {
+            "success": "已从 ComfyUI 更新工作流",
+            "noChanges": "ComfyUI 中没有需要写回的更改",
+            "cancelled": "更新已取消",
+            "failed": "从 ComfyUI 更新失败：{message}"
+        },
+        "copyWorkflow": {
+            "failed": "复制工作流失败：{message}"
+        },
+        "disabled": {
+            "title": "工作流管理已关闭",
+            "description": "启用后可扫描和管理 ComfyUI 工作流文件，保留其 CivitAI 元数据和预览，并将它们发送到正在运行的 ComfyUI 中。",
+            "enableButton": "启用工作流",
+            "hint": "你可以稍后在“设置 > 库”中再次关闭此功能。",
+            "enableFailed": "启用工作流失败"
+        },
+        "noPaths": {
+            "title": "未配置工作流文件夹",
+            "description": "工作流管理已开启，但未配置工作流文件夹。请在“设置 → 库”中设置工作流文件夹，然后重新加载此页面。",
+            "hint": "工作流库文件夹独立于 ComfyUI 内置的工作流列表。",
+            "openSettings": "打开设置"
+        }
+    },
     "sidebar": {
         "modelRoot": "根目录",
         "collapseAll": "折叠所有文件夹",
@@ -1722,8 +1820,8 @@
             "errors": {
                 "invalidUrl": "无效的模型 URL 格式",
                 "noVersions": "此模型没有可用版本",
-                "linkedFileNotFound": "[TODO: Translate] File {fileId} was not found in the requested model version.",
-                "linkedFileNotWeightFile": "[TODO: Translate] File {fileId} is not a downloadable model file.",
+                "linkedFileNotFound": "未在所请求的模型版本中找到文件 {fileId}。",
+                "linkedFileNotWeightFile": "文件 {fileId} 不是可下载的模型文件。",
                 "mixedSources": "无法在同一批次中混合使用 CivitAI 和 Hugging Face / ModelScope URL。",
                 "noModelFiles": "在此仓库中未找到模型文件。"
             },
@@ -2222,7 +2320,7 @@
             "downloadCsv": "下载 CSV",
             "columnModelName": "模型名称",
             "columnError": "错误",
-            "rateLimitedNotice": "[TODO: Translate] Fetch aborted: the metadata provider rate limit was reached. Re-run \"Fetch from Civitai\" later to retry the remaining models."
+            "rateLimitedNotice": "获取已中止：已达到元数据提供方的速率限制。请稍后重新执行“从 CivitAI 获取元数据”，以重试剩余的模型。"
         },
         "downloadBatchSummary": {
             "title": "批量下载摘要",
@@ -2272,6 +2370,10 @@
             "title": "正在初始化其他模型管理器",
             "message": "正在扫描并构建模型缓存。这可能需要几分钟..."
         },
+        "workflows": {
+            "title": "初始化工作流管理器",
+            "message": "正在扫描并构建工作流缓存。这可能需要几分钟..."
+        },
         "recipes": {
             "title": "初始化配方管理器",
             "message": "正在加载和处理配方。这可能需要几分钟..."
@@ -2309,50 +2411,50 @@
             }
         },
         "error": {
-            "title": "[TODO: Translate] Initialization failed",
-            "message": "[TODO: Translate] Something went wrong while scanning your model library.",
-            "retry": "[TODO: Translate] Retry"
+            "title": "初始化失败",
+            "message": "扫描你的模型库时出错。",
+            "retry": "重试"
         }
     },
     "firstRun": {
-        "title": "[TODO: Translate] Welcome to LoRA Manager",
-        "description": "[TODO: Translate] Before you start, LoRA Manager needs to scan your model libraries and generate metadata sidecar files. This is a one-time step; how long it takes depends on the size of your library and the speed of your disk.",
+        "title": "欢迎使用 LoRA 管理器",
+        "description": "开始之前，LoRA Manager 需要扫描你的模型库并生成元数据附属文件。这是一次性步骤；耗时取决于模型库的大小和磁盘速度。",
         "libraries": {
-            "loras": "[TODO: Translate] LoRAs",
-            "checkpoints": "[TODO: Translate] Checkpoints",
-            "embeddings": "[TODO: Translate] Embeddings",
-            "other": "[TODO: Translate] Other Models"
+            "loras": "LoRA",
+            "checkpoints": "Checkpoint",
+            "embeddings": "Embedding",
+            "other": "其他模型"
         },
         "language": {
-            "label": "[TODO: Translate] Language"
+            "label": "选择语言"
         },
-        "libraryStats": "[TODO: Translate] {count} models · {size}",
-        "rootMissing": "[TODO: Translate] Directory not found",
-        "estimate": "[TODO: Translate] About {count} models ({size}) — estimated scan time ~{minutes} min, depending on library size and disk speed.",
+        "libraryStats": "{count} 个模型 · {size}",
+        "rootMissing": "未找到目录",
+        "estimate": "约 {count} 个模型（{size}），预计扫描时间约 {minutes} 分钟，具体取决于模型库大小和磁盘速度。",
         "noRoots": {
-            "plugin": "[TODO: Translate] No accessible model folders were found. Open Settings to configure your model directories, then reload this page.",
-            "standalone": "[TODO: Translate] No accessible model folders were found. Edit folder_paths in settings.json, then restart the server."
+            "plugin": "未找到可访问的模型文件夹。打开设置配置模型目录，然后重新加载此页面。",
+            "standalone": "未找到可访问的模型文件夹。编辑 settings.json 中的 folder_paths，然后重启服务器。"
         },
         "sidecar": {
-            "title": "[TODO: Translate] Metadata storage",
+            "title": "元数据存储",
             "alongside": {
-                "label": "[TODO: Translate] Next to model files (recommended)",
-                "description": "[TODO: Translate] Metadata .json files are stored next to each model file, so they move together with the model."
+                "label": "与模型文件放在一起（推荐）",
+                "description": "元数据 .json 文件与每个模型文件存放在一起，因此会随模型一起移动。"
             },
             "centralized": {
-                "label": "[TODO: Translate] Centralized directory",
-                "description": "[TODO: Translate] Metadata is stored in a separate directory, keeping your model folders clean.",
-                "pathPlaceholder": "[TODO: Translate] Directory for centralized metadata storage"
+                "label": "集中目录",
+                "description": "元数据存储在单独的目录中，让模型文件夹保持整洁。",
+                "pathPlaceholder": "集中元数据存储目录"
             }
         },
         "actions": {
-            "start": "[TODO: Translate] Start Scan",
-            "defer": "[TODO: Translate] Later"
+            "start": "开始扫描",
+            "defer": "稍后"
         },
         "errors": {
-            "loadFailed": "[TODO: Translate] Failed to load library information.",
-            "pathRequired": "[TODO: Translate] Please enter a storage directory for centralized metadata.",
-            "startFailed": "[TODO: Translate] Failed to start the scan."
+            "loadFailed": "加载模型库信息失败。",
+            "pathRequired": "请输入用于集中存储元数据的目录。",
+            "startFailed": "无法启动扫描。"
         }
     },
     "duplicates": {
@@ -2868,8 +2970,8 @@
             "deleteError": "错误：{message}",
             "deleteSuccess": "成功删除 {count} 个 {type}",
             "deleteFailed": "删除 {type} 失败：{message}",
-            "deletePartialFailed": "[TODO: Translate] Failed to delete {failed} selected {type}: {message}",
-            "cacheUpdateFailed": "[TODO: Translate] The files were deleted but the library cache could not be updated. Run Rebuild Cache to refresh the list."
+            "deletePartialFailed": "删除 {failed} 个选中的 {type} 失败：{message}",
+            "cacheUpdateFailed": "文件已删除，但无法更新模型库缓存。请运行“重建缓存”刷新列表。"
         },
         "controls": {
             "reloadFailed": "重新加载 {pageType} 失败：{message}",
@@ -2882,7 +2984,7 @@
             "contentRatingFailed": "设置内容评级失败：{message}",
             "relinkSuccess": "模型已成功重新关联到 CivitAI",
             "relinkFailed": "错误：{message}",
-            "linkHfSuccess": "模型已成功链接到 HuggingFace",
+            "linkHfSuccess": "模型已成功关联到其模型来源",
             "linkHfFailed": "错误：{message}",
             "linkCivArchSuccess": "模型已成功通过 CivitArchive 重新关联",
             "fetchMetadataFirst": "请先从 CivitAI 获取元数据",
@@ -2929,7 +3031,7 @@
             "metadataUpdateComplete": "元数据更新完成",
             "operationCancelled": "操作已由用户取消",
             "operationCancelledPartial": "操作已取消。已处理 {success} 个项目。",
-            "metadataFetchRateLimited": "[TODO: Translate] Metadata fetch aborted due to rate limiting — updated {success} of {total}, {failed} failed, {skipped} skipped. Re-run Fetch from Civitai later to retry the rest.",
+            "metadataFetchRateLimited": "因速率限制，元数据获取已中止——已更新 {total} 个中的 {success} 个，失败 {failed} 个，跳过 {skipped} 个。请稍后重新从 CivitAI 获取元数据，以重试其余模型。",
             "metadataFetchFailed": "获取元数据失败：{message}",
             "bulkMetadataCompleteAll": "全部 {count} 个 {type} 元数据刷新成功",
             "bulkMetadataCompletePartial": "已刷新 {success}/{total} 个 {type} 元数据",
@@ -3060,6 +3162,12 @@
             "content": "在一个专属页面中扫描和管理 VAE、Upscaler、Text Encoder、CLIP Vision 和 ControlNet 文件，并从 CivitAI 下载。",
             "enable": "启用其他模型",
             "openSettings": "打开设置"
+        },
+        "bulkFetchPrompt": {
+            "title": "让你的模型库焕发生机",
+            "content": "首次扫描发现 {count} 个模型缺少元数据。从 CivitAI 获取这些模型的信息，即可获得预览图片、描述和触发词。",
+            "fetch": "获取元数据",
+            "later": "以后再说"
         },
         "pager": {
             "previous": "上一条通知",

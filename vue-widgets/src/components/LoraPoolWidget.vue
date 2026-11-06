@@ -170,7 +170,10 @@ onMounted(async () => {
   await state.fetchFilterOptions()
 
   // Initial preview (only called once on mount)
-  // When workflow is loaded, callback restores config, then watch triggers this
+  // When workflow is loaded, callback restores config, then watch triggers this.
+  // The refresh updates the live match count only: buildConfig() skips the
+  // widget write while the filters are unchanged, so loading a workflow never
+  // reserializes widget_values (which would mark it dirty).
   await state.refreshPreview()
 })
 </script>
@@ -178,7 +181,9 @@ onMounted(async () => {
 <style scoped>
 .lora-pool-widget {
   padding: 12px;
-  background: rgba(40, 44, 52, 0.6);
+  /* The node surface shows through; only interactive controls and cards are
+     painted, so the widget never looks like a darkened slab on light themes. */
+  background: transparent;
   border-radius: 4px;
   height: 100%;
   display: flex;

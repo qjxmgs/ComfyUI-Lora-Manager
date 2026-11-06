@@ -209,6 +209,11 @@ class Config:
         self.other_root_subtypes: Dict[str, str] = {}
         self.other_folder_roots: Dict[str, List[str]] = {}
         self.other_roots = self._init_other_paths()
+        # Workflow roots (ComfyUI workflow JSON library). Opt-in feature:
+        # empty while ``enable_workflows`` is off. Not a ComfyUI folder_paths
+        # category — sourced from LoRA Manager's own settings in both modes.
+        self.workflows_roots: List[str] = []
+        self.workflows_roots = self._init_workflow_paths()
         # Extra paths (only for LoRA Manager, not shared with ComfyUI)
         self.extra_loras_roots: List[str] = []
         self.extra_checkpoints_roots: List[str] = []
@@ -460,6 +465,10 @@ class Config:
                     self.embeddings_roots or [],
                 ),
             }
+            # The workflow library folder is a top-level LM setting
+            # (workflow_path), not a folder_paths entry, so it is persisted by
+            # SettingsManager and never written into the library's
+            # folder_paths map here.
             # Persist the other-model roots under their original folder_paths
             # keys so library switching round-trips them.
             for key, roots in (self.other_folder_roots or {}).items():
@@ -1124,6 +1133,8 @@ class Config:
             preview_roots.update(self._expand_preview_root(root))
         for root in self.other_roots or []:
             preview_roots.update(self._expand_preview_root(root))
+        for root in self.workflows_roots or []:
+            preview_roots.update(self._expand_preview_root(root))
         # Include extra paths for preview access
         for root in self.extra_loras_roots or []:
             preview_roots.update(self._expand_preview_root(root))
@@ -1556,6 +1567,7 @@ class Config:
         folder_paths: Mapping[str, Any],
         extra_folder_paths: Optional[Mapping[str, Any]] = None,
         recipes_path: str = "",
+        workflow_path: str = "",
     ) -> None:
         self._path_mappings.clear()
         self._preview_root_paths = set()
@@ -1595,6 +1607,27 @@ class Config:
             self.other_root_subtypes,
             self.other_folder_roots,
         ) = self._prepare_other_paths(other_path_map)
+
+        # The workflow library is a single LM-owned folder (workflow_path),
+        # not a ComfyUI folder_paths category; the live root stays empty while
+        # the opt-in feature is off.
+        normalized_workflow_path = (
+            workflow_path.strip() if isinstance(workflow_path, str) else ""
+        )
+        self._remember_configured_paths(
+            "workflow", [normalized_workflow_path] if normalized_workflow_path else []
+        )
+        try:
+            from .services.settings_manager import get_settings_manager
+
+            workflows_enabled = get_settings_manager().is_workflows_enabled()
+        except Exception:  # pragma: no cover - defensive fallback
+            workflows_enabled = False
+        self.workflows_roots = (
+            self._prepare_lora_paths([normalized_workflow_path])
+            if workflows_enabled and normalized_workflow_path
+            else []
+        )
 
         # Process extra paths (only for LoRA Manager, not shared with ComfyUI)
         extra_paths = extra_folder_paths or {}
@@ -1808,6 +1841,56 @@ class Config:
         except Exception as e:
             logger.warning(f"Error initializing other model paths: {e}")
             return []
+
+    def _get_configured_workflow_paths(self) -> List[str]:
+        """Return the configured workflow library folder as a root list.
+
+        Workflow management keeps a single LM-owned folder (``workflow_path``)
+        rather than a ComfyUI ``folder_paths`` category, so both modes source
+        it from LoRA Manager's own settings. The scanner API stays list-based.
+        """
+        try:
+            from .services.settings_manager import get_settings_manager
+
+            path = get_settings_manager().get_workflow_path()
+        except Exception:
+            return []
+        return [path] if path else []
+
+    def _init_workflow_paths(self) -> List[str]:
+        """Initialize and validate the workflow library root.
+
+        Opt-in feature: the live root list stays empty while
+        ``enable_workflows`` is off. The configured folder is remembered so
+        diagnostics can report an unavailable/offline root.
+        """
+        try:
+            raw_paths = self._get_configured_workflow_paths()
+            self._remember_configured_paths("workflow", raw_paths)
+
+            from .services.settings_manager import get_settings_manager
+
+            if not get_settings_manager().is_workflows_enabled():
+                return []
+
+            unique_paths = self._prepare_lora_paths(raw_paths)
+            logger.info(
+                "Found workflow root: %s"
+                % (unique_paths[0] if unique_paths else "[]")
+            )
+            return unique_paths
+        except Exception as e:
+            logger.warning(f"Error initializing workflow paths: {e}")
+            return []
+
+    def refresh_workflow_roots(self) -> None:
+        """Rebuild the workflow root after the opt-in toggle or path change.
+
+        Called when ``enable_workflows`` or ``workflow_path`` is updated so the
+        scanner immediately reflects the new folder without a restart.
+        """
+        self.workflows_roots = self._init_workflow_paths()
+        self._rebuild_preview_roots()
 
     def _remember_configured_paths(
         self, model_type: str, paths: Iterable[str]
@@ -2050,7 +2133,18 @@ class Config:
 
         normalized = os.path.normpath(preview_path).replace(os.sep, "/")
         encoded_path = urllib.parse.quote(normalized, safe="")
-        return f"/api/lm/previews?path={encoded_path}"
+        url = f"/api/lm/previews?path={encoded_path}"
+        # Previews are served with Cache-Control max-age=86400, so a rewritten
+        # file (e.g. delete + recreate an LM-managed workflow) would keep
+        # showing the stale cached image under the identical URL. Bust the
+        # cache by versioning the URL with the file's modification time.
+        try:
+            version = os.stat(preview_path).st_mtime_ns
+        except OSError:
+            version = 0
+        if version:
+            url += f"&v={version}"
+        return url
 
     def is_preview_path_allowed(self, preview_path: str) -> bool:
         """Return ``True`` if ``preview_path`` is within an allowed directory.
@@ -2174,7 +2268,14 @@ class Config:
             if isinstance(library_config, Mapping)
             else ""
         )
-        self._apply_library_paths(folder_paths, extra_folder_paths, recipes_path)
+        workflow_path = (
+            str(library_config.get("workflow_path", "") or "")
+            if isinstance(library_config, Mapping)
+            else ""
+        )
+        self._apply_library_paths(
+            folder_paths, extra_folder_paths, recipes_path, workflow_path
+        )
 
         logger.info(
             "Applied library settings with %d lora roots (%d extra), %d checkpoint roots (%d extra), and %d embedding roots (%d extra)",

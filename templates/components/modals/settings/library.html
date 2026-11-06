@@ -90,6 +90,12 @@
             </div>
         </div>
         {% endfor %}
+
+        {{ sm.setting_toggle('enableWorkflows', 'enable_workflows', 'settings.folderSettings.enableWorkflows', 'settings.folderSettings.enableWorkflowsHelp') }}
+
+        <div id="workflowPathSetting">
+            {{ sm.setting_input('workflowPath', 'workflow_path', 'settings.folderSettings.workflowFolder', 'settings.folderSettings.workflowFolderPlaceholder', 'settings.folderSettings.workflowFolderHelp') }}
+        </div>
     </div>
 
     <!-- Recipe Settings -->
