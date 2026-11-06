@@ -1,5 +1,6 @@
 import { api } from '../../scripts/api.js';
 import { app } from '../../scripts/app.js';
+import { lmUrl } from './base_path.js';
 
 // Keep the synchronous widget factory usable before locale requests finish.
 export const GROUP_MESSAGES = {
@@ -43,19 +44,24 @@ export const GROUP_MESSAGES = {
 
 const localeRequests = new Map();
 export async function loadGroupMessages() {
-  let locale = app.ui?.settings?.getSettingValue?.('Comfy.Locale') || 'en';
+  let locale = app.extensionManager?.setting?.get?.('Comfy.Locale')
+    || app.ui?.settings?.getSettingValue?.('Comfy.Locale') || 'en';
   if (locale === 'zh') locale = 'zh-CN';
   if (!['en', 'zh-CN', 'zh-TW', 'ja', 'ru', 'de', 'fr', 'es', 'ko', 'he'].includes(locale)) locale = 'en';
   if (!localeRequests.has(locale)) {
     localeRequests.set(locale, (async () => {
       try {
-        const response = await api.fetchApi(`/locales/${locale}.json`);
-        if (!response?.ok) return GROUP_MESSAGES;
+        // Locale files are static routes, not /api routes. Modern fetchApi adds /api.
+        const path = `/locales/${locale}.json`;
+        const response = await fetch(api.fileURL?.(path) ?? lmUrl(path), { cache: 'no-cache' });
+        if (!response?.ok) throw new Error(`Locale request failed: ${response?.status}`);
         const data = await response.json();
         const translations = Object.fromEntries(Object.entries(data?.loraGroups || {})
           .filter(([, value]) => typeof value === 'string' && !value.startsWith('[TODO: Translate]')));
         return { ...GROUP_MESSAGES, ...translations };
-      } catch {
+      } catch (error) {
+        localeRequests.delete(locale);
+        console.warn('LoRA Manager: could not load group translations.', error);
         return GROUP_MESSAGES;
       }
     })());

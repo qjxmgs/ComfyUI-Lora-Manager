@@ -129,11 +129,16 @@ export function setGroupedActive(entries, config, name, active) {
 }
 
 export function moveGroupedEntry(entries, config, name, targetId, beforeName = null) {
-  const item = entries.find(entry => entry.name === name);
-  if (!item || !config.groups.some(group => group.id === targetId)) return entries;
-  const next = entries.filter(entry => entry.name !== name).map(entry => ({ ...entry }));
+  return moveGroupedEntries(entries, config, [name], targetId, beforeName);
+}
+
+export function moveGroupedEntries(entries, config, names, targetId, beforeName = null) {
+  const selected = new Set(names);
+  const moving = entries.filter(entry => selected.has(entry.name));
+  if (!moving.length || !config.groups.some(group => group.id === targetId)) return entries;
+  const next = entries.filter(entry => !selected.has(entry.name)).map(entry => ({ ...entry }));
   const before = next.findIndex(entry => entry.name === beforeName && entry.groupId === targetId);
-  next.splice(before < 0 ? next.length : before, 0, { ...item, groupId: targetId });
+  next.splice(before < 0 ? next.length : before, 0, ...moving.map(item => ({ ...item, groupId: targetId })));
   return normalizeGroupedEntries(next, config, entries, targetId);
 }
 

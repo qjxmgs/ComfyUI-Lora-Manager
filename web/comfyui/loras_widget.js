@@ -86,6 +86,7 @@ export function addLorasWidget(node, name, opts, callback) {
   
   // Selection state - only one LoRA can be selected at a time
   let selectedLora = null;
+  let selectedNames = new Set();
   let currentLorasData = parseLoraValue(defaultValue);
   let lastSelectionKey = "__none__";
   let pendingFocusTarget = null;
@@ -150,10 +151,11 @@ export function addLorasWidget(node, name, opts, callback) {
 
   const selectLora = (loraName, options = {}) => {
     selectedLora = loraName;
+    if (grouped) selectedNames = new Set(options.names || (selectedNames.has(loraName) ? [...selectedNames] : loraName ? [loraName] : []));
     // Update visual feedback for all entries
     container.querySelectorAll('.lm-lora-entry').forEach(entry => {
       const entryLoraName = entry.dataset.loraName;
-      updateEntrySelection(entry, entryLoraName === selectedLora);
+      updateEntrySelection(entry, grouped ? selectedNames.has(entryLoraName) : entryLoraName === selectedLora);
     });
 
     if (!options.silent) {
@@ -421,7 +423,8 @@ export function addLorasWidget(node, name, opts, callback) {
 
         e.preventDefault();
         e.stopPropagation();
-        selectLora(name === selectedLora ? null : name);
+        if (groupsController) groupsController.selectItem(name, e);
+        else selectLora(name === selectedLora ? null : name);
         container.focus();
       });
 
@@ -851,7 +854,7 @@ export function addLorasWidget(node, name, opts, callback) {
     // This ensures the selection state is not overwritten
     container.querySelectorAll('.lm-lora-entry').forEach(entry => {
       const entryLoraName = entry.dataset.loraName;
-      updateEntrySelection(entry, entryLoraName === selectedLora);
+      updateEntrySelection(entry, grouped ? selectedNames.has(entryLoraName) : entryLoraName === selectedLora);
     });
 
     // Flag the node when any active entry references a LoRA missing locally.
@@ -869,7 +872,7 @@ export function addLorasWidget(node, name, opts, callback) {
       : false;
 
     if (selectedLora && !selectionExists) {
-      selectLora(null);
+      selectLora(grouped ? [...selectedNames][0] || null : null, { names: [...selectedNames] });
     } else if (selectedLora) {
       emitSelectionChange(buildSelectionPayload(selectedLora));
     }
@@ -910,7 +913,7 @@ export function addLorasWidget(node, name, opts, callback) {
     getValue: function() {
       return widgetValue.map(lora => {
         const entry = { ...lora };
-        entry.selected = lora.name === selectedLora;
+        entry.selected = grouped ? selectedNames.has(lora.name) : lora.name === selectedLora;
         return entry;
       });
     },
@@ -941,6 +944,13 @@ export function addLorasWidget(node, name, opts, callback) {
       });
 
       widgetValue = groupsController ? groupsController.normalize(updatedValue) : updatedValue;
+      if (grouped) {
+        const existing = new Set(widgetValue.map(entry => entry.name));
+        selectedNames = new Set([...selectedNames].filter(name => existing.has(name)));
+        if (!selectedLora && !selectedNames.size) {
+          selectedNames = new Set(updatedValue.filter(entry => entry.selected).map(entry => entry.name));
+        }
+      }
 
       // Restore selection state when loading a saved workflow
       if (!selectedLora) {
@@ -965,12 +975,13 @@ export function addLorasWidget(node, name, opts, callback) {
   });
 
   if (grouped) {
-    groupsController = createLoraGroupsController({ node, container, widget, getSelected: () => selectedLora, select: selectLora });
+    groupsController = createLoraGroupsController({ node, container, widget, getSelected: () => selectedLora, getSelection: () => [...selectedNames], select: selectLora });
     const oldConfigure = node.onConfigure;
     node.onConfigure = function (data) {
       const result = oldConfigure?.apply(this, arguments);
       groupsController.restore();
       selectedLora = null;
+      selectedNames.clear();
       const index = node.widgets?.indexOf(widget) ?? -1;
       const restored = data?.widgets_values?.[index];
       widget.value = Array.isArray(restored) ? restored : widget.value;

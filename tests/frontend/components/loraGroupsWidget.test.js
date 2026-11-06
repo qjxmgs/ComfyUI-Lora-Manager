@@ -59,6 +59,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   document.elementFromPoint = vi.fn();
   getSettingValue.mockReturnValue('en');
+  vi.stubGlobal('fetch', fetchApi);
   fetchApi.mockResolvedValue({ ok: true, json: async () => ({ loras: [] }) });
 });
 afterEach(() => {
@@ -67,6 +68,136 @@ afterEach(() => {
 });
 
 describe('grouped LoRA Loader interactions', () => {
+  it.each([0.5, 1, 2])('centers the item marker between rows including expanded CLIP at scale %s', async scale => {
+    const node = await mount([{ ...value('A'), expanded: true }, value('B'), value('C')]);
+    const body = panels(node)[0].querySelector('.lm-group-body');
+    Object.defineProperty(body, 'clientHeight', { value: 200 });
+    body.getBoundingClientRect = () => ({ left: 0, width: 200 * scale, top: 0, height: 200 * scale, bottom: 200 * scale });
+    row(node, 'A').getBoundingClientRect = () => ({ top: 0, bottom: 20 * scale, height: 20 * scale });
+    row(node, 'A').nextElementSibling.getBoundingClientRect = () => ({ top: 23 * scale, bottom: 40 * scale, height: 17 * scale });
+    row(node, 'B').getBoundingClientRect = () => ({ top: 46 * scale, bottom: 66 * scale, height: 20 * scale });
+    document.elementFromPoint.mockReturnValue(row(node, 'B'));
+    const handle = row(node, 'C').querySelector('.lm-lora-name');
+    handle.dispatchEvent(new PointerEvent('pointerdown', { button: 0, pointerId: 1, bubbles: true }));
+    handle.dispatchEvent(new PointerEvent('pointermove', { clientY: 48 * scale, pointerId: 1, bubbles: true }));
+    const marker = document.querySelector('.lm-group-insertion-line');
+    expect(parseFloat(marker.style.top) + parseFloat(marker.style.height) / 2).toBeCloseTo(43 * scale);
+    handle.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, bubbles: true }));
+    expect(node.widget.value.map(item => item.name)).toEqual(['A', 'C', 'B']);
+  });
+
+  it.each([0.5, 1, 2].flatMap(scale => [
+    { scale, columns: 3, from: 2, to: 1, axis: 'x', center: 203 },
+    { scale, columns: 3, from: 0, to: 1, axis: 'x', center: 409 },
+    { scale, columns: 3, from: 4, to: 3, axis: 'y', center: 123 },
+    { scale, columns: 3, from: 0, to: 2, axis: 'y', center: 123 },
+    { scale, columns: 1, from: 2, to: 1, axis: 'y', center: 123 },
+  ]))('centers a group insertion marker in its gap: %j', async ({ scale, columns, from, to, axis, center }) => {
+    const node = await mount([], normalizeGroupConfig({ rows: columns === 1 ? 3 : 2, columns }));
+    const list = panels(node);
+    list.forEach((panel, index) => {
+      const left = (index % columns) * 206 * scale;
+      const top = Math.floor(index / columns) * 126 * scale;
+      panel.getBoundingClientRect = () => ({ left, top, right: left + 200 * scale, bottom: top + 120 * scale, width: 200 * scale, height: 120 * scale });
+    });
+    document.elementFromPoint.mockReturnValue(list[to]);
+    const handle = list[from].querySelector('.lm-group-header');
+    handle.dispatchEvent(new PointerEvent('pointerdown', { button: 0, pointerId: 1, bubbles: true }));
+    handle.dispatchEvent(new PointerEvent('pointermove', { clientX: 50, clientY: 50, pointerId: 1, bubbles: true }));
+    const marker = document.querySelector('.lm-group-insertion-line');
+    const position = parseFloat(marker.style[axis === 'x' ? 'left' : 'top']);
+    const thickness = parseFloat(marker.style[axis === 'x' ? 'width' : 'height']);
+    expect(position + thickness / 2).toBeCloseTo(center * scale);
+    expect(thickness).toBeLessThan(6 * scale);
+    expect(list[to].classList.contains('lm-group-sort-target')).toBe(true);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(document.querySelector('.lm-group-sort-target')).toBeNull();
+  });
+
+  it('keeps the marker visible and accepts a drop directly in the gap', async () => {
+    const node = await mount([], normalizeGroupConfig({ rows: 1, columns: 3 }));
+    const list = panels(node);
+    list.forEach((panel, index) => {
+      panel.getBoundingClientRect = () => ({ left: index * 206, right: index * 206 + 200, top: 0, bottom: 120, width: 200, height: 120 });
+    });
+    document.elementFromPoint.mockReturnValue(node.container.querySelector('.lm-groups-grid'));
+    const header = list[2].querySelector('.lm-group-header');
+    header.dispatchEvent(new PointerEvent('pointerdown', { button: 0, pointerId: 1, bubbles: true }));
+    header.dispatchEvent(new PointerEvent('pointermove', { pointerId: 1, clientX: 203, clientY: 60, bubbles: true }));
+    expect(document.querySelector('.lm-group-insertion-line').hidden).toBe(false);
+    header.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, bubbles: true }));
+    expect(node.properties.lmLoraGroups.groups.map(group => group.id)).toEqual(['group-1', 'group-3', 'group-2']);
+  });
+
+  it('selects ranges and toggles individual items independently from activation across groups', async () => {
+    const node = await mount([value('A'), value('B'), value('C'), value('D', 'group-2')], normalizeGroupConfig({ rows: 1, columns: 2 }));
+    const choose = (name, modifiers = {}) => row(node, name).querySelector('.lm-lora-name').dispatchEvent(new MouseEvent('click', { bubbles: true, ...modifiers }));
+    const names = () => node.widget.value.filter(item => item.selected).map(item => item.name);
+    choose('A'); choose('C', { shiftKey: true }); expect(names()).toEqual(['A', 'B', 'C']);
+    choose('B', { ctrlKey: true }); expect(names()).toEqual(['A', 'C']);
+    choose('D', { ctrlKey: true }); expect(names()).toEqual(['A', 'C', 'D']);
+    expect(node.widget.value.every(item => item.active)).toBe(true);
+    node.widget.value = node.widget.value.map(item => ({ ...item, strength: .5 }));
+    expect(names()).toEqual(['A', 'C', 'D']);
+    const saved = snapshot(node);
+    const clone = await mount(); clone.properties = structuredClone(saved.properties); clone.onConfigure(saved);
+    expect(clone.widget.value.filter(item => item.selected).map(item => item.name)).toEqual(['A', 'C', 'D']);
+    choose('B'); expect(names()).toEqual(['B']);
+    choose('A', { shiftKey: true, ctrlKey: true }); expect(names()).toEqual(['A', 'B']);
+    choose('D', { shiftKey: true }); expect(names()).toEqual(['D']);
+  });
+
+  it('reorders a noncontiguous selection as a block inside its group', async () => {
+    const node = await mount(['A', 'B', 'C', 'D'].map(name => value(name)));
+    row(node, 'A').querySelector('.lm-lora-name').click();
+    row(node, 'C').querySelector('.lm-lora-name').dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
+    const body = panels(node)[0].querySelector('.lm-group-body');
+    document.elementFromPoint.mockReturnValue(body);
+    row(node, 'B').getBoundingClientRect = () => ({ top: 20, height: 20 });
+    row(node, 'D').getBoundingClientRect = () => ({ top: 60, height: 20, bottom: 80 });
+    const handle = row(node, 'C').querySelector('.lm-lora-drag-handle');
+    handle.dispatchEvent(new PointerEvent('pointerdown', { button: 0, pointerId: 1, bubbles: true }));
+    handle.dispatchEvent(new PointerEvent('pointermove', { pointerId: 1, clientY: 100, bubbles: true }));
+    handle.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, bubbles: true }));
+    expect(node.widget.value.map(item => item.name)).toEqual(['B', 'D', 'A', 'C']);
+    expect(node.widget.value.filter(item => item.selected).map(item => item.name)).toEqual(['A', 'C']);
+    expect(node.widget.value.every(item => item.active && item.strength === .8)).toBe(true);
+    expect(node.history).toHaveLength(1);
+  });
+
+  it.each([0.5, 2])('drags a selected batch at scale %s, cancels with Esc and supports one-step undo', async scale => {
+    const state = normalizeGroupConfig({ rows: 1, columns: 2 }); state.groups[1].mode = 'single';
+    const node = await mount([value('A'), value('B'), value('C'), value('D', 'group-2')], state);
+    row(node, 'A').querySelector('.lm-lora-name').click();
+    row(node, 'C').querySelector('.lm-lora-name').dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
+    const saved = snapshot(node);
+    const drag = cancel => {
+      const body = panels(node)[1].querySelector('.lm-group-body');
+      Object.defineProperty(body, 'clientHeight', { value: 200 });
+      body.getBoundingClientRect = () => ({ left: 300 * scale, top: 0, width: 200 * scale, height: 200 * scale, bottom: 200 * scale });
+      row(node, 'D').getBoundingClientRect = () => ({ top: 50 * scale, height: 24 * scale, bottom: 74 * scale });
+      document.elementFromPoint.mockReturnValue(body);
+      const handle = row(node, 'A').querySelector('.lm-lora-name'); handle.setPointerCapture = vi.fn();
+      handle.dispatchEvent(new PointerEvent('pointerdown', { button: 0, pointerId: 1, bubbles: true }));
+      handle.dispatchEvent(new PointerEvent('pointermove', { pointerId: 1, clientX: 310 * scale, clientY: 30 * scale, bubbles: true }));
+      expect(document.querySelector('.lm-group-drag-ghost').textContent).toContain('2 selected');
+      expect(node.container.querySelectorAll('.lm-lora-entry--dragging')).toHaveLength(2);
+      if (cancel) document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      handle.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, bubbles: true }));
+    };
+    drag(true); expect(snapshot(node)).toEqual(saved); expect(node.history).toHaveLength(0);
+    await flush();
+    drag(false);
+    expect(node.widget.value.map(item => [item.name, item.groupId, item.active])).toEqual([
+      ['B', 'group-1', true], ['A', 'group-2', false], ['C', 'group-2', false], ['D', 'group-2', true],
+    ]);
+    expect(node.widget.value.filter(item => item.selected).map(item => item.name)).toEqual(['A', 'C']);
+    expect(node.widget.value.find(item => item.name === 'C').addedOrder).toBe(2);
+    expect(node.history).toHaveLength(1);
+    node.properties = structuredClone(saved.properties); node.onConfigure(saved);
+    expect(snapshot(node)).toEqual(saved);
+  });
+
   it('applies compound sorting once, persists rules and addition order, and restores everything with undo', async () => {
     const node = await mount([
       { ...value('A'), strength: .2 }, { ...value('B', 'group-1', false), strength: 2 },
@@ -478,7 +609,7 @@ describe('grouped LoRA Loader interactions', () => {
     handle.dispatchEvent(new PointerEvent('pointerdown', { button: 0, clientX: 20, clientY: 60, pointerId: 1, bubbles: true }));
     handle.dispatchEvent(new PointerEvent('pointermove', { clientX: 23, clientY: 60, pointerId: 1, bubbles: true }));
     expect(node.widget.__dragActive).toBe(true);
-    expect(document.querySelector('.lm-group-insertion-line').style.top).toBe('54px');
+    expect(document.querySelector('.lm-group-insertion-line').style.top).toBe('54.75px');
     expect(panels(node)[0].classList.contains('lm-group-drop-target')).toBe(true);
     expect(document.querySelector('.lm-group-drag-ghost').textContent).toBe('A');
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));

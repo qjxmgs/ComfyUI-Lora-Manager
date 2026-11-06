@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   normalizeGroupConfig, normalizeGroupedEntries, changeGroupMode, setGroupedActive,
-  moveGroupedEntry, previewGroupResize, resolveGroupResize,
+  moveGroupedEntry, moveGroupedEntries, previewGroupResize, resolveGroupResize,
 } from '../../../web/comfyui/lora_groups_state.js';
 
 const config = () => normalizeGroupConfig({ rows: 2, columns: 2, groups: [
@@ -13,6 +13,22 @@ const config = () => normalizeGroupConfig({ rows: 2, columns: 2, groups: [
 const entry = (name, groupId, active = true) => ({ name, groupId, active, strength: 0.8, clipStrength: 0, expanded: true });
 
 describe('LoRA group state', () => {
+  it('moves a batch in display order and preserves the destination single winner and metadata', () => {
+    const old = [entry('A', 'training'), { ...entry('B', 'style'), addedOrder: 4 }, entry('C', 'style'), entry('D', 'detail', false)];
+    const result = moveGroupedEntries(old, config(), ['D', 'C', 'B'], 'training', 'A');
+    expect(result.map(item => [item.name, item.active])).toEqual([['B', false], ['C', false], ['D', false], ['A', true]]);
+    expect(result[0]).toMatchObject({ addedOrder: 4, strength: .8, clipStrength: 0 });
+    expect(old[1].active).toBe(true);
+    const emptyTarget = moveGroupedEntries(old, config(), ['C', 'B'], 'character');
+    expect(emptyTarget.filter(item => item.groupId === 'character').map(item => [item.name, item.active])).toEqual([['B', true], ['C', false]]);
+  });
+
+  it('reorders noncontiguous items as a block without changing activation', () => {
+    const old = ['A', 'B', 'C', 'D'].map(name => entry(name, 'style'));
+    expect(moveGroupedEntries(old, config(), ['C', 'A'], 'style', 'D').map(item => item.name)).toEqual(['B', 'A', 'C', 'D']);
+    expect(moveGroupedEntries(old, config(), ['A', 'C'], 'style').map(item => item.name)).toEqual(['B', 'D', 'A', 'C']);
+    expect(moveGroupedEntries(old, config(), ['A', 'C'], 'style').every(item => item.active)).toBe(true);
+  });
   it('migrates a legacy list without changing order, weights, or active state', () => {
     const groups = normalizeGroupConfig(undefined);
     const old = [entry('B', undefined, false), entry('A', undefined)];

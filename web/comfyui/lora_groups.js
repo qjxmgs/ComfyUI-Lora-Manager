@@ -4,7 +4,7 @@ import { GROUP_MESSAGES, loadGroupMessages } from './lora_groups_i18n.js';
 import { openGroupSort } from './lora_groups_sort.js';
 import {
   GROUPS_PROPERTY, GROUP_MIN_WIDTH, GROUP_MIN_HEIGHT, normalizeGroupConfig,
-  normalizeGroupedEntries, changeGroupMode, setGroupedActive, moveGroupedEntry,
+  normalizeGroupedEntries, changeGroupMode, setGroupedActive, moveGroupedEntry, moveGroupedEntries,
   previewGroupResize, resolveGroupResize,
   assignAddedOrders, sortGroupEntries,
 } from './lora_groups_state.js';
@@ -25,7 +25,7 @@ function button(text, action, title = text) {
   return el;
 }
 
-export function createLoraGroupsController({ node, container, widget, getSelected, select }) {
+export function createLoraGroupsController({ node, container, widget, getSelected, getSelection = () => [getSelected()].filter(Boolean), select }) {
   let messages = GROUP_MESSAGES;
   let messagesLoaded = false;
   const pendingDefaultTitles = new Map();
@@ -35,6 +35,9 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
   let cancelDrag = null;
   let previousEntries = [];
   let strengthHistoryOpen = false;
+  let selectionAnchor = null;
+  let suppressClick = false;
+  let clickTimer = null;
   const scrollPositions = new Map();
   const bodies = new Map();
   const t = (key, args = {}) => Object.entries(args).reduce(
@@ -52,6 +55,29 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
   };
   const getEntries = () => widget.value || [];
   const notice = detail => app.extensionManager?.toast?.add?.({ severity: 'info', summary: 'LoRA Manager', detail, life: 5000 });
+
+  function selectItem(name, event = {}) {
+    const entries = getEntries();
+    const item = entries.find(entry => entry.name === name);
+    if (!item) return;
+    const additive = event.ctrlKey || event.metaKey;
+    let names = new Set(additive ? getSelection() : []);
+    const members = entries.filter(entry => entry.groupId === item.groupId);
+    const from = members.findIndex(entry => entry.name === selectionAnchor);
+    const to = members.findIndex(entry => entry.name === name);
+    if (event.shiftKey && from >= 0) {
+      members.slice(Math.min(from, to), Math.max(from, to) + 1).forEach(entry => names.add(entry.name));
+    } else {
+      if (additive && names.has(name)) names.delete(name); else names.add(name);
+      selectionAnchor = name;
+    }
+    select(names.has(name) ? name : [...names].at(-1) || null, { names: [...names] });
+  }
+  const blockDragClick = event => {
+    if (!suppressClick) return;
+    event.preventDefault(); event.stopImmediatePropagation();
+  };
+  container.addEventListener('click', blockDragClick, true);
 
   function commit(entries, nextConfig = config()) {
     const before = getEntries();
@@ -448,46 +474,91 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
     let pointer = null;
     let indicator = null;
     let ghost = null;
+    let dragNames = [name];
     const clearMarks = () => {
-      container.querySelectorAll('.lm-group-drop-target').forEach(el => el.classList.remove('lm-group-drop-target'));
+      container.querySelectorAll('.lm-group-drop-target').forEach(el => el.classList.remove('lm-group-drop-target', 'lm-group-sort-target'));
       if (indicator) indicator.hidden = true;
+    };
+    const groupMarker = (panels, boundary, columns) => {
+      const rects = panels.map(panel => panel.getBoundingClientRect());
+      const before = rects[boundary - 1];
+      const after = rects[boundary];
+      const rect = after || before;
+      const horizontal = columns === 1 || (before && after && boundary % columns === 0);
+      const grid = panels[0].parentElement;
+      const scale = grid.getBoundingClientRect().width / grid.clientWidth || 1;
+      const fallbackGap = (parseFloat(getComputedStyle(grid)[horizontal ? 'rowGap' : 'columnGap']) || 6) * scale;
+      const gap = before && after ? (horizontal ? after.top - before.bottom : after.left - before.right) : fallbackGap;
+      const thickness = Math.min(3, Math.max(1, gap / 2));
+      if (horizontal) {
+        const center = before && after ? (before.bottom + after.top) / 2 : after ? rect.top - gap / 2 : rect.bottom + gap / 2;
+        const left = Math.min(...rects.map(rect => rect.left));
+        return { left, top: center - thickness / 2, width: Math.max(...rects.map(rect => rect.right)) - left, height: thickness };
+      }
+      const center = before && after ? (before.right + after.left) / 2 : after ? rect.left - gap / 2 : rect.right + gap / 2;
+      return { left: center - thickness / 2, top: rect.top, width: thickness, height: rect.height };
     };
     const locate = () => {
       clearMarks(); destination = null;
       if (!pointer) return;
-      const panel = document.elementFromPoint?.(pointer.x, pointer.y)?.closest('.lm-lora-group');
-      const body = panel?.querySelector('.lm-group-body');
-      if (!body || !container.contains(body)) return;
+      const hit = document.elementFromPoint?.(pointer.x, pointer.y);
+      let panel = hit?.closest('.lm-lora-group');
       if (groupId) {
-        if (panel.dataset.groupId === groupId) return;
-        const groups = config().groups;
+        const grid = container.querySelector('.lm-groups-grid');
+        if (!grid || !hit || !grid.contains(hit)) return;
+        const state = config();
+        const groups = state.groups;
+        const panels = [...grid.querySelectorAll('.lm-lora-group')];
         const from = groups.findIndex(group => group.id === groupId);
-        const to = groups.findIndex(group => group.id === panel.dataset.groupId);
+        let to = groups.findIndex(group => group.id === panel?.dataset.groupId);
+        let boundary;
+        if (!panel) {
+          // Keep the gap itself droppable instead of losing the marker between panels.
+          let closest = Infinity;
+          for (let index = 1; index < panels.length; index++) {
+            const marker = groupMarker(panels, index, state.columns);
+            const dx = Math.max(marker.left - pointer.x, 0, pointer.x - marker.left - marker.width);
+            const dy = Math.max(marker.top - pointer.y, 0, pointer.y - marker.top - marker.height);
+            const distance = Math.hypot(dx, dy);
+            if (distance < closest) { closest = distance; boundary = index; }
+          }
+          if (boundary === undefined) return;
+          to = boundary > from ? boundary - 1 : boundary;
+          panel = panels[to];
+        } else boundary = from < to ? to + 1 : to;
+        if (from === to) return;
         if (from < 0 || to < 0) return;
         destination = { id: panel.dataset.groupId };
-        panel.classList.add('lm-group-drop-target');
-        const rect = panel.getBoundingClientRect();
-        Object.assign(indicator.style, {
-          left: `${from < to ? rect.right - 3 : rect.left}px`, top: `${rect.top}px`,
-          width: '3px', height: `${rect.height}px`,
-        });
+        panel.classList.add('lm-group-drop-target', 'lm-group-sort-target');
+        const marker = groupMarker(panels, boundary, state.columns);
+        for (const [key, value] of Object.entries(marker)) indicator.style[key] = `${value}px`;
         indicator.hidden = false;
         return;
       }
-      const candidates = [...body.querySelectorAll('.lm-lora-entry')].filter(el => el.dataset.loraName !== name);
+      const body = panel?.querySelector('.lm-group-body');
+      if (!body || !container.contains(body)) return;
+      const candidates = [...body.querySelectorAll('.lm-lora-entry')].filter(el => !dragNames.includes(el.dataset.loraName));
       const before = candidates.find(el => { const rect = el.getBoundingClientRect(); return pointer.y < rect.top + rect.height / 2; });
       destination = { id: body.dataset.groupId, before: before?.dataset.loraName || null };
       panel.classList.add('lm-group-drop-target');
       const rect = body.getBoundingClientRect();
       const last = candidates.at(-1);
       const lastRow = last?.nextElementSibling?.classList.contains('lm-lora-clip-entry') ? last.nextElementSibling : last;
-      const lineY = before ? before.getBoundingClientRect().top : lastRow?.getBoundingClientRect().bottom ?? rect.top + 4;
+      const scale = rect.height / body.clientHeight || 1;
+      const previous = before?.previousElementSibling;
+      const previousRow = previous?.matches('.lm-lora-entry,.lm-lora-clip-entry') ? previous : null;
+      const gap = before && previousRow
+        ? Math.max(0, before.getBoundingClientRect().top - previousRow.getBoundingClientRect().bottom)
+        : 3 * scale;
+      const thickness = Math.min(3, Math.max(1, gap / 2));
+      const center = before ? before.getBoundingClientRect().top - gap / 2
+        : lastRow ? lastRow.getBoundingClientRect().bottom + gap / 2 : rect.top + 4;
+      const lineY = center - thickness / 2;
       Object.assign(indicator.style, {
         left: `${rect.left + 4}px`, width: `${Math.max(0, rect.width - 8)}px`,
-        top: `${Math.max(rect.top + 2, Math.min(rect.bottom - 3, lineY))}px`,
+        top: `${Math.max(rect.top, Math.min(rect.bottom - thickness, lineY))}px`, height: `${thickness}px`,
       });
       indicator.hidden = false;
-      const scale = rect.height / body.clientHeight || 1;
       const edge = Math.min(40 * scale, rect.height / 3);
       if (pointer.y < rect.top + edge) body.scrollTop -= Math.min(20, (rect.top + edge - pointer.y) / scale / 2);
       else if (pointer.y > rect.bottom - edge) body.scrollTop += Math.min(20, (pointer.y - rect.bottom + edge) / scale / 2);
@@ -498,6 +569,11 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       if (dragging) { event?.stopPropagation(); event?.preventDefault(); }
       const target = destination;
       const didDrag = dragging;
+      if (didDrag) {
+        suppressClick = true;
+        clearTimeout(clickTimer);
+        clickTimer = setTimeout(() => { suppressClick = false; }, 0);
+      }
       const pointerId = start.id;
       start = null; dragging = false; destination = null;
       try { if (handle.hasPointerCapture?.(pointerId)) handle.releasePointerCapture(pointerId); } catch { /* Detached host node. */ }
@@ -505,7 +581,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       animation = null;
       widget.__dragActive = false;
       document.body.classList.remove('lm-lora-reordering');
-      handle.closest('.lm-lora-entry')?.classList.remove('lm-lora-entry--dragging');
+      container.querySelectorAll('.lm-lora-entry--dragging').forEach(entry => entry.classList.remove('lm-lora-entry--dragging'));
       if (groupId) handle.closest('.lm-lora-group')?.classList.remove('lm-group--dragging');
       clearMarks(); cancelDrag = null;
       indicator?.remove(); ghost?.remove(); indicator = ghost = null;
@@ -520,7 +596,13 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
           next.groups.splice(to, 0, group);
           commit(getEntries(), next);
         }
-      } else if (accept && didDrag && target) move(name, target.id, target.before);
+      } else if (accept && didDrag && target) {
+        const old = getEntries();
+        const next = moveGroupedEntries(old, config(), dragNames, target.id, target.before);
+        setTarget(target.id);
+        commit(next);
+        if (next.some(entry => dragNames.includes(entry.name) && !entry.active && old.find(item => item.name === entry.name)?.active)) notice(t('movedInactive'));
+      }
       else if (didDrag && !removed) widget.value = widget.value;
     };
     const cancel = () => finish(null, false);
@@ -533,7 +615,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       if (groupId && event.target.closest('button,input,select,textarea,a,[contenteditable="true"]')) return;
       cancelDrag?.();
       event.preventDefault(); event.stopPropagation();
-      start = { x: event.clientX, y: event.clientY, id: event.pointerId };
+      start = { x: event.clientX, y: event.clientY, id: event.pointerId, ctrlKey: event.ctrlKey, metaKey: event.metaKey, shiftKey: event.shiftKey };
       widget.__dragActive = true;
       handle.setPointerCapture?.(event.pointerId);
       cancelDrag = cancel;
@@ -545,12 +627,19 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       pointer = { x: event.clientX, y: event.clientY };
       if (!dragging && Math.hypot(pointer.x - start.x, pointer.y - start.y) >= 3) {
         dragging = true; widget.__dragActive = true;
+        if (!groupId) {
+          if (!getSelection().includes(name)) selectItem(name, start);
+          const selection = new Set(getSelection());
+          dragNames = getEntries().filter(entry => selection.has(entry.name)).map(entry => entry.name);
+        }
         indicator = element('div', 'lm-popover lm-group-insertion-line');
-        ghost = element('div', 'lm-popover lm-group-drag-ghost', name);
+        ghost = element('div', 'lm-popover lm-group-drag-ghost', !groupId && dragNames.length > 1 ? `${t('selected', { count: dragNames.length })} · ${name}` : name);
         indicator.setAttribute('aria-hidden', 'true'); ghost.setAttribute('aria-hidden', 'true');
         document.body.append(indicator, ghost);
         document.body.classList.add('lm-lora-reordering');
-        handle.closest('.lm-lora-entry')?.classList.add('lm-lora-entry--dragging');
+        if (!groupId) container.querySelectorAll('.lm-lora-entry').forEach(entry => {
+          if (dragNames.includes(entry.dataset.loraName)) entry.classList.add('lm-lora-entry--dragging');
+        });
         if (groupId) handle.closest('.lm-lora-group')?.classList.add('lm-group--dragging');
         tick();
       }
@@ -580,7 +669,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       if (event.ctrlKey || event.metaKey) {
         const others = members.filter(entry => entry.name !== selected.name);
         move(selected.name, selected.groupId, others[targetIndex]?.name || null);
-      } else select(members[targetIndex].name);
+      } else selectItem(members[targetIndex].name, event);
       const focused = [...container.querySelectorAll('.lm-lora-entry')].find(el => el.dataset.loraName === getSelected());
       if (focused) {
         const body = focused.parentElement;
@@ -625,7 +714,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
   });
 
   return {
-    commit, config, render, bindDrag, keydown, moveDialog, t,
+    commit, config, render, bindDrag, keydown, moveDialog, selectItem, t,
     beginStrengthEdit() {
       if (strengthHistoryOpen) return;
       strengthHistoryOpen = true;
@@ -649,7 +738,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       previousEntries = normalized.map(entry => ({ ...entry }));
       return normalized;
     },
-    restore() { previousEntries = []; activeGroupId = null; pendingDefaultTitles.clear(); scrollPositions.clear(); bodies.clear(); closeOverlay?.(); },
+    restore() { previousEntries = []; activeGroupId = null; selectionAnchor = null; pendingDefaultTitles.clear(); scrollPositions.clear(); bodies.clear(); closeOverlay?.(); },
     setActive(name, active) { commit(setGroupedActive(getEntries(), config(), name, active)); },
     isSingle(id) { return config().groups.find(group => group.id === id)?.mode === 'single'; },
     body(id) { return bodies.get(id); },
@@ -660,6 +749,6 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
         body.scrollTop = scrollPositions.get(id) || 0;
       });
     },
-    dispose() { removed = true; cancelDrag?.(); closeOverlay?.(); window.removeEventListener('wheel', wheel, true); },
+    dispose() { removed = true; cancelDrag?.(); clearTimeout(clickTimer); container.removeEventListener('click', blockDragClick, true); closeOverlay?.(); window.removeEventListener('wheel', wheel, true); },
   };
 }
