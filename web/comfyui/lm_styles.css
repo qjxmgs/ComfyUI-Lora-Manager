@@ -274,11 +274,18 @@
 }
 .lm-group-body > .lm-group-button { width: 100%; white-space: normal; margin-top: 6px; }
 .lm-group-body .lm-lora-entry { padding: 3px 1px; margin-bottom: 3px; gap: 3px; border-radius: 3px; }
-.lm-group-body .lm-lora-entry-left { gap: 2px; }
-.lm-group-body .lm-lora-drag-handle { width: 10px; min-width: 10px; padding: 0; }
-.lm-group-body .lm-lora-toggle { width: 13px; height: 13px; min-width: 13px; flex-shrink: 0; }
+.lm-group-body .lm-lora-entry-left { gap: 4px; align-items: center; }
+.lm-group-body .lm-lora-drag-handle,
+.lm-group-body .lm-lora-toggle,
+.lm-group-body .lm-lora-expand-button {
+  box-sizing: border-box;
+  width: 16px; min-width: 16px; height: 16px;
+  flex: 0 0 16px;
+  margin: 0; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  transform: none;
+}
 .lm-group-body .lm-lora-radio { border-radius: 50%; }
-.lm-group-body .lm-lora-expand-button { width: 14px; height: 16px; }
 .lm-group-body .lm-lora-name { font-size: 11px; margin-left: 1px; display: flex; min-width: 0; }
 .lm-lora-name-prefix { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
 .lm-lora-name-suffix { flex-shrink: 0; max-width: 100%; overflow: hidden; }

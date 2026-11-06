@@ -155,7 +155,7 @@ describe('grouped LoRA Loader interactions', () => {
     document.elementFromPoint.mockReturnValue(body);
     row(node, 'B').getBoundingClientRect = () => ({ top: 20, height: 20 });
     row(node, 'D').getBoundingClientRect = () => ({ top: 60, height: 20, bottom: 80 });
-    const handle = row(node, 'C').querySelector('.lm-lora-drag-handle');
+    const handle = row(node, 'C').querySelector('.lm-lora-name');
     handle.dispatchEvent(new PointerEvent('pointerdown', { button: 0, pointerId: 1, bubbles: true }));
     handle.dispatchEvent(new PointerEvent('pointermove', { pointerId: 1, clientY: 100, bubbles: true }));
     handle.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, bubbles: true }));
@@ -478,7 +478,7 @@ describe('grouped LoRA Loader interactions', () => {
     expect(node.widget.value[0].name).toBe('A');
   });
 
-  it.each([[0.5, '.lm-lora-drag-handle'], [2, '.lm-lora-drag-handle'], [0.5, '.lm-lora-name'], [2, '.lm-lora-name']])('moves across columns at canvas scale %s from %s and preserves updates during drag', async (scale, selector) => {
+  it.each([[0.5, '.lm-lora-name'], [2, '.lm-lora-name']])('moves across columns at canvas scale %s from %s and preserves updates during drag', async (scale, selector) => {
     const state = normalizeGroupConfig({ rows: 1, columns: 2 });
     state.groups[1].mode = 'single';
     const node = await mount([value('A'), value('B', 'group-2')], state);
@@ -512,7 +512,7 @@ describe('grouped LoRA Loader interactions', () => {
     const drag = (targetIndex, cancel) => {
       const body = panels(node)[targetIndex].querySelector('.lm-group-body');
       document.elementFromPoint = () => body;
-      const handle = row(node, 'A').querySelector('.lm-lora-drag-handle'); handle.setPointerCapture = vi.fn();
+      const handle = row(node, 'A').querySelector('.lm-lora-name'); handle.setPointerCapture = vi.fn();
       handle.dispatchEvent(new PointerEvent('pointerdown', { button: 0, clientX: 0, clientY: 0, pointerId: 1, bubbles: true }));
       handle.dispatchEvent(new PointerEvent('pointermove', { clientX: 300, clientY: 80, pointerId: 1, bubbles: true }));
       handle.dispatchEvent(new PointerEvent(cancel ? 'pointercancel' : 'pointerup', { pointerId: 1, bubbles: true }));
@@ -597,7 +597,7 @@ describe('grouped LoRA Loader interactions', () => {
     expect(node.widget.value[0].clipStrength).toBe(0);
   });
 
-  it.each(['.lm-lora-name', '.lm-lora-drag-handle'])('reorders from %s with a precise end marker and Esc cancellation', async selector => {
+  it.each(['.lm-lora-name'])('reorders from %s with a precise end marker and Esc cancellation', async selector => {
     const node = await mount([value('A'), value('B')]);
     const body = panels(node)[0].querySelector('.lm-group-body');
     body.getBoundingClientRect = () => ({ left: 0, width: 300, top: 0, bottom: 200, height: 200 });

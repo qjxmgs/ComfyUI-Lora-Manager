@@ -445,12 +445,11 @@ export function addLorasWidget(node, name, opts, callback) {
             updateWidgetValue(newValue);
           }
         });
-      } else {
-        // For other nodes, show drag handle
+      } else if (!groupsController) {
+        // Ungrouped nodes retain their dedicated drag handle.
         dragHandleOrLockButton = createDragHandle();
         // Initialize reorder drag functionality
-        if (groupsController) groupsController.bindDrag(dragHandleOrLockButton, name);
-        else initReorderDrag(dragHandleOrLockButton, name, widget, renderLoras);
+        initReorderDrag(dragHandleOrLockButton, name, widget, renderLoras);
       }
 
       // Create toggle for this lora
@@ -704,7 +703,7 @@ export function addLorasWidget(node, name, opts, callback) {
       const leftSection = document.createElement("div");
       leftSection.className = "lm-lora-entry-left";
 
-      leftSection.appendChild(dragHandleOrLockButton); // Add drag handle or lock button first
+      if (dragHandleOrLockButton) leftSection.appendChild(dragHandleOrLockButton);
       leftSection.appendChild(toggle);
       leftSection.appendChild(expandButton); // Add expand button
       leftSection.appendChild(nameEl);
