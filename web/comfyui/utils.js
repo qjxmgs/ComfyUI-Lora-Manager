@@ -666,6 +666,7 @@ export function mergeLoras(lorasText, lorasArr) {
         selected: !!lora.selected,
         locked: lora.locked !== undefined ? lora.locked : false,
         ...(lora.groupId !== undefined ? { groupId: lora.groupId } : {}),
+        ...(lora.addedOrder !== undefined ? { addedOrder: lora.addedOrder } : {}),
       });
       usedNames.add(lora.name);
     }

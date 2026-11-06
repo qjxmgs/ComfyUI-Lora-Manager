@@ -17,7 +17,7 @@ describe('LoRA group state', () => {
     const groups = normalizeGroupConfig(undefined);
     const old = [entry('B', undefined, false), entry('A', undefined)];
     expect(normalizeGroupedEntries(old, groups)).toEqual(old.map(item => ({ ...item, groupId: groups.groups[0].id })));
-    expect(groups).toMatchObject({ version: 1, rows: 1, columns: 1, groups: [{ mode: 'multi' }] });
+    expect(groups).toMatchObject({ version: 2, rows: 1, columns: 1, groups: [{ mode: 'multi' }] });
   });
 
   it('normalizes damaged dimensions and duplicate IDs without allocating an unbounded grid', () => {

@@ -1,10 +1,12 @@
 import { app } from '../../scripts/app.js';
 import { api } from '../../scripts/api.js';
 import { GROUP_MESSAGES, loadGroupMessages } from './lora_groups_i18n.js';
+import { openGroupSort } from './lora_groups_sort.js';
 import {
   GROUPS_PROPERTY, GROUP_MIN_WIDTH, GROUP_MIN_HEIGHT, normalizeGroupConfig,
   normalizeGroupedEntries, changeGroupMode, setGroupedActive, moveGroupedEntry,
   previewGroupResize, resolveGroupResize,
+  assignAddedOrders, sortGroupEntries,
 } from './lora_groups_state.js';
 
 function element(tag, className, text) {
@@ -117,23 +119,36 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
     return { content, footer, close, alive: () => backdrop.isConnected };
   }
 
-  function rename(group) {
-    const view = modal(t('rename'));
-    const input = element('input');
+  function rename(group, title) {
+    const input = element('input', 'lm-group-title-input');
     input.value = group.title;
     input.maxLength = 100;
     input.setAttribute('aria-label', t('rename'));
-    const save = () => {
-      if (!input.value.trim()) return input.focus();
+    let finished = false;
+    const finish = save => {
+      if (finished) return;
+      finished = true;
+      input.replaceWith(title);
+      const name = input.value.trim();
+      if (!save || !name || name === group.title) return;
       const next = config();
-      next.groups.find(item => item.id === group.id).title = input.value.trim();
+      const current = next.groups.find(item => item.id === group.id);
+      if (!current) return;
+      current.title = name;
       pendingDefaultTitles.delete(group.id);
-      view.close();
       commit(getEntries(), next);
     };
-    input.addEventListener('keydown', event => { if (event.key === 'Enter') save(); });
-    view.content.append(input);
-    view.footer.append(button(t('confirm'), save));
+    input.addEventListener('pointerdown', event => event.stopPropagation());
+    input.addEventListener('keydown', event => {
+      event.stopPropagation();
+      if (event.isComposing) return;
+      if (event.key === 'Enter' || event.key === 'Escape') {
+        event.preventDefault(); finish(event.key === 'Enter');
+      }
+    });
+    input.addEventListener('blur', () => finish(true));
+    title.replaceWith(input);
+    input.focus(); input.select();
   }
 
   async function addLoras(groupId) {
@@ -350,10 +365,24 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       header.addEventListener('click', () => setTarget(group.id));
       header.addEventListener('focusin', () => setTarget(group.id));
       bindDrag(header, group.title, group.id);
+      const titleSlot = element('div', 'lm-group-title-slot');
       const title = element('span', 'lm-group-title', group.title);
       title.title = group.title;
-      title.addEventListener('dblclick', () => rename(group));
+      title.tabIndex = 0;
+      title.setAttribute('role', 'button');
+      title.setAttribute('aria-label', `${t('rename')}: ${group.title}`);
+      title.addEventListener('pointerdown', event => { if (event.button === 0) event.stopPropagation(); });
+      title.addEventListener('click', event => { event.stopPropagation(); setTarget(group.id); rename(group, title); });
+      title.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault(); event.stopPropagation(); rename(group, title);
+        }
+      });
+      titleSlot.append(title);
       const controls = element('div', 'lm-group-actions');
+      const modeSwitch = element('div', 'lm-group-mode-switch');
+      modeSwitch.setAttribute('role', 'group');
+      modeSwitch.setAttribute('aria-label', `${t('single')} / ${t('multi')}`);
       for (const mode of ['single', 'multi']) {
         const toggle = button(t(mode), () => {
           const old = getEntries();
@@ -364,10 +393,27 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
           }
         });
         toggle.setAttribute('aria-pressed', String(group.mode === mode));
-        controls.append(toggle);
+        modeSwitch.append(toggle);
       }
+      controls.append(modeSwitch);
       controls.append(button('+', () => addLoras(group.id), t('add')), button('⋯', () => groupActions(group), t('menu')));
-      header.append(title, button('✎', () => rename(group), t('rename')), controls);
+      const sort = button('⇅', () => {
+        closeOverlay?.();
+        closeOverlay = openGroupSort({ anchor: sort, rules: config().groups.find(item => item.id === group.id).sortRules, t,
+          onApply: rules => {
+            const next = config();
+            const current = next.groups.find(item => item.id === group.id);
+            if (!current) return;
+            current.sortRules = rules;
+            const locale = app.ui?.settings?.getSettingValue?.('Comfy.Locale') || 'en';
+            commit(sortGroupEntries(getEntries(), group.id, rules, locale), next);
+          },
+        });
+      }, t('sort'));
+      sort.classList.add('lm-group-sort-button');
+      sort.append(element('span', 'lm-group-sort-label', t('sort')));
+      controls.append(sort);
+      header.append(titleSlot, controls);
       const body = element('div', 'lm-group-body');
       body.dataset.groupId = group.id;
       body.tabIndex = 0;
@@ -594,7 +640,12 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       app.canvas?.emitAfterChange?.();
     },
     normalize(entries) {
-      const normalized = normalizeGroupedEntries(entries, config(), previousEntries, activeGroupId);
+      const state = config();
+      const assigned = assignAddedOrders(entries, state.nextAddedOrder, previousEntries);
+      state.nextAddedOrder = assigned.nextAddedOrder;
+      node.properties ||= {};
+      node.properties[GROUPS_PROPERTY] = state;
+      const normalized = normalizeGroupedEntries(assigned.entries, state, previousEntries, activeGroupId);
       previousEntries = normalized.map(entry => ({ ...entry }));
       return normalized;
     },

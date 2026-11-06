@@ -2,6 +2,68 @@
 export const GROUPS_PROPERTY = 'lmLoraGroups';
 export const GROUP_MIN_WIDTH = 200;
 export const GROUP_MIN_HEIGHT = 120;
+export const SORT_FIELDS = ['addedOrder', 'active', 'strength', 'name'];
+
+export function normalizeSortRules(rules) {
+  const seen = new Set();
+  const result = [];
+  for (const rule of Array.isArray(rules) ? rules : []) {
+    if (!SORT_FIELDS.includes(rule?.field) || seen.has(rule.field)) continue;
+    seen.add(rule.field);
+    result.push({ field: rule.field, direction: rule.direction === 'desc' ? 'desc' : 'asc' });
+  }
+  return result.length ? result : [{ field: 'addedOrder', direction: 'asc' }];
+}
+
+// Allocate before grouping so legacy lists and batch additions retain their original order.
+export function assignAddedOrders(entries, counter = 0, previous = []) {
+  const valid = value => Number.isSafeInteger(value) && value >= 0 && value < Number.MAX_SAFE_INTEGER;
+  const old = new Map(previous.map(entry => [entry.name, entry.addedOrder]));
+  const values = Array.isArray(entries) ? entries : [];
+  let next = valid(counter) ? counter : 0;
+  for (const entry of [...previous, ...values]) {
+    if (valid(entry?.addedOrder)) next = Math.max(next, entry.addedOrder + 1);
+  }
+  const assigned = new Map();
+  const used = new Set();
+  const result = values.map(entry => {
+    if (!entry || typeof entry.name !== 'string') return entry;
+    if (!assigned.has(entry.name)) {
+      let order = old.get(entry.name) ?? entry.addedOrder;
+      if (!valid(order) || used.has(order)) order = next++;
+      used.add(order); assigned.set(entry.name, order);
+    }
+    return { ...entry, addedOrder: assigned.get(entry.name) };
+  });
+  return { entries: result, nextAddedOrder: next };
+}
+
+export function sortGroupEntries(entries, groupId, rules, locale = 'en') {
+  const normalized = normalizeSortRules(rules);
+  const collator = new Intl.Collator(locale, { numeric: true, sensitivity: 'base' });
+  const filename = name => String(name).split(/[\\/]/).pop();
+  const sorted = entries.filter(entry => entry.groupId === groupId).map((entry, index) => ({ entry, index }))
+    .sort((a, b) => {
+      for (const { field, direction } of normalized) {
+        let comparison;
+        if (field === 'name') comparison = collator.compare(filename(a.entry.name), filename(b.entry.name));
+        else {
+          const left = field === 'active' ? Number(!!a.entry.active) : Number(a.entry[field]);
+          const right = field === 'active' ? Number(!!b.entry.active) : Number(b.entry[field]);
+          if (!Number.isFinite(left) || !Number.isFinite(right)) {
+            comparison = Number(!Number.isFinite(left)) - Number(!Number.isFinite(right));
+            if (comparison) return comparison;
+            continue;
+          }
+          comparison = left - right;
+        }
+        if (comparison) return direction === 'desc' ? -comparison : comparison;
+      }
+      return a.index - b.index;
+    }).map(item => item.entry);
+  let index = 0;
+  return entries.map(entry => entry.groupId === groupId ? sorted[index++] : entry);
+}
 
 export function normalizeGroupConfig(value, defaultTitle = 'Default group') {
   const dimension = n => Number.isSafeInteger(n) && n > 0 ? n : 1;
@@ -20,9 +82,10 @@ export function normalizeGroupConfig(value, defaultTitle = 'Default group') {
       title: typeof source?.title === 'string' && source.title.trim()
         ? source.title.trim() : index === 0 ? defaultTitle : `Group ${index + 1}`,
       mode: source?.mode === 'single' ? 'single' : 'multi',
+      sortRules: normalizeSortRules(source?.sortRules),
     };
   });
-  return { version: 1, rows, columns, groups };
+  return { version: 2, rows, columns, groups, nextAddedOrder: Number.isSafeInteger(value?.nextAddedOrder) && value.nextAddedOrder >= 0 ? value.nextAddedOrder : 0 };
 }
 
 export function normalizeGroupedEntries(entries, config, previous = [], targetId = config.groups[0].id) {

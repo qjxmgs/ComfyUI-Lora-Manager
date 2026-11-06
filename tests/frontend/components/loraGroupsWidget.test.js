@@ -57,6 +57,7 @@ async function mount(entries = [], state, comfyClass = 'Lora Loader (LoraManager
 
 beforeEach(() => {
   vi.clearAllMocks();
+  document.elementFromPoint = vi.fn();
   getSettingValue.mockReturnValue('en');
   fetchApi.mockResolvedValue({ ok: true, json: async () => ({ loras: [] }) });
 });
@@ -66,6 +67,118 @@ afterEach(() => {
 });
 
 describe('grouped LoRA Loader interactions', () => {
+  it('applies compound sorting once, persists rules and addition order, and restores everything with undo', async () => {
+    const node = await mount([
+      { ...value('A'), strength: .2 }, { ...value('B', 'group-1', false), strength: 2 },
+      { ...value('C'), strength: .9 }, value('D', 'group-2'),
+    ], normalizeGroupConfig({ rows: 1, columns: 2 }));
+    row(node, 'A').querySelector('.lm-lora-name').click();
+    const saved = snapshot(node);
+    panels(node)[0].querySelector('.lm-group-body').scrollTop = 40;
+    panels(node)[0].querySelector('.lm-group-sort-button').click();
+    const popup = document.querySelector('.lm-sort-popover');
+    const change = (select, value) => { select.value = value; select.dispatchEvent(new Event('change', { bubbles: true })); };
+    change(popup.querySelector('select'), 'active');
+    click(popup, '＋ Add rule');
+    change(popup.querySelectorAll('.lm-sort-rule')[1].querySelector('select'), 'strength');
+    expect(node.widget.value.map(item => item.name)).toEqual(['A', 'B', 'C', 'D']);
+    click(popup, 'Apply sort');
+    expect(node.widget.value.map(item => item.name)).toEqual(['C', 'A', 'B', 'D']);
+    expect(node.widget.value.map(item => item.addedOrder)).toEqual([2, 0, 1, 3]);
+    expect(node.properties.lmLoraGroups.groups[0].sortRules).toEqual([{ field: 'active', direction: 'desc' }, { field: 'strength', direction: 'desc' }]);
+    expect(row(node, 'A').dataset.selected).toBe('true');
+    expect(panels(node)[0].querySelector('.lm-group-body').scrollTop).toBe(40);
+    expect(node.history).toHaveLength(1);
+    const sorted = snapshot(node);
+    const clone = await mount(); clone.properties = structuredClone(sorted.properties); clone.onConfigure(sorted);
+    expect(snapshot(clone)).toEqual(sorted);
+    node.widget.value = node.widget.value.map(item => item.name === 'A' ? { ...item, strength: 9 } : item);
+    expect(node.widget.value.map(item => item.name)).toEqual(['C', 'A', 'B', 'D']);
+    node.properties = structuredClone(saved.properties); node.onConfigure(saved);
+    expect(snapshot(node)).toEqual(saved);
+  });
+
+  it('edits rule priority with buttons and dragging, prevents duplicate fields, and discards cancelled drafts', async () => {
+    const node = await mount([value('A'), value('B')]);
+    const saved = snapshot(node);
+    const open = () => { node.container.querySelector('.lm-group-sort-button').click(); return document.querySelector('.lm-sort-popover'); };
+    let popup = open();
+    expect(popup.querySelector('[aria-label="Remove rule"]').disabled).toBe(true);
+    for (let i = 0; i < 3; i++) click(popup, '＋ Add rule');
+    expect(popup.querySelector('[aria-label="Add rule"]').disabled).toBe(true);
+    expect(popup.querySelectorAll('.lm-sort-rule')).toHaveLength(4);
+    expect(popup.querySelector('select option[value="active"]').disabled).toBe(true);
+    popup.querySelector('[aria-label="Move rule down"]').click();
+    expect(popup.querySelector('select').value).toBe('active');
+    let rows = [...popup.querySelectorAll('.lm-sort-rule')];
+    document.elementFromPoint.mockReturnValue(rows[2]);
+    const grip = rows[0].querySelector('.lm-sort-grip');
+    grip.setPointerCapture = vi.fn();
+    grip.dispatchEvent(new PointerEvent('pointerdown', { button: 0, pointerId: 1, bubbles: true }));
+    grip.dispatchEvent(new PointerEvent('pointermove', { pointerId: 1, clientY: 100, bubbles: true }));
+    grip.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, bubbles: true }));
+    expect([...popup.querySelectorAll('.lm-sort-rule')].map(row => row.querySelector('select').value)).toEqual(['addedOrder', 'strength', 'active', 'name']);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(snapshot(node)).toEqual(saved);
+    popup = open(); expect(popup.querySelectorAll('.lm-sort-rule')).toHaveLength(1);
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { button: 0, bubbles: true }));
+    expect(document.querySelector('.lm-sort-popover')).toBeNull();
+    expect(snapshot(node)).toEqual(saved);
+    popup = open(); click(popup, '＋ Add rule'); popup.querySelector('[aria-label="Remove rule"]').click();
+    expect(popup.querySelectorAll('.lm-sort-rule')).toHaveLength(1);
+    click(popup, 'Cancel'); expect(node.history).toHaveLength(0);
+  });
+
+  it.each([0.5, 2])('reorders whole groups from header whitespace at canvas scale %s and supports undo', async scale => {
+    const state = normalizeGroupConfig({ rows: 2, columns: 2 });
+    state.groups[0].title = 'Epoch trials'; state.groups[0].mode = 'single';
+    const node = await mount([value('A'), value('B', 'group-2')], state);
+    const saved = snapshot(node);
+    const sourceBody = panels(node)[0].querySelector('.lm-group-body');
+    sourceBody.scrollTop = 75;
+    const header = panels(node)[0].querySelector('.lm-group-header');
+    header.setPointerCapture = vi.fn();
+    const target = panels(node)[2];
+    target.getBoundingClientRect = () => ({ left: 0, right: 200 * scale, top: 200 * scale, height: 150 * scale });
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(target.querySelector('.lm-group-header'));
+    header.dispatchEvent(new PointerEvent('pointerdown', { button: 0, pointerId: 3, clientX: 20, clientY: 20, bubbles: true }));
+    header.dispatchEvent(new PointerEvent('pointermove', { pointerId: 3, clientX: 30, clientY: 220 * scale, bubbles: true }));
+    expect(header.isConnected).toBe(true);
+    expect(target.classList.contains('lm-group-drop-target')).toBe(true);
+    expect(document.querySelector('.lm-group-drag-ghost').textContent).toBe('Epoch trials');
+    header.dispatchEvent(new PointerEvent('pointerup', { pointerId: 3, bubbles: true }));
+    expect(node.properties.lmLoraGroups.groups.map(group => group.id)).toEqual(['group-2', 'group-3', 'group-1', 'group-4']);
+    expect(node.properties.lmLoraGroups.groups[2]).toEqual(state.groups[0]);
+    expect(node.widget.value).toEqual([saved.widgets_values[0][1], saved.widgets_values[0][0]]);
+    expect(panels(node)[2].querySelector('.lm-group-body').scrollTop).toBe(75);
+    expect(node.history).toHaveLength(1);
+    node.properties = structuredClone(saved.properties); node.onConfigure(saved);
+    expect(snapshot(node)).toEqual(saved);
+    vi.restoreAllMocks();
+  });
+
+  it('cancels group sorting with Esc and excludes header buttons from drag initiation', async () => {
+    const node = await mount([value('A')], normalizeGroupConfig({ rows: 1, columns: 2 }));
+    const saved = snapshot(node);
+    const header = panels(node)[0].querySelector('.lm-group-header');
+    header.setPointerCapture = vi.fn();
+    for (const button of header.querySelectorAll('button')) {
+      button.dispatchEvent(new PointerEvent('pointerdown', { button: 0, pointerId: 1, bubbles: true }));
+    }
+    expect(header.setPointerCapture).not.toHaveBeenCalled();
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(panels(node)[1]);
+    header.dispatchEvent(new PointerEvent('pointerdown', { button: 0, pointerId: 2, bubbles: true }));
+    header.dispatchEvent(new PointerEvent('pointermove', { clientX: 220, clientY: 20, pointerId: 2, bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    header.dispatchEvent(new PointerEvent('pointerup', { pointerId: 2, bubbles: true }));
+    expect(snapshot(node)).toEqual(saved);
+    expect(node.history).toHaveLength(0);
+    expect(node.widget.__dragActive).toBe(false);
+    expect(document.querySelector('.lm-group-drop-target')).toBeNull();
+    expect(document.querySelector('.lm-group-drag-ghost')).toBeNull();
+    vi.restoreAllMocks();
+  });
+
   it('loads ComfyUI Chinese labels and default titles without replacing saved or edited names', async () => {
     getSettingValue.mockReturnValue('zh');
     let resolveLocale;
@@ -74,9 +187,10 @@ describe('grouped LoRA Loader interactions', () => {
       : Promise.resolve({ ok: true, json: async () => ({ loras: [] }) }));
     const node = await mount();
     const edited = await mount();
-    click(edited.container, '✎');
-    document.querySelector('[role="dialog"] input').value = 'My training epochs';
-    click(document.querySelector('[role="dialog"]'), 'Confirm');
+    edited.container.querySelector('.lm-group-title').click();
+    const titleInput = edited.container.querySelector('.lm-group-title-input');
+    titleInput.value = 'My training epochs';
+    titleInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     const saved = await mount([], normalizeGroupConfig());
     resolveLocale({ ok: true, json: async () => chineseLocale });
     await flush();
@@ -98,7 +212,7 @@ describe('grouped LoRA Loader interactions', () => {
     expect(node.container.textContent).toContain('Default group');
     expect(node.container.textContent).toContain('Add LoRAs or drag them here');
     expect(node.container.textContent).not.toContain('Toggle All');
-    expect(node.properties.lmLoraGroups).toMatchObject({ rows: 1, columns: 1, version: 1 });
+    expect(node.properties.lmLoraGroups).toMatchObject({ rows: 1, columns: 1, version: 2 });
   });
 
   it('leaves other node classes on the existing ungrouped list', async () => {
@@ -294,15 +408,47 @@ describe('grouped LoRA Loader interactions', () => {
 
   it('renames a group and applies weights only to that group with CLIP linking preserved', async () => {
     const node = await mount([value('A'), { ...value('B', 'group-2'), expanded: true }], normalizeGroupConfig({ rows: 1, columns: 2 }));
-    panels(node)[0].querySelector('.lm-group-title').dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
-    let dialog = document.querySelector('[role="dialog"]');
-    dialog.querySelector('input').value = 'Epoch trials'; click(dialog, 'Confirm');
+    panels(node)[0].querySelector('.lm-group-title').click();
+    const input = node.container.querySelector('.lm-group-title-input');
+    input.value = 'Epoch trials'; input.blur();
     expect(node.properties.lmLoraGroups.groups[0].title).toBe('Epoch trials');
-    click(panels(node)[0], '⋯'); dialog = document.querySelector('[role="dialog"]');
+    click(panels(node)[0], '⋯'); let dialog = document.querySelector('[role="dialog"]');
     dialog.querySelector('input').value = '0.6'; click(dialog, 'Apply');
     expect(node.widget.value.map(item => [item.strength, item.clipStrength])).toEqual([[.6, .6], [.8, 0]]);
     click(panels(node)[0], '⋯'); click(document.querySelector('[role="dialog"]'), 'Disable all');
     expect(node.widget.value.map(item => item.active)).toEqual([false, true]);
+  });
+
+  it('edits only clicked title text inline and handles Escape, empty names and IME confirmation', async () => {
+    const node = await mount();
+    const saved = snapshot(node);
+    panels(node)[0].querySelector('.lm-group-header').click();
+    panels(node)[0].querySelector('.lm-group-title-slot').click();
+    expect(node.container.querySelector('.lm-group-title-input')).toBeNull();
+    const title = node.container.querySelector('.lm-group-title');
+    title.dispatchEvent(new PointerEvent('pointerdown', { button: 0, bubbles: true }));
+    expect(node.widget.__dragActive).not.toBe(true);
+    title.click();
+    let input = node.container.querySelector('.lm-group-title-input');
+    expect(document.activeElement).toBe(input);
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    input.value = 'Cancelled';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(snapshot(node)).toEqual(saved);
+    expect(node.history).toHaveLength(0);
+    node.container.querySelector('.lm-group-title').click();
+    input = node.container.querySelector('.lm-group-title-input');
+    input.value = '   '; input.blur();
+    expect(snapshot(node)).toEqual(saved);
+    node.container.querySelector('.lm-group-title').click();
+    input = node.container.querySelector('.lm-group-title-input');
+    input.value = '训练轮次';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true }));
+    expect(node.properties.lmLoraGroups.groups[0].title).toBe('Default group');
+    expect(input.isConnected).toBe(true);
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(node.properties.lmLoraGroups.groups[0].title).toBe('训练轮次');
+    expect(node.history).toHaveLength(1);
   });
 
   it('does not adjust weights by dragging the grouped row background', async () => {
