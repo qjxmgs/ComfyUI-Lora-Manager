@@ -349,6 +349,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       header.addEventListener('pointerdown', () => setTarget(group.id));
       header.addEventListener('click', () => setTarget(group.id));
       header.addEventListener('focusin', () => setTarget(group.id));
+      bindDrag(header, group.title, group.id);
       const title = element('span', 'lm-group-title', group.title);
       title.title = group.title;
       title.addEventListener('dblclick', () => rename(group));
@@ -393,65 +394,128 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
     }
   }
 
-  function bindDrag(handle, name) {
+  function bindDrag(handle, name, groupId = null) {
     let start = null;
     let dragging = false;
     let destination = null;
     let animation = null;
     let pointer = null;
-    const clearMarks = () => container.querySelectorAll('.lm-group-drop-before,.lm-group-drop-end')
-      .forEach(el => el.classList.remove('lm-group-drop-before', 'lm-group-drop-end'));
+    let indicator = null;
+    let ghost = null;
+    const clearMarks = () => {
+      container.querySelectorAll('.lm-group-drop-target').forEach(el => el.classList.remove('lm-group-drop-target'));
+      if (indicator) indicator.hidden = true;
+    };
     const locate = () => {
       clearMarks(); destination = null;
       if (!pointer) return;
-      const body = document.elementFromPoint?.(pointer.x, pointer.y)?.closest('.lm-group-body');
+      const panel = document.elementFromPoint?.(pointer.x, pointer.y)?.closest('.lm-lora-group');
+      const body = panel?.querySelector('.lm-group-body');
       if (!body || !container.contains(body)) return;
+      if (groupId) {
+        if (panel.dataset.groupId === groupId) return;
+        const groups = config().groups;
+        const from = groups.findIndex(group => group.id === groupId);
+        const to = groups.findIndex(group => group.id === panel.dataset.groupId);
+        if (from < 0 || to < 0) return;
+        destination = { id: panel.dataset.groupId };
+        panel.classList.add('lm-group-drop-target');
+        const rect = panel.getBoundingClientRect();
+        Object.assign(indicator.style, {
+          left: `${from < to ? rect.right - 3 : rect.left}px`, top: `${rect.top}px`,
+          width: '3px', height: `${rect.height}px`,
+        });
+        indicator.hidden = false;
+        return;
+      }
       const candidates = [...body.querySelectorAll('.lm-lora-entry')].filter(el => el.dataset.loraName !== name);
       const before = candidates.find(el => { const rect = el.getBoundingClientRect(); return pointer.y < rect.top + rect.height / 2; });
       destination = { id: body.dataset.groupId, before: before?.dataset.loraName || null };
-      (before || body).classList.add(before ? 'lm-group-drop-before' : 'lm-group-drop-end');
+      panel.classList.add('lm-group-drop-target');
       const rect = body.getBoundingClientRect();
+      const last = candidates.at(-1);
+      const lastRow = last?.nextElementSibling?.classList.contains('lm-lora-clip-entry') ? last.nextElementSibling : last;
+      const lineY = before ? before.getBoundingClientRect().top : lastRow?.getBoundingClientRect().bottom ?? rect.top + 4;
+      Object.assign(indicator.style, {
+        left: `${rect.left + 4}px`, width: `${Math.max(0, rect.width - 8)}px`,
+        top: `${Math.max(rect.top + 2, Math.min(rect.bottom - 3, lineY))}px`,
+      });
+      indicator.hidden = false;
       const scale = rect.height / body.clientHeight || 1;
-      if (pointer.y < rect.top + 24 * scale) body.scrollTop -= 8;
-      else if (pointer.y > rect.bottom - 24 * scale) body.scrollTop += 8;
+      const edge = Math.min(40 * scale, rect.height / 3);
+      if (pointer.y < rect.top + edge) body.scrollTop -= Math.min(20, (rect.top + edge - pointer.y) / scale / 2);
+      else if (pointer.y > rect.bottom - edge) body.scrollTop += Math.min(20, (pointer.y - rect.bottom + edge) / scale / 2);
     };
     const tick = () => { locate(); animation = requestAnimationFrame(tick); };
     const finish = (event, accept) => {
-      if (!start) return;
+      if (!start || (event?.pointerId !== undefined && event.pointerId !== start.id)) return;
       if (dragging) { event?.stopPropagation(); event?.preventDefault(); }
       const target = destination;
       const didDrag = dragging;
-      try { if (handle.hasPointerCapture?.(start.id)) handle.releasePointerCapture(start.id); } catch { /* Detached host node. */ }
+      const pointerId = start.id;
       start = null; dragging = false; destination = null;
+      try { if (handle.hasPointerCapture?.(pointerId)) handle.releasePointerCapture(pointerId); } catch { /* Detached host node. */ }
       if (animation !== null) cancelAnimationFrame(animation);
       animation = null;
       widget.__dragActive = false;
       document.body.classList.remove('lm-lora-reordering');
       handle.closest('.lm-lora-entry')?.classList.remove('lm-lora-entry--dragging');
+      if (groupId) handle.closest('.lm-lora-group')?.classList.remove('lm-group--dragging');
       clearMarks(); cancelDrag = null;
-      if (accept && didDrag && target) move(name, target.id, target.before);
+      indicator?.remove(); ghost?.remove(); indicator = ghost = null;
+      window.removeEventListener('keydown', escape, true);
+      window.removeEventListener('blur', cancel);
+      if (accept && didDrag && target && groupId) {
+        const next = config();
+        const from = next.groups.findIndex(group => group.id === groupId);
+        const to = next.groups.findIndex(group => group.id === target.id);
+        if (from >= 0 && to >= 0 && from !== to) {
+          const [group] = next.groups.splice(from, 1);
+          next.groups.splice(to, 0, group);
+          commit(getEntries(), next);
+        }
+      } else if (accept && didDrag && target) move(name, target.id, target.before);
       else if (didDrag && !removed) widget.value = widget.value;
+    };
+    const cancel = () => finish(null, false);
+    const escape = event => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault(); event.stopImmediatePropagation(); cancel();
     };
     handle.addEventListener('pointerdown', event => {
       if (event.button !== 0) return;
+      if (groupId && event.target.closest('button,input,select,textarea,a,[contenteditable="true"]')) return;
+      cancelDrag?.();
       event.preventDefault(); event.stopPropagation();
       start = { x: event.clientX, y: event.clientY, id: event.pointerId };
+      widget.__dragActive = true;
       handle.setPointerCapture?.(event.pointerId);
-      cancelDrag = () => finish(null, false);
+      cancelDrag = cancel;
+      window.addEventListener('keydown', escape, true);
+      window.addEventListener('blur', cancel);
     });
     handle.addEventListener('pointermove', event => {
-      if (!start) return;
+      if (!start || event.pointerId !== start.id) return;
       pointer = { x: event.clientX, y: event.clientY };
-      if (!dragging && Math.hypot(pointer.x - start.x, pointer.y - start.y) > 4) {
+      if (!dragging && Math.hypot(pointer.x - start.x, pointer.y - start.y) >= 3) {
         dragging = true; widget.__dragActive = true;
+        indicator = element('div', 'lm-popover lm-group-insertion-line');
+        ghost = element('div', 'lm-popover lm-group-drag-ghost', name);
+        indicator.setAttribute('aria-hidden', 'true'); ghost.setAttribute('aria-hidden', 'true');
+        document.body.append(indicator, ghost);
         document.body.classList.add('lm-lora-reordering');
         handle.closest('.lm-lora-entry')?.classList.add('lm-lora-entry--dragging');
+        if (groupId) handle.closest('.lm-lora-group')?.classList.add('lm-group--dragging');
         tick();
       }
-      if (dragging) { event.preventDefault(); event.stopPropagation(); locate(); }
+      if (dragging) {
+        Object.assign(ghost.style, { left: `${Math.min(pointer.x + 14, window.innerWidth - 280)}px`, top: `${Math.min(pointer.y + 14, window.innerHeight - 40)}px` });
+        event.preventDefault(); event.stopPropagation(); locate();
+      }
     });
     handle.addEventListener('pointerup', event => finish(event, true));
     handle.addEventListener('pointercancel', event => finish(event, false));
+    handle.addEventListener('lostpointercapture', event => finish(event, false));
   }
 
   function keydown(event) {

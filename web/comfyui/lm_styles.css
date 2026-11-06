@@ -179,6 +179,8 @@
 }
 .lm-lora-group[data-target="true"] { border-color: var(--lm-accent-border); }
 .lm-group-header {
+  cursor: grab;
+  touch-action: none;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -190,6 +192,7 @@
   color: var(--lm-fg);
 }
 .lm-group-title { flex: 1; min-width: 30px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 600; }
+.lm-lora-group.lm-group--dragging { opacity: .55; }
 .lm-group-actions { display: flex; gap: 3px; align-items: center; flex-wrap: wrap; }
 @container (max-width: 330px) {
   .lm-group-header > .lm-group-actions { flex-basis: 100%; }
@@ -239,8 +242,20 @@
 .lm-group-body .lm-lora-strength-input { width: 39px; min-width: 39px; padding: 1px 2px; font-size: 11px; }
 .lm-group-body .lm-lora-arrow { width: 10px; }
 .lm-group-body .lm-lora-clip-entry { margin-left: 8px; padding: 3px; }
-.lm-group-drop-before { box-shadow: 0 -2px 0 var(--lm-accent) !important; }
-.lm-group-drop-end { box-shadow: inset 0 -2px 0 var(--lm-accent); }
+.lm-group-body .lm-lora-name { cursor: grab; touch-action: none; }
+.lm-group-body .lm-lora-drag-handle { touch-action: none; }
+.lm-lora-group.lm-group-drop-target { outline: 2px solid var(--lm-accent); outline-offset: -2px; background: var(--lm-accent-soft); }
+.lm-group-insertion-line {
+  position: fixed; height: 3px; border-radius: 2px; background: var(--lm-accent);
+  box-shadow: 0 0 0 1px var(--lm-surface), 0 0 7px var(--lm-accent);
+  pointer-events: none; z-index: 100001;
+}
+.lm-group-drag-ghost {
+  position: fixed; width: 260px; padding: 6px 8px; border-radius: 5px;
+  background: var(--lm-surface); color: var(--lm-fg); border: 1px solid var(--lm-accent);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px;
+  box-shadow: var(--lm-shadow); pointer-events: none; z-index: 100002;
+}
 
 .lm-groups-backdrop {
   position: fixed;

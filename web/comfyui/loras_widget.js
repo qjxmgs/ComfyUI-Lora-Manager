@@ -95,7 +95,7 @@ export function addLorasWidget(node, name, opts, callback) {
   let lastStrengthDragEndAt = 0;
 
   const shouldSuppressPreview = () => {
-    if (strengthDragActive) {
+    if (strengthDragActive || widget.__dragActive) {
       return true;
     }
     return Date.now() - lastStrengthDragEndAt < PREVIEW_SUPPRESSION_AFTER_DRAG_MS;

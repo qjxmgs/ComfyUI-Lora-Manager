@@ -233,7 +233,7 @@ describe('grouped LoRA Loader interactions', () => {
     expect(node.widget.value[0].name).toBe('A');
   });
 
-  it.each([0.5, 2])('moves across columns at canvas scale %s and preserves updates during drag', async scale => {
+  it.each([[0.5, '.lm-lora-drag-handle'], [2, '.lm-lora-drag-handle'], [0.5, '.lm-lora-name'], [2, '.lm-lora-name']])('moves across columns at canvas scale %s from %s and preserves updates during drag', async (scale, selector) => {
     const state = normalizeGroupConfig({ rows: 1, columns: 2 });
     state.groups[1].mode = 'single';
     const node = await mount([value('A'), value('B', 'group-2')], state);
@@ -244,7 +244,7 @@ describe('grouped LoRA Loader interactions', () => {
     target.getBoundingClientRect = () => ({ top: 100 * scale, height: 24 * scale });
     const originalHitTest = document.elementFromPoint;
     document.elementFromPoint = () => target;
-    const handle = row(node, 'A').querySelector('.lm-lora-drag-handle');
+    const handle = row(node, 'A').querySelector(selector);
     handle.setPointerCapture = vi.fn();
     handle.dispatchEvent(new PointerEvent('pointerdown', { button: 0, clientX: 0, clientY: 100 * scale, pointerId: 1, bubbles: true }));
     handle.dispatchEvent(new PointerEvent('pointermove', { clientX: 300 * scale, clientY: 105 * scale, pointerId: 1, bubbles: true }));
@@ -305,7 +305,7 @@ describe('grouped LoRA Loader interactions', () => {
     expect(node.widget.value.map(item => item.active)).toEqual([false, true]);
   });
 
-  it('records a continuous strength drag once and preserves the original value for undo', async () => {
+  it('does not adjust weights by dragging the grouped row background', async () => {
     const node = await mount([value('A')]);
     const el = row(node, 'A');
     el.setPointerCapture = vi.fn(); el.releasePointerCapture = vi.fn();
@@ -315,11 +315,44 @@ describe('grouped LoRA Loader interactions', () => {
     el.dispatchEvent(new PointerEvent('pointermove', { clientX: 150, pointerId: 2, bubbles: true }));
     expect(el.isConnected).toBe(true);
     el.dispatchEvent(new PointerEvent('pointerup', { pointerId: 2, bubbles: true }));
+    expect(node.history).toHaveLength(0);
+    expect(node.widget.value[0].strength).toBe(.8);
+    expect(node.widget.value[0].clipStrength).toBe(0);
+  });
+
+  it.each(['.lm-lora-name', '.lm-lora-drag-handle'])('reorders from %s with a precise end marker and Esc cancellation', async selector => {
+    const node = await mount([value('A'), value('B')]);
+    const body = panels(node)[0].querySelector('.lm-group-body');
+    body.getBoundingClientRect = () => ({ left: 0, width: 300, top: 0, bottom: 200, height: 200 });
+    Object.defineProperty(body, 'clientHeight', { value: 200 });
+    row(node, 'B').getBoundingClientRect = () => ({ top: 30, bottom: 54, height: 24 });
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(body);
+    const handle = row(node, 'A').querySelector(selector);
+    handle.setPointerCapture = vi.fn();
+    handle.dispatchEvent(new PointerEvent('pointerdown', { button: 0, clientX: 20, clientY: 60, pointerId: 1, bubbles: true }));
+    handle.dispatchEvent(new PointerEvent('pointermove', { clientX: 23, clientY: 60, pointerId: 1, bubbles: true }));
+    expect(node.widget.__dragActive).toBe(true);
+    expect(document.querySelector('.lm-group-insertion-line').style.top).toBe('54px');
+    expect(panels(node)[0].classList.contains('lm-group-drop-target')).toBe(true);
+    expect(document.querySelector('.lm-group-drag-ghost').textContent).toBe('A');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    handle.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, bubbles: true }));
+    expect(node.widget.value.map(item => item.name)).toEqual(['A', 'B']);
+    expect(node.history).toHaveLength(0);
+    expect(node.widget.__dragActive).toBe(false);
+    expect(document.querySelector('.lm-group-insertion-line')).toBeNull();
+    expect(document.querySelector('.lm-group-drag-ghost')).toBeNull();
+
+    row(node, 'B').getBoundingClientRect = () => ({ top: 30, bottom: 54, height: 24 });
+    document.elementFromPoint.mockReturnValue(panels(node)[0].querySelector('.lm-group-body'));
+    const nextHandle = row(node, 'A').querySelector(selector);
+    nextHandle.dispatchEvent(new PointerEvent('pointerdown', { button: 0, clientX: 20, clientY: 40, pointerId: 2, bubbles: true }));
+    nextHandle.dispatchEvent(new PointerEvent('pointermove', { clientX: 40, clientY: 60, pointerId: 2, bubbles: true }));
+    nextHandle.dispatchEvent(new PointerEvent('pointerup', { pointerId: 2, bubbles: true }));
+    expect(node.widget.value.map(item => item.name)).toEqual(['B', 'A']);
+    expect(node.widget.value.map(item => item.strength)).toEqual([.8, .8]);
     expect(node.history).toHaveLength(1);
-    expect(node.history[0].widgets_values[0][0].strength).toBe(.8);
-    expect(node.widget.value[0].strength).toBe(.9);
-    expect(node.graph.afterChange).toHaveBeenCalledTimes(1);
-    expect(node._lmFlushLoraText).toHaveBeenCalledTimes(1);
+    vi.restoreAllMocks();
   });
 
   it('keeps the epoch suffix and full filename available in narrow rows', async () => {
