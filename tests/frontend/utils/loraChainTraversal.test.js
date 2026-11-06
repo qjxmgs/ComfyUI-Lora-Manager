@@ -219,7 +219,7 @@ describe("LoRA chain traversal", () => {
       new Set(["Beta", "Alpha"])
     );
 
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
     const firstBody = JSON.parse(global.fetch.mock.calls[0][1].body);
     expect(firstBody.lora_names).toEqual(["Alpha"]);
     expect(firstBody.configured_lora_names).toEqual(["Beta", "Alpha"]);
@@ -231,7 +231,7 @@ describe("LoRA chain traversal", () => {
       new Set(["Alpha", "Beta"])
     );
 
-    expect(global.fetch).toHaveBeenCalledTimes(2);
+    await vi.waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(2));
     const secondBody = JSON.parse(global.fetch.mock.calls[1][1].body);
     expect(secondBody.request_revision).toBe(2);
   });

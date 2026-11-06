@@ -1,4 +1,4 @@
-from py.nodes.lora_loader import LoraLoaderLM
+from py.nodes.lora_loader import LoraLoaderLM, LoraTextLoaderLM
 
 
 class _DiffusionModel:
@@ -98,3 +98,14 @@ def test_loader_schema_exposes_a_default_off_anima_mode():
     input_types = LoraLoaderLM.INPUT_TYPES()
 
     assert input_types["hidden"]["anima_mode"] == ("BOOLEAN", {"default": False})
+
+
+def test_text_loader_never_remaps_and_newer_lora_falls_back(monkeypatch):
+    model = _Model(_DiffusionModel())
+    source = {"lora_unet_blocks_2_attn_to_q.lora_down.weight": object()}
+    _, applied = _load_one_lora(LoraLoaderLM(), model, source, monkeypatch, False)
+    LoraTextLoaderLM().load_loras_from_text(model, "<lora:demo:1.0>")
+    assert applied[-1][0] is source
+    newer = {"lora_unet_blocks_51_attn_to_q.lora_down.weight": object()}
+    _, applied = _load_one_lora(LoraLoaderLM(), model, newer, monkeypatch, True)
+    assert applied[0][0] is newer

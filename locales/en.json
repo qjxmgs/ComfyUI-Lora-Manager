@@ -262,7 +262,8 @@
         "title": "Recipe Title",
         "loraName": "LoRA Filename",
         "loraModel": "LoRA Model Name",
-        "prompt": "Prompt"
+        "prompt": "Prompt",
+        "triggerWords": "Trigger Words"
       }
     },
     "filter": {
@@ -704,7 +705,16 @@
       "pathPlaceholder": "Enter path...",
       "go": "Go",
       "emptyFolder": "No subfolders",
-      "loadError": "Failed to load directory"
+      "loadError": "Failed to load directory",
+      "newFolder": "New Folder",
+      "newFolderPlaceholder": "Folder name",
+      "create": "Create",
+      "cancel": "Cancel",
+      "createError": "Failed to create folder",
+      "nameRequired": "Enter a folder name",
+      "nameInvalid": "Folder name contains invalid characters",
+      "alreadyExists": "A folder with this name already exists",
+      "permissionDenied": "Permission denied"
     },
     "pathValidation": {
       "valid": "Path is valid",
@@ -749,10 +759,12 @@
         "customTemplate": "Custom Template"
       },
       "customTemplatePlaceholder": "Enter custom template (e.g., {base_model}/{author}/{first_tag})",
+      "workflowHint": "Applies to workflow downloads and to Auto-Organize on the Workflows page.",
       "modelTypes": {
         "lora": "LoRA",
         "checkpoint": "Checkpoint",
-        "embedding": "Embedding"
+        "embedding": "Embedding",
+        "workflow": "Workflow"
       },
       "baseModelPathMappings": "Base Model Path Mappings",
       "baseModelPathMappingsHelp": "Customize folder names for specific base models (e.g., \"Flux.1 D\" → \"flux\")",
@@ -2069,6 +2081,8 @@
         "sendToWorkflow": "Send to ComfyUI",
         "sendToWorkflowText": "Send to ComfyUI",
         "copyHash": "Copy hash",
+        "calculateHash": "Calculate hash",
+        "retryHash": "Retry",
         "copyCivitaiId": "Copy Civitai ID",
         "civitaiIdCopied": "Civitai ID copied to clipboard",
         "deleteModelWithShortcut": "Delete model (Del)"
@@ -2095,6 +2109,10 @@
         "baseModel": "Base Model",
         "size": "Size",
         "hashes": "Hashes",
+        "hashPending": "Not calculated yet",
+        "hashCalculating": "Calculating...",
+        "hashFailed": "Calculation failed",
+        "hashPendingHint": "This SHA256 hash has not been calculated yet. Large models are hashed on demand to keep scanning fast.",
         "civitaiModelId": "Model ID",
         "civitaiVersionId": "Version ID",
         "unknown": "Unknown",
@@ -3028,6 +3046,8 @@
       "refreshFailed": "Failed to {action} {type}s",
       "metadataRefreshed": "Metadata refreshed successfully",
       "metadataRefreshFailed": "Failed to refresh metadata: {message}",
+      "hashCalculated": "SHA256 hash calculated successfully",
+      "hashCalculationFailed": "Failed to calculate hash: {message}",
       "metadataUpdateComplete": "Metadata update complete",
       "operationCancelled": "Operation cancelled by user",
       "operationCancelledPartial": "Operation cancelled. {success} items processed.",

@@ -270,4 +270,3 @@ async def test_create_default_metadata_ignores_an_empty_model_file(tmp_path) -> 
 
     assert await MetadataManager.create_default_metadata(str(model_path)) is None
     assert not (tmp_path / "Emilia(RE0).safetensors.metadata.json").exists()
-

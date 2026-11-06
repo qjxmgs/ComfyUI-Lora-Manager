@@ -16150,11 +16150,11 @@ function updateConnectedTriggerWords(node, loraNames, configuredLoraNames = null
     clearTimeout(pendingTimer);
   }
   const loraNamesSnapshot = Array.from(loraNames || []);
-  Array.from(configuredLoraNames || loraNames || []);
+  const configuredNamesSnapshot = Array.from(configuredLoraNames || loraNames || []);
   node[TRIGGER_WORD_SYNC_TIMER] = setTimeout(() => {
     delete node[TRIGGER_WORD_SYNC_TIMER];
     const activeNames = loraNamesSnapshot.filter(Boolean);
-    const configuredNames = Array.from(configuredLoraNames || loraNames || []).filter(Boolean);
+    const configuredNames = configuredNamesSnapshot.filter(Boolean);
     const signatureActiveNames = [...activeNames].sort((left, right) => String(left).localeCompare(String(right)));
     const signatureConfiguredNames = [...configuredNames].sort((left, right) => String(left).localeCompare(String(right)));
     const sortedNodeIds = [...nodeIds].sort(

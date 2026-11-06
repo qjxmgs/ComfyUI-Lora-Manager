@@ -604,20 +604,6 @@ app.registerExtension({
             category: ["LoRA Manager", "Statistics", "Usage Tracking"],
         },
         {
-            id: ANIMA_LORA_BLOCK_REMAP_SETTING_ID,
-            name: "Legacy Anima LoRA block remap",
-            type: "boolean",
-            defaultValue: ANIMA_LORA_BLOCK_REMAP_DEFAULT,
-            tooltip: "Automatically remap LoRA block indices when an older Anima LoRA is loaded on Anima 2.9B (40 blocks) or 3.8B (52 blocks). Turn off to load the file unchanged.",
-            category: ["LoRA Manager", "LoRA Loader", "Anima Block Remap"],
-            onChange: async (value) => {
-                if (!animaLoraBlockRemapSynced) {
-                    return;
-                }
-                await persistAnimaLoraBlockRemap(value);
-            },
-        },
-        {
             id: NEW_TAB_TEMPLATE_ID,
             name: "New Tab Template Workflow",
             type: "combo",
@@ -657,7 +643,7 @@ app.registerExtension({
     ],
     async setup() {
         await loadWorkflowOptions();
-        await syncAnimaLoraBlockRemapFromBackend();
+        // This fork uses the workflow-local anima_mode widget, not a global toggle.
 
         const originalNewBlankWorkflow = async () => {
             const blankGraph = {

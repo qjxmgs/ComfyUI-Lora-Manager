@@ -1,5 +1,12 @@
 # Anima LoRA block compatibility
 
+> **Fork behavior:** This document below describes the upstream compatibility
+> library, not this fork's loader policy. This fork retains only the default-off
+> `Anima 2.9B 模式` switch on `Lora Loader`: 28→40 remapping runs in memory
+> only for a detected 40-layer Anima model. Disabled mode and unsupported
+> inputs load unchanged; Text Loader does not perform automatic remapping.
+> The upstream global setting is not used by these loaders.
+
 `Lora Loader (LoraManager)` and `LoRA Text Loader (LoraManager)` automatically
 remap legacy Anima LoRA block indices when the connected model uses a larger
 Anima layout. No extra node is required and the LoRA file is never modified.

@@ -262,7 +262,8 @@
                 "title": "配方標題",
                 "loraName": "LoRA 檔案名稱",
                 "loraModel": "LoRA 模型名稱",
-                "prompt": "提示詞"
+                "prompt": "提示詞",
+                "triggerWords": "[TODO: Translate] Trigger Words"
             }
         },
         "filter": {
@@ -704,7 +705,16 @@
             "pathPlaceholder": "輸入路徑...",
             "go": "前往",
             "emptyFolder": "沒有子資料夾",
-            "loadError": "目錄載入失敗"
+            "loadError": "目錄載入失敗",
+            "newFolder": "新增資料夾",
+            "newFolderPlaceholder": "資料夾名稱",
+            "create": "建立",
+            "cancel": "取消",
+            "createError": "建立資料夾失敗",
+            "nameRequired": "請輸入資料夾名稱",
+            "nameInvalid": "資料夾名稱包含無效字元",
+            "alreadyExists": "已存在同名資料夾",
+            "permissionDenied": "權限不足"
         },
         "pathValidation": {
             "valid": "路徑有效",
@@ -749,10 +759,12 @@
                 "customTemplate": "自訂範本"
             },
             "customTemplatePlaceholder": "輸入自訂範本（例如：{base_model}/{author}/{first_tag}）",
+            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
-                "embedding": "Embedding"
+                "embedding": "Embedding",
+                "workflow": "[TODO: Translate] Workflow"
             },
             "baseModelPathMappings": "基礎模型路徑對應",
             "baseModelPathMappingsHelp": "自訂特定基礎模型的資料夾名稱（例如：「Flux.1 D」→「flux」）",
@@ -2069,6 +2081,8 @@
                 "sendToWorkflow": "傳送到 ComfyUI",
                 "sendToWorkflowText": "傳送到 ComfyUI",
                 "copyHash": "複製雜湊值",
+                "calculateHash": "計算雜湊值",
+                "retryHash": "重試",
                 "copyCivitaiId": "複製 Civitai ID",
                 "civitaiIdCopied": "Civitai ID 已複製到剪貼簿",
                 "deleteModelWithShortcut": "刪除模型（Del）"
@@ -2095,6 +2109,10 @@
                 "baseModel": "基礎模型",
                 "size": "大小",
                 "hashes": "雜湊值",
+                "hashPending": "尚未計算",
+                "hashCalculating": "計算中...",
+                "hashFailed": "計算失敗",
+                "hashPendingHint": "此 SHA256 雜湊值尚未計算。大型模型會按需計算雜湊，以維持掃描速度。",
                 "civitaiModelId": "模型 ID",
                 "civitaiVersionId": "版本 ID",
                 "unknown": "未知",
@@ -3028,6 +3046,8 @@
             "refreshFailed": "{action} {type} 失敗",
             "metadataRefreshed": "metadata 已成功刷新",
             "metadataRefreshFailed": "刷新 metadata 失敗：{message}",
+            "hashCalculated": "SHA256 雜湊值計算成功",
+            "hashCalculationFailed": "計算雜湊值失敗：{message}",
             "metadataUpdateComplete": "metadata 更新完成",
             "operationCancelled": "操作已由用戶取消",
             "operationCancelledPartial": "操作已取消。已處理 {success} 個項目。",

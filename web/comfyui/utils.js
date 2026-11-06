@@ -584,7 +584,7 @@ export function updateConnectedTriggerWords(node, loraNames, configuredLoraNames
         delete node[TRIGGER_WORD_SYNC_TIMER];
 
         const activeNames = loraNamesSnapshot.filter(Boolean);
-        const configuredNames = Array.from(configuredLoraNames || loraNames || [])
+        const configuredNames = configuredNamesSnapshot
             .filter(Boolean);
         const signatureActiveNames = [...activeNames]
             .sort((left, right) => String(left).localeCompare(String(right)));

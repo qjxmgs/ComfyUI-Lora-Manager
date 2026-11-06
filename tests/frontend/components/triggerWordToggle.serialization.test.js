@@ -36,6 +36,7 @@ vi.mock(API_MODULE, () => ({
 
 vi.mock(UTILS_MODULE, () => ({
   CONVERTED_TYPE: "converted-widget",
+  getWidgetByName: (node, name) => node.widgets?.find(w => w.name === name),
   getNodeFromGraph: vi.fn(),
   getWidgetSerializedValue: (node, widgetName) => {
     if (!node || !Array.isArray(node.widgets) || !Array.isArray(node.widgets_values)) {

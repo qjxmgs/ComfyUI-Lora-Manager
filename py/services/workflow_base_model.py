@@ -156,4 +156,3 @@ async def resolve_workflow_base_model(
     if include_remote:
         return await _resolve_from_civitai_refs(civitai_refs, metadata_provider)
     return None
-

@@ -128,6 +128,9 @@ describe("updateConnectedTriggerWords", () => {
     expect(url).toBe("/api/lm/loras/get_trigger_words");
     expect(JSON.parse(init.body)).toEqual({
       lora_names: ["Illustrious/realistic/114558v4df2fsdf5"],
+      configured_lora_names: ["Illustrious/realistic/114558v4df2fsdf5"],
+      source_node: { node_id: 56, graph_id: "root" },
+      request_revision: 1,
       node_ids: [{ node_id: 55, graph_id: "root" }],
     });
   });

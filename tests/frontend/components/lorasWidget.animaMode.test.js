@@ -39,6 +39,7 @@ vi.mock(UTILS_MODULE, () => ({
   updateDownstreamLoaders: vi.fn(),
 }));
 vi.mock(WIDGET_UTILS_MODULE, () => ({
+  getLoraDisplayName: name => name,
   parseLoraValue: (value) => Array.isArray(value) ? value : [],
   formatLoraValue: (value) => value,
   shouldShowClipEntry: () => false,
@@ -66,7 +67,7 @@ vi.mock(PREVIEW_MODULE, () => ({
   },
 }));
 vi.mock(STYLES_MODULE, () => ({ ensureLmStyles: vi.fn() }));
-vi.mock(SETTINGS_MODULE, () => ({ getStrengthStepPreference: () => 0.05 }));
+vi.mock(SETTINGS_MODULE, () => ({ getStrengthStepPreference: () => 0.05, onNodeLoraNameDisplayChanged: () => () => {}, getNodeLoraNameDisplayPreference: () => "filename" }));
 
 function createNode(comfyClass) {
   const node = {

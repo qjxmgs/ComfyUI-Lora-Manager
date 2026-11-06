@@ -262,7 +262,8 @@
                 "title": "Название рецепта",
                 "loraName": "Имя файла LoRA",
                 "loraModel": "Название модели LoRA",
-                "prompt": "Промпт"
+                "prompt": "Промпт",
+                "triggerWords": "[TODO: Translate] Trigger Words"
             }
         },
         "filter": {
@@ -704,7 +705,16 @@
             "pathPlaceholder": "Введите путь...",
             "go": "Перейти",
             "emptyFolder": "Нет подпапок",
-            "loadError": "Не удалось загрузить каталог"
+            "loadError": "Не удалось загрузить каталог",
+            "newFolder": "Новая папка",
+            "newFolderPlaceholder": "Имя папки",
+            "create": "Создать",
+            "cancel": "Отмена",
+            "createError": "Не удалось создать папку",
+            "nameRequired": "Введите имя папки",
+            "nameInvalid": "Имя папки содержит недопустимые символы",
+            "alreadyExists": "Папка с таким именем уже существует",
+            "permissionDenied": "Доступ запрещён"
         },
         "pathValidation": {
             "valid": "Путь действителен",
@@ -749,10 +759,12 @@
                 "customTemplate": "Пользовательский шаблон"
             },
             "customTemplatePlaceholder": "Введите пользовательский шаблон (например, {base_model}/{author}/{first_tag})",
+            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
-                "embedding": "Embedding"
+                "embedding": "Embedding",
+                "workflow": "[TODO: Translate] Workflow"
             },
             "baseModelPathMappings": "Сопоставления путей базовых моделей",
             "baseModelPathMappingsHelp": "Настройте имена папок для конкретных базовых моделей (например, \"Flux.1 D\" → \"flux\")",
@@ -2069,6 +2081,8 @@
                 "sendToWorkflow": "Отправить в ComfyUI",
                 "sendToWorkflowText": "Отправить в ComfyUI",
                 "copyHash": "Копировать хеш",
+                "calculateHash": "Вычислить хеш",
+                "retryHash": "Повторить",
                 "copyCivitaiId": "Копировать ID Civitai",
                 "civitaiIdCopied": "ID Civitai скопирован в буфер обмена",
                 "deleteModelWithShortcut": "Удалить модель (Del)"
@@ -2095,6 +2109,10 @@
                 "baseModel": "Базовая модель",
                 "size": "Размер",
                 "hashes": "Хэши",
+                "hashPending": "Ещё не вычислен",
+                "hashCalculating": "Вычисление...",
+                "hashFailed": "Не удалось вычислить",
+                "hashPendingHint": "Этот хеш SHA256 ещё не вычислен. У больших моделей хеш вычисляется по требованию, чтобы сканирование оставалось быстрым.",
                 "civitaiModelId": "ID модели",
                 "civitaiVersionId": "ID версии",
                 "unknown": "Неизвестно",
@@ -3028,6 +3046,8 @@
             "refreshFailed": "Не удалось {action} {type}s",
             "metadataRefreshed": "Метаданные успешно обновлены",
             "metadataRefreshFailed": "Не удалось обновить метаданные: {message}",
+            "hashCalculated": "Хеш SHA256 успешно вычислен",
+            "hashCalculationFailed": "Не удалось вычислить хеш: {message}",
             "metadataUpdateComplete": "Обновление метаданных завершено",
             "operationCancelled": "Операция отменена пользователем",
             "operationCancelledPartial": "Операция отменена. Обработано {success} элементов.",

@@ -447,4 +447,3 @@ async def test_parse_metadata_resolves_urn_models_from_local_library(monkeypatch
     assert lora["weight"] == 0.8
     assert lora["localPath"] == "/models/loras/urn_local_lora.safetensors"
     assert result["base_model"] == "SDXL 1.0"
-

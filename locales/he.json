@@ -262,7 +262,8 @@
                 "title": "כותרת מתכון",
                 "loraName": "שם קובץ LoRA",
                 "loraModel": "שם מודל LoRA",
-                "prompt": "פרומפט"
+                "prompt": "פרומפט",
+                "triggerWords": "[TODO: Translate] Trigger Words"
             }
         },
         "filter": {
@@ -704,7 +705,16 @@
             "pathPlaceholder": "הזן נתיב...",
             "go": "עבור",
             "emptyFolder": "אין תתי-תיקיות",
-            "loadError": "טעינת התיקייה נכשלה"
+            "loadError": "טעינת התיקייה נכשלה",
+            "newFolder": "תיקייה חדשה",
+            "newFolderPlaceholder": "שם תיקייה",
+            "create": "צור",
+            "cancel": "ביטול",
+            "createError": "יצירת התיקייה נכשלה",
+            "nameRequired": "הזן שם תיקייה",
+            "nameInvalid": "שם התיקייה מכיל תווים לא חוקיים",
+            "alreadyExists": "תיקייה בשם זה כבר קיימת",
+            "permissionDenied": "אין הרשאה"
         },
         "pathValidation": {
             "valid": "הנתיב תקין",
@@ -749,10 +759,12 @@
                 "customTemplate": "תבנית מותאמת אישית"
             },
             "customTemplatePlaceholder": "הזן תבנית מותאמת אישית (למשל, {base_model}/{author}/{first_tag})",
+            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
-                "embedding": "Embedding"
+                "embedding": "Embedding",
+                "workflow": "[TODO: Translate] Workflow"
             },
             "baseModelPathMappings": "מיפוי נתיבי מודל בסיס",
             "baseModelPathMappingsHelp": "התאם אישית שמות תיקיות עבור מודלי בסיס ספציפיים (למשל, \"Flux.1 D\" → \"flux\")",
@@ -2069,6 +2081,8 @@
                 "sendToWorkflow": "שלח ל-ComfyUI",
                 "sendToWorkflowText": "שלח ל-ComfyUI",
                 "copyHash": "העתק hash",
+                "calculateHash": "חשב hash",
+                "retryHash": "נסה שוב",
                 "copyCivitaiId": "העתק מזהה Civitai",
                 "civitaiIdCopied": "מזהה Civitai הועתק ללוח העריכה",
                 "deleteModelWithShortcut": "מחק מודל (Del)"
@@ -2095,6 +2109,10 @@
                 "baseModel": "מודל בסיס",
                 "size": "גודל",
                 "hashes": "hashes",
+                "hashPending": "טרם חושב",
+                "hashCalculating": "מחושב...",
+                "hashFailed": "החישוב נכשל",
+                "hashPendingHint": "ה-hash של SHA256 טרם חושב. במודלים גדולים ה-hash מחושב לפי דרישה כדי לשמור על סריקה מהירה.",
                 "civitaiModelId": "מזהה מודל",
                 "civitaiVersionId": "מזהה גרסה",
                 "unknown": "לא ידוע",
@@ -3028,6 +3046,8 @@
             "refreshFailed": "{action} של {type}s נכשל",
             "metadataRefreshed": "המטא-נתונים רועננה בהצלחה",
             "metadataRefreshFailed": "רענון המטא-נתונים נכשל: {message}",
+            "hashCalculated": "ה-hash של SHA256 חושב בהצלחה",
+            "hashCalculationFailed": "חישוב ה-hash נכשל: {message}",
             "metadataUpdateComplete": "עדכון המטא-נתונים הושלם",
             "operationCancelled": "הפעולה בוטלה על ידי המשתמש",
             "operationCancelledPartial": "הפעולה בוטלה. {success} פריטים עובדו.",

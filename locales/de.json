@@ -262,7 +262,8 @@
                 "title": "Rezept-Titel",
                 "loraName": "LoRA-Dateiname",
                 "loraModel": "LoRA-Modellname",
-                "prompt": "Prompt"
+                "prompt": "Prompt",
+                "triggerWords": "[TODO: Translate] Trigger Words"
             }
         },
         "filter": {
@@ -704,7 +705,16 @@
             "pathPlaceholder": "Pfad eingeben...",
             "go": "Los",
             "emptyFolder": "Keine Unterordner",
-            "loadError": "Verzeichnis konnte nicht geladen werden"
+            "loadError": "Verzeichnis konnte nicht geladen werden",
+            "newFolder": "Neuer Ordner",
+            "newFolderPlaceholder": "Ordnername",
+            "create": "Erstellen",
+            "cancel": "Abbrechen",
+            "createError": "Ordner konnte nicht erstellt werden",
+            "nameRequired": "Geben Sie einen Ordnernamen ein",
+            "nameInvalid": "Ordnername enthält ungültige Zeichen",
+            "alreadyExists": "Ein Ordner mit diesem Namen ist bereits vorhanden",
+            "permissionDenied": "Zugriff verweigert"
         },
         "pathValidation": {
             "valid": "Pfad ist gültig",
@@ -749,10 +759,12 @@
                 "customTemplate": "Benutzerdefinierte Vorlage"
             },
             "customTemplatePlaceholder": "Benutzerdefinierte Vorlage eingeben (z.B. {base_model}/{author}/{first_tag})",
+            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
-                "embedding": "Embedding"
+                "embedding": "Embedding",
+                "workflow": "[TODO: Translate] Workflow"
             },
             "baseModelPathMappings": "Basismodell-Pfad-Zuordnungen",
             "baseModelPathMappingsHelp": "Passen Sie Ordnernamen für spezifische Basismodelle an (z.B. \"Flux.1 D\" → \"flux\")",
@@ -2069,6 +2081,8 @@
                 "sendToWorkflow": "An ComfyUI senden",
                 "sendToWorkflowText": "An ComfyUI senden",
                 "copyHash": "Hash kopieren",
+                "calculateHash": "Hash berechnen",
+                "retryHash": "Wiederholen",
                 "copyCivitaiId": "Civitai-ID kopieren",
                 "civitaiIdCopied": "Civitai-ID in die Zwischenablage kopiert",
                 "deleteModelWithShortcut": "Modell löschen (Del)"
@@ -2095,6 +2109,10 @@
                 "baseModel": "Basismodell",
                 "size": "Größe",
                 "hashes": "Hashes",
+                "hashPending": "Noch nicht berechnet",
+                "hashCalculating": "Wird berechnet...",
+                "hashFailed": "Berechnung fehlgeschlagen",
+                "hashPendingHint": "Dieser SHA256-Hash wurde noch nicht berechnet. Bei großen Modellen wird der Hash nur bei Bedarf berechnet, damit der Scan schnell bleibt.",
                 "civitaiModelId": "Modell-ID",
                 "civitaiVersionId": "Versions-ID",
                 "unknown": "Unbekannt",
@@ -3028,6 +3046,8 @@
             "refreshFailed": "Fehler beim {action} der {type}s",
             "metadataRefreshed": "Metadaten erfolgreich aktualisiert",
             "metadataRefreshFailed": "Fehler beim Aktualisieren der Metadaten: {message}",
+            "hashCalculated": "SHA256-Hash erfolgreich berechnet",
+            "hashCalculationFailed": "Fehler beim Berechnen des Hashes: {message}",
             "metadataUpdateComplete": "Metadaten-Update abgeschlossen",
             "operationCancelled": "Vorgang vom Benutzer abgebrochen",
             "operationCancelledPartial": "Vorgang abgebrochen. {success} Elemente verarbeitet.",

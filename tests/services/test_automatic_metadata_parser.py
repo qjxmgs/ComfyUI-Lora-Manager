@@ -660,4 +660,3 @@ async def test_parse_metadata_resolves_civitai_resources_from_local_library(monk
     assert parsed_lora["baseModel"] == "illustrious"
     assert parsed_lora["weight"] == 0.7
     assert result["base_model"] == "sdxl"
-
