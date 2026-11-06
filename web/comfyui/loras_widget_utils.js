@@ -850,6 +850,13 @@ export function moveLoraInArray(loras, fromIndex, toIndex) {
  * @returns {Array} - New array with LoRA moved
  */
 export function moveLoraByDirection(loras, loraName, direction) {
+  const groupId = loras.find(lora => lora.name === loraName)?.groupId;
+  if (groupId && loras.some(lora => lora.groupId !== groupId)) {
+    const members = loras.filter(lora => lora.groupId === groupId);
+    const reordered = moveLoraByDirection(members, loraName, direction);
+    let index = 0;
+    return loras.map(lora => lora.groupId === groupId ? reordered[index++] : lora);
+  }
   const currentIndex = loras.findIndex(l => l.name === loraName);
   if (currentIndex === -1) return loras;
   

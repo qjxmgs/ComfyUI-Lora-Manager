@@ -282,6 +282,13 @@ app.registerExtension({
             isSyncingInput = false;
           }
         });
+        // Group edits are one history transaction, including the text mirror.
+        this._lmFlushLoraText = () => scheduleInputSync.flush();
+        const previousConfigure = this.onConfigure;
+        this.onConfigure = function () {
+          scheduleInputSync.cancel();
+          return previousConfigure?.apply(this, arguments);
+        };
 
         // The "loras" widget is declared in INPUT_TYPES (LORAS type) and
         // created by the LoraManager.LorasWidget extension; take it over here.

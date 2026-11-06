@@ -20,9 +20,12 @@ import { updateConnectedLoraInfoNodes } from "./lora_info.js";
 import { PreviewTooltip } from "./preview_tooltip.js";
 import { ensureLmStyles } from "./lm_styles_loader.js";
 import { getStrengthStepPreference, getNodeLoraNameDisplayPreference, onNodeLoraNameDisplayChanged } from "./settings.js";
+import { createLoraGroupsController } from "./lora_groups.js";
 
 export function addLorasWidget(node, name, opts, callback) {
   ensureLmStyles();
+  let groupsController = null;
+  const grouped = node.comfyClass === 'Lora Loader (LoraManager)' || opts?.isAnimaModeNode === true;
 
   // Create container for loras — search for an empty container already
   // in the DOM first. During undo/redo in ComfyUI Vue render mode,
@@ -48,6 +51,7 @@ export function addLorasWidget(node, name, opts, callback) {
   // Containers reused from a previous mount (undo/redo) may predate the
   // theme context class, so always make sure it is present.
   container.classList.add("lm-widget-root");
+  container.classList.toggle('lm-loras-grouped', grouped);
 
   if (!reuseExisting) {
     forwardMiddleMouseToCanvas(container);
@@ -98,6 +102,7 @@ export function addLorasWidget(node, name, opts, callback) {
   };
 
   const markStrengthDragStart = () => {
+    groupsController?.beginStrengthEdit();
     strengthDragActive = true;
     previewTooltip.hide();
   };
@@ -199,17 +204,19 @@ export function addLorasWidget(node, name, opts, callback) {
   };
   
   // Add keyboard event listener to container
-  container.addEventListener('keydown', (e) => {
-    if (handleKeyboardNavigation(e, selectedLora, widget, renderLoras, selectLora)) {
+  const handleContainerKeydown = (e) => {
+    if (grouped ? groupsController?.keydown(e) : handleKeyboardNavigation(e, selectedLora, widget, renderLoras, selectLora)) {
       e.stopPropagation();
     }
-  });
+  };
+  container.addEventListener('keydown', handleContainerKeydown);
   
   // Make container focusable for keyboard events
   container.tabIndex = 0;
   
   // Function to render loras from data
   const renderLoras = (value, widget) => {
+    groupsController?.beforeRender();
     // Clear existing content
     while (container.firstChild) {
       container.removeChild(container.firstChild);
@@ -221,6 +228,10 @@ export function addLorasWidget(node, name, opts, callback) {
     const focusSequence = [];
 
     const updateWidgetValue = (newValue) => {
+      if (groupsController) {
+        groupsController.commit(newValue);
+        return;
+      }
       widget.value = newValue;
 
       if (typeof widget.callback === "function") {
@@ -271,7 +282,7 @@ export function addLorasWidget(node, name, opts, callback) {
       return loraName.replace(/"|\\/g, "\\$&");
     };
 
-    if (lorasData.length === 0) {
+    if (lorasData.length === 0 && !grouped) {
       // Show message when no loras are added
       const emptyMessage = document.createElement("div");
       emptyMessage.textContent = "No LoRAs added";
@@ -351,15 +362,15 @@ export function addLorasWidget(node, name, opts, callback) {
     dragHint.className = "lm-drag-hint";
     strengthLabel.appendChild(dragHint);
 
-    header.appendChild(toggleContainer);
-    if (animaModeContainer) {
-      header.appendChild(animaModeContainer);
+    if (groupsController) {
+      groupsController.render(animaModeContainer);
+    } else {
+      header.appendChild(toggleContainer);
+      if (animaModeContainer) header.appendChild(animaModeContainer);
+      header.appendChild(strengthLabel);
+      container.appendChild(header);
+      initHeaderDrag(header, widget, renderLoras);
     }
-    header.appendChild(strengthLabel);
-    container.appendChild(header);
-    
-    // Initialize the header drag functionality
-    initHeaderDrag(header, widget, renderLoras);
 
     // Render each lora entry
     const availableSet = getAvailableLorasSync();
@@ -376,6 +387,7 @@ export function addLorasWidget(node, name, opts, callback) {
     }
     lorasData.forEach((loraData) => {
       const { name, strength, clipStrength, active } = loraData;
+      const listContainer = groupsController?.body(loraData.groupId) || container;
       const missing = !isLoraNameAvailable(name, availableSet);
       
       // Determine expansion state using our helper function
@@ -434,11 +446,16 @@ export function addLorasWidget(node, name, opts, callback) {
         // For other nodes, show drag handle
         dragHandleOrLockButton = createDragHandle();
         // Initialize reorder drag functionality
-        initReorderDrag(dragHandleOrLockButton, name, widget, renderLoras);
+        if (groupsController) groupsController.bindDrag(dragHandleOrLockButton, name);
+        else initReorderDrag(dragHandleOrLockButton, name, widget, renderLoras);
       }
 
       // Create toggle for this lora
       const toggle = createToggle(active, (newActive) => {
+        if (groupsController) {
+          groupsController.setActive(name, newActive);
+          return;
+        }
         // Update this lora's active state
         const lorasData = parseLoraValue(widget.value);
         const loraIndex = lorasData.findIndex(l => l.name === name);
@@ -458,6 +475,20 @@ export function addLorasWidget(node, name, opts, callback) {
           updateWidgetValue(newValue);
         }
       });
+
+      if (groupsController) {
+        toggle.classList.toggle('lm-lora-radio', groupsController.isSingle(loraData.groupId));
+        toggle.setAttribute('role', 'checkbox');
+        toggle.setAttribute('aria-checked', String(!!active));
+        toggle.setAttribute('aria-label', name);
+        toggle.tabIndex = 0;
+        toggle.addEventListener('keydown', event => {
+          if (event.key === ' ' || event.key === 'Enter') {
+            event.preventDefault(); event.stopPropagation();
+            groupsController.setActive(name, !active);
+          }
+        });
+      }
 
       // Create expand button
       const expandButton = createExpandButton(isExpanded, (shouldExpand) => {
@@ -491,6 +522,22 @@ export function addLorasWidget(node, name, opts, callback) {
       const nameEl = document.createElement("div");
       nameEl.textContent = displayName;
       nameEl.className = "lm-lora-name";
+      if (groupsController) {
+        // Split the label into flexible prefix and preserved suffix. CSS
+        // truncates the prefix first, keeping training steps recognizable.
+        const file = name.replace(/\.(safetensors|ckpt|pt|bin)$/i, '');
+        const suffix = file.match(/(?:[_ -](?:step|epoch)[_ -]?\d+|[_ -]\d{3,})$/i)?.[0];
+        const label = suffix && !displayName.includes(suffix) ? `${displayName}${suffix}` : displayName.replace(/\.(safetensors|ckpt|pt|bin)$/i, '');
+        const keep = suffix || label.slice(-Math.min(12, Math.ceil(label.length / 3)));
+        const prefix = document.createElement('span');
+        prefix.className = 'lm-lora-name-prefix';
+        prefix.textContent = label.slice(0, label.length - keep.length);
+        const tail = document.createElement('span');
+        tail.className = 'lm-lora-name-suffix';
+        tail.textContent = keep;
+        nameEl.replaceChildren(prefix, tail);
+        nameEl.title = displayName === name ? name : `${displayName}\n${name}`;
+      }
       if (displayName !== name) {
         nameEl.dataset.loraFileName = name;
       }
@@ -531,7 +578,10 @@ export function addLorasWidget(node, name, opts, callback) {
       });
       
       // Initialize drag functionality for strength adjustment
-      initDrag(loraEl, name, widget, false, previewTooltip, renderLoras, {
+      if (groupsController) {
+        groupsController.bindDrag(nameEl, name);
+        nameEl.addEventListener('pointerdown', () => { clearPreviewTimer(); previewTooltip.hide(); });
+      } else initDrag(loraEl, name, widget, false, previewTooltip, renderLoras, {
         onDragStart: () => {
           clearPreviewTimer();
           markStrengthDragStart();
@@ -539,14 +589,15 @@ export function addLorasWidget(node, name, opts, callback) {
         onDragEnd: () => {
           clearPreviewTimer();
           markStrengthDragEnd();
-        }
+        },
+        onDragCommit: () => groupsController?.endStrengthEdit(),
       });
 
       // Add context menu event
       loraEl.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        createContextMenu(e.clientX, e.clientY, name, widget, previewTooltip, renderLoras);
+        createContextMenu(e.clientX, e.clientY, name, widget, previewTooltip, renderLoras, groupsController);
       });
 
       // Create strength control
@@ -658,7 +709,7 @@ export function addLorasWidget(node, name, opts, callback) {
       loraEl.appendChild(leftSection);
       loraEl.appendChild(strengthControl);
 
-      container.appendChild(loraEl);
+      listContainer.appendChild(loraEl);
 
       // If expanded, show the clip entry
       if (isExpanded) {
@@ -784,14 +835,17 @@ export function addLorasWidget(node, name, opts, callback) {
         clipEl.appendChild(clipStrengthControl);
 
         // Add drag functionality to clip entry
-        initDrag(clipEl, name, widget, true, previewTooltip, renderLoras, {
+        if (groupsController) groupsController.bindDrag(clipNameEl, name);
+        else initDrag(clipEl, name, widget, true, previewTooltip, renderLoras, {
           onDragStart: markStrengthDragStart,
-          onDragEnd: markStrengthDragEnd
+          onDragEnd: markStrengthDragEnd,
+          onDragCommit: () => groupsController?.endStrengthEdit(),
         });
 
-        container.appendChild(clipEl);
+        listContainer.appendChild(clipEl);
       }
     });
+    groupsController?.afterRender();
     
     // After all LoRA elements are created, apply selection state as the last step
     // This ensures the selection state is not overwritten
@@ -875,7 +929,7 @@ export function addLorasWidget(node, name, opts, callback) {
       const updatedValue = uniqueValue.map(lora => {
         // For new loras, default clip strength to model strength and expanded to false
         // unless clipStrength is already different from strength
-        const clipStrength = lora.clipStrength || lora.strength;
+        const clipStrength = lora.clipStrength ?? lora.strength;
         return {
           ...lora,
           clipStrength: clipStrength,
@@ -886,7 +940,7 @@ export function addLorasWidget(node, name, opts, callback) {
         };
       });
 
-      widgetValue = updatedValue;
+      widgetValue = groupsController ? groupsController.normalize(updatedValue) : updatedValue;
 
       // Restore selection state when loading a saved workflow
       if (!selectedLora) {
@@ -910,6 +964,21 @@ export function addLorasWidget(node, name, opts, callback) {
     hideInPanel: true
   });
 
+  if (grouped) {
+    groupsController = createLoraGroupsController({ node, container, widget, getSelected: () => selectedLora, select: selectLora });
+    const oldConfigure = node.onConfigure;
+    node.onConfigure = function (data) {
+      const result = oldConfigure?.apply(this, arguments);
+      groupsController.restore();
+      selectedLora = null;
+      const index = node.widgets?.indexOf(widget) ?? -1;
+      const restored = data?.widgets_values?.[index];
+      widget.value = Array.isArray(restored) ? restored : widget.value;
+      widget.callback?.(widget.value);
+      node._lmFlushLoraText?.();
+      return result;
+    };
+  }
   widget.value = defaultValue;
   
   widget.callback = callback;
@@ -940,6 +1009,7 @@ export function addLorasWidget(node, name, opts, callback) {
   });
 
   widget.onRemove = () => {
+    groupsController?.dispose();
     unsubscribeLibraryChange();
     unsubscribeNodeLabelChange();
     if (errorFlagTimer !== null) {
@@ -951,7 +1021,7 @@ export function addLorasWidget(node, name, opts, callback) {
       container.removeChild(container.firstChild);
     }
     previewTooltip.cleanup();
-    container.removeEventListener('keydown', handleKeyboardNavigation);
+    container.removeEventListener('keydown', handleContainerKeydown);
   };
 
   return { minWidth: 400, minHeight: defaultHeight, widget };

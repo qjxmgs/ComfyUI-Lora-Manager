@@ -117,7 +117,7 @@ export function initDrag(
   let initialStrength = 0;
   let currentDragElement = null;
   let hasMoved = false;
-  const { onDragStart, onDragEnd } = dragCallbacks;
+  const { onDragStart, onDragEnd, onDragCommit } = dragCallbacks;
   
   // Create a drag handler using pointer events for Vue DOM render mode compatibility
   dragEl.addEventListener('pointerdown', (e) => {
@@ -250,6 +250,7 @@ export function initDrag(
       }
     } finally {
       widget.__dragActive = false;
+      if (wasDragging) onDragCommit?.();
     }
   };
 
@@ -711,7 +712,16 @@ export function handleKeyboardNavigation(event, selectedLora, widget, renderFunc
 }
 
 // Function to create context menu
-export function createContextMenu(x, y, loraName, widget, previewTooltip, renderFunction) {
+export function createContextMenu(x, y, loraName, widget, previewTooltip, renderFunction, groups = null) {
+  if (groups) {
+    const originalWidget = widget;
+    widget = {
+      get value() { return originalWidget.value; },
+      set value(value) { groups.commit(value); },
+    };
+    // commit already renders and notifies downstream nodes.
+    renderFunction = null;
+  }
   // Hide preview tooltip first
   if (previewTooltip) {
     previewTooltip.hide();
@@ -990,6 +1000,13 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
   menu.appendChild(moveDownOption);
   menu.appendChild(moveTopOption);
   menu.appendChild(moveBottomOption);
+  if (groups) {
+    menu.appendChild(createMenuItem(groups.t('moveTo'), '↗', () => {
+      menu.remove();
+      document.removeEventListener('click', closeMenu);
+      groups.moveDialog(loraName);
+    }));
+  }
   menu.appendChild(orderSeparator);
   menu.appendChild(copyNotesOption);
   menu.appendChild(copyTriggerWordsOption);

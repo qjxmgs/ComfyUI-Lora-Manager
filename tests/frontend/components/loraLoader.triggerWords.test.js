@@ -95,6 +95,32 @@ describe("Lora Loader trigger word updates", () => {
     getWidgetSerializedValue.mockClear();
   });
 
+  it("flushes text within group transactions and cancels stale text updates on undo", async () => {
+    vi.useFakeTimers();
+    try {
+      await import(LORA_LOADER_MODULE);
+      const nodeType = { comfyClass: "Lora Loader (LoraManager)", prototype: {} };
+      await extensionState.current.beforeRegisterNodeDef(nodeType, {}, {});
+      const text = { name: "text", value: "" };
+      const loras = { name: "loras", value: [] };
+      const restored = vi.fn();
+      const node = { comfyClass: nodeType.comfyClass, widgets: [text, loras], addInput: vi.fn(), graph: {}, onConfigure: restored };
+      nodeType.prototype.onNodeCreated.call(node);
+      loras.callback([{ name: "Alpha", strength: 0.8, active: true, groupId: "group-2" }]);
+      expect(text.value).toBe("");
+      node._lmFlushLoraText();
+      expect(text.value).toBe("<lora:Alpha:0.80>");
+      loras.callback([{ name: "Beta", strength: 0.6, active: true }]);
+      text.value = "<lora:Restored:1.00>";
+      node.onConfigure({});
+      vi.advanceTimersByTime(200);
+      expect(text.value).toBe("<lora:Restored:1.00>");
+      expect(restored).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("refreshes trigger word toggles after LoRA syntax edits in the input widget", async () => {
     await import(LORA_LOADER_MODULE);
 

@@ -665,6 +665,7 @@ export function mergeLoras(lorasText, lorasArr) {
         clipStrength: lora.clipStrength !== undefined ? lora.clipStrength : parsedLoras[lora.name].clipStrength,
         selected: !!lora.selected,
         locked: lora.locked !== undefined ? lora.locked : false,
+        ...(lora.groupId !== undefined ? { groupId: lora.groupId } : {}),
       });
       usedNames.add(lora.name);
     }
