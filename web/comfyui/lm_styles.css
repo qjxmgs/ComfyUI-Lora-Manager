@@ -303,6 +303,7 @@
   pointer-events: none;
 }
 .lm-group-body .lm-lora-name { font-size: 11px; margin-left: 1px; display: flex; min-width: 0; }
+.lm-group-body .lm-lora-entry[data-active="true"] .lm-lora-name { color: var(--lm-toggle-active); }
 .lm-lora-name-prefix { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
 .lm-lora-name-suffix { flex-shrink: 0; max-width: 100%; overflow: hidden; }
 .lm-group-body .lm-lora-strength-control { gap: 1px; flex-shrink: 0; }
