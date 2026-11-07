@@ -355,7 +355,7 @@
 .lm-group-body .lm-lora-clip-entry { margin-left: 8px; padding: 3px; }
 .lm-group-body .lm-lora-name { cursor: grab; touch-action: none; }
 .lm-group-body .lm-lora-drag-handle { touch-action: none; }
-.lm-lora-group.lm-group-drop-target { outline: 2px solid var(--lm-accent); outline-offset: -2px; background: var(--lm-accent-soft); }
+.lm-lora-group.lm-group-drop-target { outline: 2px solid var(--lm-accent); outline-offset: -2px; }
 .lm-lora-group.lm-group-sort-target { outline: none; }
 .lm-group-insertion-line {
   position: fixed; height: 3px; border-radius: 2px; background: var(--lm-drop-indicator);
