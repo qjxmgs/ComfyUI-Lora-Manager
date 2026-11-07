@@ -40,6 +40,21 @@
   --lm-fg-subtle: color-mix(in srgb, var(--lm-fg) 60%, transparent);
 
   /* Group title palette */
+  --lm-group-color-rgb: linear-gradient(110deg, color-mix(in srgb, var(--lm-group-color-red) 60%, var(--lm-group-color-black)), color-mix(in srgb, var(--lm-group-color-green) 60%, var(--lm-group-color-black)), color-mix(in srgb, var(--lm-group-color-blue) 60%, var(--lm-group-color-black)));
+  --lm-group-color-gbr: linear-gradient(110deg, color-mix(in srgb, var(--lm-group-color-green) 60%, var(--lm-group-color-black)), color-mix(in srgb, var(--lm-group-color-blue) 60%, var(--lm-group-color-black)), color-mix(in srgb, var(--lm-group-color-red) 60%, var(--lm-group-color-black)));
+  --lm-group-color-brg: linear-gradient(110deg, color-mix(in srgb, var(--lm-group-color-blue) 60%, var(--lm-group-color-black)), color-mix(in srgb, var(--lm-group-color-red) 60%, var(--lm-group-color-black)), color-mix(in srgb, var(--lm-group-color-green) 60%, var(--lm-group-color-black)));
+  --lm-group-color-coral: #ff8a80;
+  --lm-group-color-peach: #ffccbc;
+  --lm-group-color-amber: #ffc107;
+  --lm-group-color-olive: #827717;
+  --lm-group-color-mint: #a5d6a7;
+  --lm-group-color-teal: #00796b;
+  --lm-group-color-sky: #81d4fa;
+  --lm-group-color-navy: #283593;
+  --lm-group-color-lavender: #ce93d8;
+  --lm-group-color-indigo: #5e35b1;
+  --lm-group-color-rose: #f48fb1;
+  --lm-group-color-slate: #546e7a;
   --lm-group-color-red: #e65353;
   --lm-group-color-orange: #ff9800;
   --lm-group-color-yellow: #ffdf40;

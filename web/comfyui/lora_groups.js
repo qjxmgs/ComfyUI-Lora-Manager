@@ -435,7 +435,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       if (group.titleColor) {
         panel.style.setProperty('--lm-group-title-bg', `var(--lm-group-color-${group.titleColor})`);
         panel.style.setProperty('--lm-group-title-selected-bg', `var(--lm-group-color-${group.titleColor})`);
-        panel.style.setProperty('--lm-group-title-fg', ['yellow', 'cyan', 'gray', 'white', 'orange'].includes(group.titleColor) ? 'var(--lm-group-color-black)' : 'var(--lm-group-color-white)');
+        panel.style.setProperty('--lm-group-title-fg', ['yellow', 'cyan', 'gray', 'white', 'orange', 'coral', 'peach', 'amber', 'mint', 'sky', 'lavender', 'rose'].includes(group.titleColor) ? 'var(--lm-group-color-black)' : 'var(--lm-group-color-white)');
       }
       panel.dataset.target = String(group.id === activeGroupId);
       const header = element('header', 'lm-group-header');

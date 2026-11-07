@@ -4,6 +4,21 @@ import { lmUrl } from './base_path.js';
 
 // Keep the synchronous widget factory usable before locale requests finish.
 export const GROUP_MESSAGES = {
+  color_rgb: "RGB gradient",
+  color_gbr: "GBR gradient",
+  color_brg: "BRG gradient",
+  color_coral: "Coral",
+  color_peach: "Peach",
+  color_amber: "Amber",
+  color_olive: "Olive",
+  color_mint: "Mint",
+  color_teal: "Teal",
+  color_sky: "Sky blue",
+  color_navy: "Navy blue",
+  color_lavender: "Lavender",
+  color_indigo: "Indigo",
+  color_rose: "Rose",
+  color_slate: "Slate",
   titleColor: "Color",
   defaultColor: "Default color",
   color_red: "Red",

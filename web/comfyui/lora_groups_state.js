@@ -2,7 +2,7 @@
 export const GROUPS_PROPERTY = 'lmLoraGroups';
 export const GROUP_MIN_WIDTH = 200;
 export const GROUP_MIN_HEIGHT = 120;
-export const GROUP_COLORS = ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'pink', 'brown', 'gray', 'white', 'black'];
+export const GROUP_COLORS = ['red', 'coral', 'orange', 'peach', 'amber', 'yellow', 'olive', 'green', 'mint', 'teal', 'cyan', 'sky', 'blue', 'navy', 'indigo', 'purple', 'lavender', 'pink', 'rose', 'brown', 'slate', 'gray', 'white', 'black', 'rgb', 'gbr', 'brg'];
 export const SORT_FIELDS = ['addedOrder', 'active', 'strength', 'name'];
 
 export function normalizeSortRules(rules) {

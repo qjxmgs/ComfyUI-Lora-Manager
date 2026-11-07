@@ -73,7 +73,11 @@ describe('grouped LoRA Loader interactions', () => {
     const open = () => panels(node)[0].querySelector('.lm-group-title-slot').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 20, clientY: 20 }));
     const before = JSON.stringify(node.widget.value);
     open();
-    expect(document.querySelectorAll('.lm-group-color-swatch')).toHaveLength(13);
+    expect(document.querySelectorAll('.lm-group-color-swatch')).toHaveLength(28);
+    for (const color of ['coral', 'peach', 'amber', 'olive', 'mint', 'teal', 'sky', 'navy', 'lavender', 'indigo', 'rose', 'slate', 'rgb', 'gbr', 'brg']) {
+      expect(document.querySelector(`[data-color="${color}"]`)).not.toBeNull();
+      expect(normalizeGroupConfig({ groups: [{ titleColor: color }] }).groups[0].titleColor).toBe(color);
+    }
     document.querySelector('[data-color="red"]').click();
     expect(node.properties.lmLoraGroups.groups[0].titleColor).toBe('red');
     expect(JSON.stringify(node.widget.value)).toBe(before);
