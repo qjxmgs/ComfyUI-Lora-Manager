@@ -4,6 +4,20 @@ import { lmUrl } from './base_path.js';
 
 // Keep the synchronous widget factory usable before locale requests finish.
 export const GROUP_MESSAGES = {
+  titleColor: "Color",
+  defaultColor: "Default color",
+  color_red: "Red",
+  color_orange: "Orange",
+  color_yellow: "Yellow",
+  color_green: "Green",
+  color_cyan: "Cyan",
+  color_blue: "Blue",
+  color_purple: "Purple",
+  color_pink: "Pink",
+  color_brown: "Brown",
+  color_gray: "Gray",
+  color_white: "White",
+  color_black: "Black",
   sort: "Sort",
   sortRules: "Sort rules",
   sortHelp: "Compare rules in priority order. Sorting runs only when you apply it.",

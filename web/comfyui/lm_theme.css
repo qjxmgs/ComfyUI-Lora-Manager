@@ -39,6 +39,20 @@
   --lm-fg-muted: var(--descrip-text, #999);
   --lm-fg-subtle: color-mix(in srgb, var(--lm-fg) 60%, transparent);
 
+  /* Group title palette */
+  --lm-group-color-red: #e65353;
+  --lm-group-color-orange: #ff9800;
+  --lm-group-color-yellow: #ffdf40;
+  --lm-group-color-green: #439b49;
+  --lm-group-color-cyan: #2bbdca;
+  --lm-group-color-blue: #3797dd;
+  --lm-group-color-purple: #a64cc5;
+  --lm-group-color-pink: #d93987;
+  --lm-group-color-brown: #986147;
+  --lm-group-color-gray: #b4bec2;
+  --lm-group-color-white: #f5f5f5;
+  --lm-group-color-black: #242424;
+
   /* Brand accent */
   --lm-accent: #4299e1;
   --lm-drop-indicator: #22c55e;

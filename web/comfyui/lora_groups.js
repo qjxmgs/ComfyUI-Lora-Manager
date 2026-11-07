@@ -5,7 +5,7 @@ import { openGroupSort } from './lora_groups_sort.js';
 import { getStrengthStepPreference } from './settings.js';
 import { applyStrengthRangeCue, getLoraStrengthRange } from './loras_widget_utils.js';
 import {
-  GROUPS_PROPERTY, GROUP_MIN_WIDTH, GROUP_MIN_HEIGHT, normalizeGroupConfig,
+  GROUP_COLORS, GROUPS_PROPERTY, GROUP_MIN_WIDTH, GROUP_MIN_HEIGHT, normalizeGroupConfig,
   normalizeGroupedEntries, changeGroupMode, setGroupedActive, moveGroupedEntry, moveGroupedEntries,
   previewGroupResize, resolveGroupResize,
   assignAddedOrders, sortGroupEntries,
@@ -145,6 +145,52 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
     document.body.append(backdrop);
     queueMicrotask(() => { if (backdrop.isConnected) dialog.querySelector('input,select,button')?.focus(); });
     return { content, footer, close, alive: () => backdrop.isConnected };
+  }
+
+  function chooseTitleColor(group, anchor, event) {
+    closeOverlay?.();
+    setTarget(group.id);
+    const menu = element('div', 'lm-popover lm-group-colors');
+    menu.setAttribute('role', 'dialog');
+    menu.setAttribute('aria-label', t('titleColor'));
+    menu.append(element('div', 'lm-group-colors-label', t('titleColor')));
+    const palette = element('div', 'lm-group-color-grid');
+    const close = () => {
+      menu.remove();
+      document.removeEventListener('pointerdown', outside, true);
+      document.removeEventListener('keydown', keydown, true);
+    };
+    const outside = e => { if (!menu.contains(e.target)) close(); };
+    const keydown = e => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); anchor.querySelector('.lm-group-title')?.focus(); }
+    };
+    for (const color of [null, ...GROUP_COLORS]) {
+      const label = t(color ? `color_${color}` : 'defaultColor');
+      const swatch = button(color ? '' : '∕', () => {
+        const next = config();
+        const target = next.groups.find(item => item.id === group.id);
+        close();
+        if (target.titleColor === color) return;
+        target.titleColor = color;
+        commit(getEntries(), next);
+      }, label);
+      swatch.className = 'lm-group-color-swatch';
+      swatch.dataset.color = color || 'default';
+      swatch.setAttribute('aria-pressed', String(group.titleColor === color));
+      if (color) swatch.style.background = `var(--lm-group-color-${color})`;
+      palette.append(swatch);
+    }
+    menu.append(palette);
+    menu.addEventListener('pointerdown', e => e.stopPropagation());
+    menu.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); });
+    document.body.append(menu);
+    const rect = menu.getBoundingClientRect();
+    menu.style.left = `${Math.max(4, Math.min(event.clientX, window.innerWidth - rect.width - 4))}px`;
+    menu.style.top = `${Math.max(4, Math.min(event.clientY, window.innerHeight - rect.height - 4))}px`;
+    document.addEventListener('pointerdown', outside, true);
+    document.addEventListener('keydown', keydown, true);
+    closeOverlay = close;
+    palette.querySelector('[aria-pressed="true"]')?.focus();
   }
 
   function rename(group, title) {
@@ -386,6 +432,11 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
     for (const group of state.groups) {
       const panel = element('section', 'lm-lora-group');
       panel.dataset.groupId = group.id;
+      if (group.titleColor) {
+        panel.style.setProperty('--lm-group-title-bg', `var(--lm-group-color-${group.titleColor})`);
+        panel.style.setProperty('--lm-group-title-selected-bg', `var(--lm-group-color-${group.titleColor})`);
+        panel.style.setProperty('--lm-group-title-fg', ['yellow', 'cyan', 'gray', 'white', 'orange'].includes(group.titleColor) ? 'var(--lm-group-color-black)' : 'var(--lm-group-color-white)');
+      }
       panel.dataset.target = String(group.id === activeGroupId);
       const header = element('header', 'lm-group-header');
       header.title = t('target');
@@ -394,6 +445,10 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       header.addEventListener('focusin', () => setTarget(group.id));
       bindDrag(header, group.title, group.id);
       const titleSlot = element('div', 'lm-group-title-slot');
+      titleSlot.addEventListener('contextmenu', event => {
+        if (event.target.closest('input')) return;
+        event.preventDefault(); event.stopPropagation(); chooseTitleColor(group, titleSlot, event);
+      });
       const title = element('span', 'lm-group-title', group.title);
       title.title = group.title;
       title.tabIndex = 0;

@@ -2,6 +2,7 @@
 export const GROUPS_PROPERTY = 'lmLoraGroups';
 export const GROUP_MIN_WIDTH = 200;
 export const GROUP_MIN_HEIGHT = 120;
+export const GROUP_COLORS = ['red', 'orange', 'yellow', 'green', 'cyan', 'blue', 'purple', 'pink', 'brown', 'gray', 'white', 'black'];
 export const SORT_FIELDS = ['addedOrder', 'active', 'strength', 'name'];
 
 export function normalizeSortRules(rules) {
@@ -83,6 +84,7 @@ export function normalizeGroupConfig(value, defaultTitle = 'Default group') {
         ? source.title.trim() : index === 0 ? defaultTitle : `Group ${index + 1}`,
       mode: source?.mode === 'single' ? 'single' : 'multi',
       sortRules: normalizeSortRules(source?.sortRules),
+      titleColor: GROUP_COLORS.includes(source?.titleColor) ? source.titleColor : null,
     };
   });
   return { version: 2, rows, columns, groups, nextAddedOrder: Number.isSafeInteger(value?.nextAddedOrder) && value.nextAddedOrder >= 0 ? value.nextAddedOrder : 0 };

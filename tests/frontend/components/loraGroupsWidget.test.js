@@ -68,6 +68,31 @@ afterEach(() => {
 });
 
 describe('grouped LoRA Loader interactions', () => {
+  it('sets, persists and resets title colors without changing LoRAs, and dismisses the palette', async () => {
+    const node = await mount([value('A')]);
+    const open = () => panels(node)[0].querySelector('.lm-group-title-slot').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 20, clientY: 20 }));
+    const before = JSON.stringify(node.widget.value);
+    open();
+    expect(document.querySelectorAll('.lm-group-color-swatch')).toHaveLength(13);
+    document.querySelector('[data-color="red"]').click();
+    expect(node.properties.lmLoraGroups.groups[0].titleColor).toBe('red');
+    expect(JSON.stringify(node.widget.value)).toBe(before);
+    expect(node.history.at(-1).properties.lmLoraGroups.groups[0].titleColor).toBeNull();
+    expect(normalizeGroupConfig(JSON.parse(JSON.stringify(node.properties.lmLoraGroups))).groups[0].titleColor).toBe('red');
+    expect(panels(node)[0].style.getPropertyValue('--lm-group-title-bg')).toBe('var(--lm-group-color-red)');
+    open();
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(document.querySelector('.lm-group-colors')).toBeNull();
+    open();
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(document.querySelector('.lm-group-colors')).toBeNull();
+    open();
+    document.querySelector('[data-color="default"]').click();
+    expect(node.properties.lmLoraGroups.groups[0].titleColor).toBeNull();
+    expect(panels(node)[0].style.getPropertyValue('--lm-group-title-bg')).toBe('');
+    expect(normalizeGroupConfig({ groups: [{ titleColor: 'invalid' }] }).groups[0].titleColor).toBeNull();
+  });
+
   it('targets the first group by default and routes appended LoRAs to a group selected through empty space', async () => {
     const node = await mount([value('A'), value('B', 'group-2')], normalizeGroupConfig({ rows: 1, columns: 2 }));
     node.widget.value = mergeLoras('<lora:A:0.8> <lora:B:0.8> <lora:C:0.5>', node.widget.value);
