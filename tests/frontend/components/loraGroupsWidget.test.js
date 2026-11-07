@@ -68,6 +68,20 @@ afterEach(() => {
 });
 
 describe('grouped LoRA Loader interactions', () => {
+  it('targets the first group by default and routes appended LoRAs to a group selected through empty space', async () => {
+    const node = await mount([value('A'), value('B', 'group-2')], normalizeGroupConfig({ rows: 1, columns: 2 }));
+    node.widget.value = mergeLoras('<lora:A:0.8> <lora:B:0.8> <lora:C:0.5>', node.widget.value);
+    expect(node.widget.value.find(item => item.name === 'C').groupId).toBe('group-1');
+    panels(node)[1].querySelector('.lm-group-body').click();
+    expect(panels(node).map(panel => panel.dataset.target)).toEqual(['false', 'true']);
+    node.widget.value = mergeLoras('<lora:A:0.8> <lora:B:0.8> <lora:C:0.5> <lora:D:0.3>', node.widget.value);
+    expect(node.widget.value.find(item => item.name === 'D')).toMatchObject({ groupId: 'group-2', strength: .3 });
+    expect(node.widget.value.find(item => item.name === 'A').groupId).toBe('group-1');
+    expect(panels(node)[1].dataset.target).toBe('true');
+    panels(node)[0].click();
+    expect(panels(node).map(panel => panel.dataset.target)).toEqual(['true', 'false']);
+  });
+
   it('deletes the selected batch across groups through the context menu in one undoable operation', async () => {
     const node = await mount([value('A'), value('B'), value('C', 'group-2')], normalizeGroupConfig({ rows: 1, columns: 2 }));
     row(node, 'A').querySelector('.lm-lora-name').click();

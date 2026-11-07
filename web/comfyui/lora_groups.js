@@ -445,6 +445,9 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       const body = element('div', 'lm-group-body');
       body.dataset.groupId = group.id;
       body.tabIndex = 0;
+      panel.addEventListener('click', event => {
+        if (event.button === 0 && (event.target === panel || event.target === body)) setTarget(group.id);
+      });
       panel.append(header, body); grid.append(panel); bodies.set(group.id, body);
     }
     container.append(toolbar, grid);
