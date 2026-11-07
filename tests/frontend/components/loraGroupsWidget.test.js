@@ -162,12 +162,20 @@ describe('grouped LoRA Loader interactions', () => {
     expect(node.widget.value.filter(entry => entry.active).map(entry => entry.name)).toEqual(['C']);
     expect(node.properties.lmLoraGroups.groups[0].enabled).toBe(false);
     expect(node.properties.lmLoraGroups.groups[0].pausedActive).toEqual(['A']);
+    expect(row(node, 'A').querySelector('.lm-lora-toggle').getAttribute('aria-checked')).toBe('true');
+    expect(row(node, 'A').querySelector('.lm-lora-toggle').getAttribute('aria-disabled')).toBe('true');
+    expect(row(node, 'A').querySelector('.lm-lora-toggle').classList.contains('lm-lora-toggle--active')).toBe(true);
+    expect(row(node, 'B').querySelector('.lm-lora-toggle').getAttribute('aria-checked')).toBe('false');
+    row(node, 'A').querySelector('.lm-lora-toggle').click();
+    expect(node.properties.lmLoraGroups.groups[0].pausedActive).toEqual(['A']);
+
     expect(panels(node)[0].querySelector('.lm-group-body').inert).toBe(true);
     expect(panels(node)[0].querySelector('.lm-group-power').getAttribute('aria-checked')).toBe('false');
     expect(node.history.at(-1).properties.lmLoraGroups.groups[0].enabled).toBe(true);
     const saved = JSON.parse(JSON.stringify(node.properties.lmLoraGroups));
     const restored = await mount(JSON.parse(JSON.stringify(node.widget.value)), saved);
     expect(restored.widget.value.filter(entry => entry.active).map(entry => entry.name)).toEqual(['C']);
+    expect(row(restored, 'A').querySelector('.lm-lora-toggle').getAttribute('aria-checked')).toBe('true');
     restored.widget.value = [...restored.widget.value, value('D')];
     expect(restored.widget.value.find(entry => entry.name === 'D').active).toBe(false);
     panels(restored)[0].querySelector('.lm-group-power').click();

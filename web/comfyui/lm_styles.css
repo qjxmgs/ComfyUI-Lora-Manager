@@ -1323,3 +1323,8 @@ body.lm-lora-reordering * {
 .lm-node-settings-help { margin: 0; padding-left: 24px; font-size: 12px; line-height: 1.6; color: var(--lm-fg-muted); overflow-wrap: anywhere; }
 
 .lm-active-count-number { color: var(--lm-toggle-active); font-weight: 700; }
+
+.lm-lora-group[data-enabled="false"] .lm-lora-toggle {
+  --lm-toggle-active: var(--lm-fg-muted);
+  --lm-toggle-active-soft: color-mix(in srgb, var(--lm-fg-muted) 18%, var(--lm-surface));
+}

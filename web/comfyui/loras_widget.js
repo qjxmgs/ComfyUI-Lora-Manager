@@ -463,8 +463,12 @@ export function addLorasWidget(node, name, opts, callback) {
         initReorderDrag(dragHandleOrLockButton, name, widget, renderLoras);
       }
 
-      // Create toggle for this lora
-      const toggle = createToggle(active, (newActive) => {
+      // Remembered checks remain visible while the group is paused; active stays false for execution.
+      const toggleGroup = groupsController?.config().groups.find(group => group.id === loraData.groupId);
+      const groupPaused = toggleGroup?.enabled === false;
+      const checked = groupPaused ? toggleGroup.pausedActive.includes(name) : active;
+      const toggle = createToggle(checked, (newActive) => {
+        if (groupPaused) return;
         if (groupsController) {
           groupsController.setActive(name, newActive);
           return;
@@ -492,10 +496,12 @@ export function addLorasWidget(node, name, opts, callback) {
       if (groupsController) {
         toggle.classList.toggle('lm-lora-radio', groupsController.isSingle(loraData.groupId));
         toggle.setAttribute('role', 'checkbox');
-        toggle.setAttribute('aria-checked', String(!!active));
+        toggle.setAttribute('aria-checked', String(!!checked));
+        toggle.setAttribute('aria-disabled', String(groupPaused));
         toggle.setAttribute('aria-label', name);
-        toggle.tabIndex = 0;
+        toggle.tabIndex = groupPaused ? -1 : 0;
         toggle.addEventListener('keydown', event => {
+          if (groupPaused) return;
           if (event.key === ' ' || event.key === 'Enter') {
             event.preventDefault(); event.stopPropagation();
             groupsController.setActive(name, !active);
