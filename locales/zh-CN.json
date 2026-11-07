@@ -1,5 +1,10 @@
 {
     "loraGroups": {
+        "nodeSettings": "节点设置",
+        "activeCount": "已激活：{count} 个",
+        "noActive": "暂无已激活的 LoRA",
+        "animaMode": "Anima 2.9B 模式",
+        "animaHelp": "通过内存重映射，在 40 层 Anima 2.9B 模型上加载旧版 28 层 Anima LoRA。",
         "enableGroup": "开启分组",
         "disableGroup": "关闭分组",
         "color_rgb": "红绿蓝渐变",

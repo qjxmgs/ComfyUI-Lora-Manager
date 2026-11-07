@@ -34,6 +34,9 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
   let activeGroupId = null;
   let removed = false;
   let closeOverlay = null;
+  let closeStats = null;
+  let statsButton = null;
+  let statsPopup = null;
   let cancelDrag = null;
   let previousEntries = [];
   let strengthHistoryOpen = false;
@@ -401,6 +404,98 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
     return true;
   }
 
+  function activeEntries(entries = getEntries()) {
+    const state = config();
+    return state.groups.flatMap(group => group.enabled
+      ? entries.filter(entry => entry.groupId === group.id && entry.active) : []);
+  }
+
+  function updateStats(entries = getEntries()) {
+    const active = activeEntries(entries);
+    if (statsButton) statsButton.textContent = t('activeCount', { count: active.length });
+    if (!statsPopup) return;
+    statsPopup.replaceChildren();
+    if (!active.length) statsPopup.append(element('div', '', t('noActive')));
+    for (const entry of active) {
+      const row = element('div', 'lm-active-summary-row');
+      row.append(element('span', 'lm-active-summary-name', entry.name));
+      const model = Number(entry.strength);
+      const clip = Number(entry.clipStrength ?? entry.strength);
+      row.append(element('span', '', `${t('strength')}: ${model}${clip !== model ? ` · CLIP: ${clip}` : ''}`));
+      statsPopup.append(row);
+    }
+  }
+
+  function bindStats(anchor) {
+    let timer;
+    const hide = () => {
+      clearTimeout(timer);
+      statsPopup?.remove(); statsPopup = null;
+      anchor.removeAttribute('aria-describedby');
+      document.removeEventListener('keydown', keydown, true);
+      window.removeEventListener('resize', hide);
+    };
+    const scheduleHide = () => { clearTimeout(timer); timer = setTimeout(hide, 180); };
+    const keydown = event => {
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); hide(); }
+    };
+    const show = () => {
+      clearTimeout(timer);
+      if (statsPopup) return;
+      statsPopup = element('div', 'lm-popover lm-active-summary');
+      statsPopup.id = `lm-active-summary-${node.id ?? 'node'}`;
+      statsPopup.setAttribute('role', 'tooltip');
+      statsPopup.tabIndex = 0;
+      anchor.setAttribute('aria-describedby', statsPopup.id);
+      statsPopup.addEventListener('pointerenter', () => clearTimeout(timer));
+      statsPopup.addEventListener('pointerleave', scheduleHide);
+      statsPopup.addEventListener('focusin', () => clearTimeout(timer));
+      statsPopup.addEventListener('focusout', scheduleHide);
+      statsPopup.addEventListener('wheel', event => event.stopPropagation(), { passive: true });
+      document.body.append(statsPopup);
+      updateStats();
+      const rect = anchor.getBoundingClientRect();
+      const bounds = statsPopup.getBoundingClientRect();
+      statsPopup.style.left = `${Math.max(8, Math.min(rect.right - bounds.width, window.innerWidth - bounds.width - 8))}px`;
+      statsPopup.style.top = `${Math.max(8, Math.min(rect.bottom + 6, window.innerHeight - bounds.height - 8))}px`;
+      document.addEventListener('keydown', keydown, true);
+      window.addEventListener('resize', hide);
+    };
+    anchor.addEventListener('pointerenter', show);
+    anchor.addEventListener('pointerleave', scheduleHide);
+    anchor.addEventListener('focus', show);
+    anchor.addEventListener('blur', scheduleHide);
+    closeStats = hide;
+  }
+
+  function openSettings() {
+    closeStats?.();
+    const backing = node._animaModeWidget || node.widgets?.find(item => item.name === 'anima_mode');
+    const view = modal(t('nodeSettings'));
+    const label = element('label', 'lm-group-field');
+    const input = element('input'); input.type = 'checkbox';
+    input.checked = backing?.value === true || backing?.value === 'true';
+    input.disabled = !backing;
+    label.append(input, document.createTextNode(t('animaMode')));
+    view.content.append(label, element('p', '', t('animaHelp')));
+    view.footer.append(button(t('apply'), () => {
+      const value = input.checked;
+      view.close();
+      if (!backing || value === (backing.value === true || backing.value === 'true')) return;
+      app.canvas?.emitBeforeChange?.(); node.graph?.beforeChange?.(node);
+      try {
+        backing.value = value;
+        node.properties ||= {}; node.properties.anima_mode = value;
+        backing.callback?.(value);
+        widget.value = widget.value;
+        node.graph?.incrementVersion?.();
+      } finally {
+        node.graph?.afterChange?.(node); app.canvas?.emitAfterChange?.();
+      }
+      node.graph?.change?.(); node.graph?.setDirtyCanvas?.(true, true);
+    }));
+  }
+
   function render(animaControl) {
     const state = config();
     node.properties ||= {};
@@ -425,7 +520,19 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
     };
     toolbar.append(button(t('apply'), apply));
     toolbar.addEventListener('keydown', event => { if (event.key === 'Enter') apply(); });
-    if (animaControl) toolbar.append(animaControl);
+    closeStats?.();
+    const status = element('div', 'lm-groups-status');
+    statsButton = button('', () => {}, '');
+    statsButton.className = 'lm-active-count';
+    statsButton.removeAttribute('title'); statsButton.removeAttribute('aria-label');
+    bindStats(statsButton); updateStats();
+    status.append(statsButton);
+    if (animaControl) {
+      const settings = button('⚙', openSettings, t('nodeSettings'));
+      settings.classList.add('lm-node-settings');
+      status.append(settings);
+    }
+    toolbar.append(status);
     const grid = element('div', 'lm-groups-grid');
     grid.style.gridTemplateColumns = `repeat(${state.columns}, minmax(0, 1fr))`;
     grid.style.gridTemplateRows = `repeat(${state.rows}, minmax(0, 1fr))`;
@@ -834,6 +941,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       node.properties[GROUPS_PROPERTY] = state;
       const normalized = normalizeGroupedEntries(assigned.entries, state, previousEntries, activeGroupId);
       previousEntries = normalized.map(entry => ({ ...entry }));
+      updateStats(normalized);
       return normalized;
     },
     restore() { previousEntries = []; activeGroupId = null; selectionAnchor = null; pendingDefaultTitles.clear(); scrollPositions.clear(); bodies.clear(); closeOverlay?.(); },
@@ -847,6 +955,6 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
         body.scrollTop = scrollPositions.get(id) || 0;
       });
     },
-    dispose() { removed = true; cancelDrag?.(); clearTimeout(clickTimer); container.removeEventListener('click', blockDragClick, true); closeOverlay?.(); window.removeEventListener('wheel', wheel, true); },
+    dispose() { closeStats?.(); removed = true; cancelDrag?.(); clearTimeout(clickTimer); container.removeEventListener('click', blockDragClick, true); closeOverlay?.(); window.removeEventListener('wheel', wheel, true); },
   };
 }

@@ -68,6 +68,46 @@ afterEach(() => {
 });
 
 describe('grouped LoRA Loader interactions', () => {
+  it('counts active local entries and shows full names and model/CLIP strengths', async () => {
+    const node = await mount([{ ...value('long/full-name'), strength: 0, clipStrength: -0.5 }, value('off', 'group-1', false), value('second', 'group-2')], normalizeGroupConfig({ rows: 1, columns: 2 }));
+    const count = () => node.container.querySelector('.lm-active-count');
+    expect(count().textContent).toBe('Active: 2');
+    count().dispatchEvent(new Event('pointerenter'));
+    expect(document.querySelector('.lm-active-summary').textContent).toContain('long/full-name');
+    expect(document.querySelector('.lm-active-summary').textContent).toContain('0 · CLIP: -0.5');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(document.querySelector('.lm-active-summary')).toBeNull();
+    panels(node)[1].querySelector('.lm-group-power').click();
+    expect(count().textContent).toBe('Active: 1');
+    panels(node)[0].querySelector('.lm-group-power').click();
+    expect(count().textContent).toBe('Active: 0');
+    count().focus();
+    expect(document.querySelector('.lm-active-summary').textContent).toBe('No active LoRAs');
+  });
+
+  it('keeps settings edits as a draft until applied, with one undo snapshot', async () => {
+    const node = await mount();
+    const backing = { name: 'anima_mode', value: false, callback: vi.fn() };
+    node.widgets.push(backing);
+    node.container.querySelector('.lm-node-settings').click();
+    document.querySelector('.lm-groups-dialog input').click();
+    expect(backing.value).toBe(false);
+    click(document.querySelector('.lm-groups-dialog'), 'Cancel');
+    expect(backing.callback).not.toHaveBeenCalled();
+    node.container.querySelector('.lm-node-settings').click();
+    expect(document.querySelector('.lm-groups-dialog input').checked).toBe(false);
+    document.querySelector('.lm-groups-dialog input').click();
+    click(document.querySelector('.lm-groups-dialog'), 'Apply');
+    expect(backing.value).toBe(true);
+    expect(backing.callback).toHaveBeenCalledWith(true);
+    expect(node.history).toHaveLength(1);
+    expect(node.history[0].widgets_values.at(-1)).toBe(false);
+    node.container.querySelector('.lm-node-settings').click();
+    expect(document.querySelector('.lm-groups-dialog input').checked).toBe(true);
+    document.querySelector('.lm-groups-dialog input').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(document.querySelector('.lm-groups-dialog')).toBeNull();
+  });
+
   it('pauses a whole group and restores its choices after saving and reloading', async () => {
     const node = await mount([value('A'), value('B', 'group-1', false), value('C', 'group-2')], normalizeGroupConfig({ rows: 1, columns: 2 }));
     const power = panels(node)[0].querySelector('.lm-group-power');

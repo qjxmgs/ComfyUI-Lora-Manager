@@ -1,5 +1,10 @@
 {
     "loraGroups": {
+        "nodeSettings": "[TODO: Translate] Node settings",
+        "activeCount": "[TODO: Translate] Active: {count}",
+        "noActive": "[TODO: Translate] No active LoRAs",
+        "animaMode": "[TODO: Translate] Anima 2.9B mode",
+        "animaHelp": "[TODO: Translate] Load older 28-layer Anima LoRAs into the 40-layer Anima 2.9B model using in-memory remapping.",
         "enableGroup": "[TODO: Translate] Enable group",
         "disableGroup": "[TODO: Translate] Disable group",
         "color_rgb": "[TODO: Translate] RGB gradient",

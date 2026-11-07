@@ -103,11 +103,13 @@ describe("Lora widget Anima mode control", () => {
     const loaderResult = customWidgets.LORAS(loaderNode);
     loaderResult.widget.value = [{ name: "demo", strength: 1, active: true }];
 
-    const animaContainer = loaderResult.widget.element.querySelector(".lm-anima-mode-container");
-    expect(animaContainer).not.toBeNull();
-    expect(animaContainer.textContent).toContain("Anima 2.9B 模式");
-
-    animaContainer.querySelector(".lm-lora-toggle").click();
+    expect(loaderResult.widget.element.querySelector('.lm-anima-mode-container')).toBeNull();
+    loaderResult.widget.element.querySelector('.lm-node-settings').click();
+    const dialog = document.querySelector('.lm-groups-dialog');
+    const checkbox = dialog.querySelector('input[type="checkbox"]');
+    checkbox.click();
+    expect(loaderNode.widgets[0].value).toBe(false);
+    [...dialog.querySelectorAll('button')].find(button => button.textContent === 'Apply').click();
     expect(loaderNode.widgets[0].value).toBe(true);
     expect(loaderNode.properties.anima_mode).toBe(true);
     expect(loaderNode.graph.setDirtyCanvas).toHaveBeenCalledWith(true, true);

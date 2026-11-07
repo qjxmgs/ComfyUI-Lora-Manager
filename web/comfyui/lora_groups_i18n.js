@@ -4,6 +4,11 @@ import { lmUrl } from './base_path.js';
 
 // Keep the synchronous widget factory usable before locale requests finish.
 export const GROUP_MESSAGES = {
+  "nodeSettings": "Node settings",
+  "activeCount": "Active: {count}",
+  "noActive": "No active LoRAs",
+  "animaMode": "Anima 2.9B mode",
+  "animaHelp": "Load older 28-layer Anima LoRAs into the 40-layer Anima 2.9B model using in-memory remapping.",
   enableGroup: "Enable group",
   disableGroup: "Disable group",
   color_rgb: "RGB gradient",
