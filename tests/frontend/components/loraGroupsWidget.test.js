@@ -686,6 +686,7 @@ describe('grouped LoRA Loader interactions', () => {
     const name = 'long-training-project/stocking_v1.2_step1800.safetensors';
     const node = await mount([value(name)]);
     expect(row(node, name).querySelector('.lm-lora-name-suffix').textContent).toBe('_step1800');
-    expect(row(node, name).querySelector('.lm-lora-name').title).toBe(name);
+    expect(row(node, name).querySelector('.lm-lora-name').hasAttribute('title')).toBe(false);
+    expect(row(node, name).querySelector('.lm-lora-name').getAttribute('aria-label')).toBe(name);
   });
 });

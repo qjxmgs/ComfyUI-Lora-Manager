@@ -538,7 +538,7 @@ export function addLorasWidget(node, name, opts, callback) {
         tail.className = 'lm-lora-name-suffix';
         tail.textContent = keep;
         nameEl.replaceChildren(prefix, tail);
-        nameEl.title = displayName === name ? name : `${displayName}\n${name}`;
+        nameEl.setAttribute('aria-label', displayName === name ? name : `${displayName}\n${name}`);
       }
       if (displayName !== name) {
         nameEl.dataset.loraFileName = name;
