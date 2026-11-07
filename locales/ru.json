@@ -1,5 +1,7 @@
 {
     "loraGroups": {
+        "enableGroup": "[TODO: Translate] Enable group",
+        "disableGroup": "[TODO: Translate] Disable group",
         "color_rgb": "[TODO: Translate] RGB gradient",
         "color_gbr": "[TODO: Translate] GBR gradient",
         "color_brg": "[TODO: Translate] BRG gradient",

@@ -85,6 +85,8 @@ export function normalizeGroupConfig(value, defaultTitle = 'Default group') {
       mode: source?.mode === 'single' ? 'single' : 'multi',
       sortRules: normalizeSortRules(source?.sortRules),
       titleColor: GROUP_COLORS.includes(source?.titleColor) ? source.titleColor : null,
+      enabled: source?.enabled !== false,
+      pausedActive: Array.isArray(source?.pausedActive) ? [...new Set(source.pausedActive.filter(name => typeof name === 'string'))] : [],
     };
   });
   return { version: 2, rows, columns, groups, nextAddedOrder: Number.isSafeInteger(value?.nextAddedOrder) && value.nextAddedOrder >= 0 ? value.nextAddedOrder : 0 };
@@ -105,6 +107,12 @@ export function normalizeGroupedEntries(entries, config, previous = [], targetId
   }
   return config.groups.flatMap(group => {
     const members = [...unique.values()].filter(entry => entry.groupId === group.id);
+    if (group.enabled === false) {
+      const remembered = new Set(group.pausedActive);
+      members.filter(entry => entry.active).forEach(entry => remembered.add(entry.name));
+      group.pausedActive = members.filter(entry => remembered.has(entry.name)).map(entry => entry.name);
+      return members.map(entry => ({ ...entry, active: false }));
+    }
     if (group.mode === 'single') {
       const winner = members.find(entry => entry.active && old.get(entry.name)?.active
         && old.get(entry.name)?.groupId === group.id) || members.find(entry => entry.active);
@@ -177,4 +185,17 @@ export function resolveGroupResize(preview, winners = {}) {
     entries: normalizeGroupedEntries(preview.entries.map(entry => conflicting.has(entry.groupId)
       ? { ...entry, active: entry.name === winners[entry.groupId] } : entry), preview.config),
   };
+}
+
+// Pause execution without losing the group's local activation choices.
+export function setGroupEnabled(config, entries, groupId, enabled) {
+  const next = normalizeGroupConfig(config);
+  const group = next.groups.find(item => item.id === groupId);
+  if (!group || group.enabled === enabled) return { config: next, entries };
+  group.enabled = enabled;
+  const remembered = new Set(group.pausedActive);
+  if (!enabled) group.pausedActive = entries.filter(entry => entry.groupId === groupId && entry.active).map(entry => entry.name);
+  const values = entries.map(entry => entry.groupId === groupId ? { ...entry, active: enabled && remembered.has(entry.name) } : entry);
+  if (enabled) group.pausedActive = [];
+  return { config: next, entries: normalizeGroupedEntries(values, next, entries) };
 }

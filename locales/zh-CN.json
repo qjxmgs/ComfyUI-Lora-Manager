@@ -1,5 +1,7 @@
 {
     "loraGroups": {
+        "enableGroup": "开启分组",
+        "disableGroup": "关闭分组",
         "color_rgb": "红绿蓝渐变",
         "color_gbr": "绿蓝红渐变",
         "color_brg": "蓝红绿渐变",

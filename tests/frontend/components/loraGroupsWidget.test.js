@@ -68,6 +68,27 @@ afterEach(() => {
 });
 
 describe('grouped LoRA Loader interactions', () => {
+  it('pauses a whole group and restores its choices after saving and reloading', async () => {
+    const node = await mount([value('A'), value('B', 'group-1', false), value('C', 'group-2')], normalizeGroupConfig({ rows: 1, columns: 2 }));
+    const power = panels(node)[0].querySelector('.lm-group-power');
+    expect(power.style.getPropertyValue('--lm-group-power-icon')).toBe(`url("${new URL('../../../web/comfyui/assets/on-off.png', import.meta.url).href}")`);
+    power.click();
+    expect(node.widget.value.filter(entry => entry.active).map(entry => entry.name)).toEqual(['C']);
+    expect(node.properties.lmLoraGroups.groups[0].enabled).toBe(false);
+    expect(node.properties.lmLoraGroups.groups[0].pausedActive).toEqual(['A']);
+    expect(panels(node)[0].querySelector('.lm-group-body').inert).toBe(true);
+    expect(panels(node)[0].querySelector('.lm-group-power').getAttribute('aria-checked')).toBe('false');
+    expect(node.history.at(-1).properties.lmLoraGroups.groups[0].enabled).toBe(true);
+    const saved = JSON.parse(JSON.stringify(node.properties.lmLoraGroups));
+    const restored = await mount(JSON.parse(JSON.stringify(node.widget.value)), saved);
+    expect(restored.widget.value.filter(entry => entry.active).map(entry => entry.name)).toEqual(['C']);
+    restored.widget.value = [...restored.widget.value, value('D')];
+    expect(restored.widget.value.find(entry => entry.name === 'D').active).toBe(false);
+    panels(restored)[0].querySelector('.lm-group-power').click();
+    expect(restored.widget.value.filter(entry => entry.active).map(entry => entry.name)).toEqual(['A', 'D', 'C']);
+    expect(panels(restored)[0].querySelector('.lm-group-body').inert).toBe(false);
+  });
+
   it('sets, persists and resets title colors without changing LoRAs, and dismisses the palette', async () => {
     const node = await mount([value('A')]);
     const open = () => panels(node)[0].querySelector('.lm-group-title-slot').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 20, clientY: 20 }));

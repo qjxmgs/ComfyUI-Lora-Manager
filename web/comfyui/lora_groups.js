@@ -8,7 +8,7 @@ import {
   GROUP_COLORS, GROUPS_PROPERTY, GROUP_MIN_WIDTH, GROUP_MIN_HEIGHT, normalizeGroupConfig,
   normalizeGroupedEntries, changeGroupMode, setGroupedActive, moveGroupedEntry, moveGroupedEntries,
   previewGroupResize, resolveGroupResize,
-  assignAddedOrders, sortGroupEntries,
+  assignAddedOrders, sortGroupEntries, setGroupEnabled,
 } from './lora_groups_state.js';
 
 function element(tag, className, text) {
@@ -432,6 +432,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
     for (const group of state.groups) {
       const panel = element('section', 'lm-lora-group');
       panel.dataset.groupId = group.id;
+      panel.dataset.enabled = String(group.enabled);
       if (group.titleColor) {
         panel.style.setProperty('--lm-group-title-bg', `var(--lm-group-color-${group.titleColor})`);
         panel.style.setProperty('--lm-group-title-selected-bg', `var(--lm-group-color-${group.titleColor})`);
@@ -462,6 +463,18 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
         }
       });
       titleSlot.append(title);
+      const power = button('', () => {
+        const next = setGroupEnabled(config(), getEntries(), group.id, !group.enabled);
+        commit(next.entries, next.config);
+      }, t(group.enabled ? 'disableGroup' : 'enableGroup'));
+      power.className = 'lm-group-power';
+      // Shared CSS is injected into the page, so resolve assets against this module.
+      power.style.setProperty('--lm-group-power-icon', `url("${new URL('./assets/on-off.png', import.meta.url).href}")`);
+      power.setAttribute('role', 'switch');
+      power.setAttribute('aria-checked', String(group.enabled));
+      power.addEventListener('pointerdown', event => event.stopPropagation());
+      power.addEventListener('contextmenu', event => { event.preventDefault(); event.stopPropagation(); });
+      titleSlot.append(power);
       const controls = element('div', 'lm-group-actions');
       const modeSwitch = element('div', 'lm-group-mode-switch');
       modeSwitch.setAttribute('role', 'group');
@@ -478,6 +491,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
         toggle.setAttribute('aria-pressed', String(group.mode === mode));
         modeSwitch.append(toggle);
       }
+      controls.inert = !group.enabled;
       controls.append(modeSwitch);
       controls.append(button('+', () => addLoras(group.id), t('add')), button('⋯', () => groupActions(group), t('menu')));
       const sort = button('⇅', () => {
@@ -499,6 +513,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       header.append(titleSlot, controls);
       const body = element('div', 'lm-group-body');
       body.dataset.groupId = group.id;
+      body.inert = !group.enabled;
       body.tabIndex = 0;
       panel.addEventListener('click', event => {
         if (event.button === 0 && (event.target === panel || event.target === body)) setTarget(group.id);

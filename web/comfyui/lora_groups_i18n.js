@@ -4,6 +4,8 @@ import { lmUrl } from './base_path.js';
 
 // Keep the synchronous widget factory usable before locale requests finish.
 export const GROUP_MESSAGES = {
+  enableGroup: "Enable group",
+  disableGroup: "Disable group",
   color_rgb: "RGB gradient",
   color_gbr: "GBR gradient",
   color_brg: "BRG gradient",
