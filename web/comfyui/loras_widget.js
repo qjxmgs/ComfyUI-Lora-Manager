@@ -428,6 +428,17 @@ export function addLorasWidget(node, name, opts, callback) {
         container.focus();
       });
 
+      if (groupsController) {
+        loraEl.addEventListener('dblclick', event => {
+          if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey ||
+              event.target.closest('button,input,select,textarea,a,.lm-lora-toggle,.lm-lora-arrow')) return;
+          event.preventDefault(); event.stopPropagation();
+          const entry = widget.value.find(item => item.name === name);
+          const group = groupsController.config().groups.find(item => item.id === entry?.groupId);
+          if (entry && group?.enabled) groupsController.setActive(name, !entry.active);
+        });
+      }
+
       // Conditionally create drag handle OR lock button
       let dragHandleOrLockButton;
 

@@ -1299,8 +1299,9 @@ body.lm-lora-reordering * {
 .lm-active-count:focus-visible { outline: 1px solid var(--lm-accent); }
 .lm-node-settings { font-size: 16px; line-height: 18px; }
 .lm-active-summary {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 6px;
   position: fixed; z-index: 100010; box-sizing: border-box;
-  width: 350px; max-width: calc(100vw - 16px); max-height: min(360px, calc(100vh - 16px));
+  width: max-content; max-width: min(520px, calc(100vw - 16px)); max-height: min(360px, calc(100vh - 16px));
   overflow: auto; overscroll-behavior: contain; padding: 12px;
   border: 1px solid color-mix(in srgb, var(--lm-accent) 22%, var(--lm-border-soft));
   border-radius: 12px;
@@ -1309,11 +1310,11 @@ body.lm-lora-reordering * {
   color: var(--lm-fg); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--lm-fg) 8%, transparent), var(--lm-shadow-lg);
   font: 12px/1.5 "Segoe UI", sans-serif;
 }
-.lm-active-summary-heading { margin-bottom: 8px; font-weight: 600; font-size: 11px; color: var(--lm-fg-muted); }
-.lm-active-summary-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 3px 0; }
+.lm-active-summary-heading { grid-column: 1 / -1; margin-bottom: 8px; font-weight: 600; font-size: 11px; color: var(--lm-fg-muted); }
+.lm-active-summary-row { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; gap: 6px; padding: 3px 0; }
 .lm-active-summary-name { min-width: 0; overflow-wrap: anywhere; font-weight: 400; }
-.lm-active-summary-weights { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
-.lm-active-summary-weight { white-space: nowrap; padding: 1px 8px; border: 1px solid var(--lm-accent-border); border-radius: 5px; color: var(--lm-accent-text); background: var(--lm-accent-soft); font-size: 11px; }
+.lm-active-summary-weights { display: flex; flex-direction: column; align-items: stretch; gap: 3px; }
+.lm-active-summary-weight { text-align: center; white-space: nowrap; padding: 1px 8px; border: 1px solid var(--lm-accent-border); border-radius: 5px; color: var(--lm-accent-text); background: var(--lm-accent-soft); font-size: 11px; }
 
 
 .lm-node-settings-dialog { box-sizing: border-box; width: min(420px, calc(100vw - 32px)); }

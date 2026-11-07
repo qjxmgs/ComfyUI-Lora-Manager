@@ -68,6 +68,26 @@ afterEach(() => {
 });
 
 describe('grouped LoRA Loader interactions', () => {
+  it('toggles enabled state on row double click, preserving single-group exclusivity', async () => {
+    const config = normalizeGroupConfig({ groups: [{ id: 'group-1', mode: 'single' }] });
+    const node = await mount([value('A'), value('B', 'group-1', false)], config);
+    const doubleClick = target => target.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true, button: 0 }));
+    doubleClick(row(node, 'B').querySelector('.lm-lora-name'));
+    expect(node.widget.value.map(entry => entry.active)).toEqual([false, true]);
+    expect(node.history).toHaveLength(1);
+    doubleClick(row(node, 'B').querySelector('.lm-lora-strength-input'));
+    expect(node.history).toHaveLength(1);
+    doubleClick(row(node, 'B'));
+    expect(node.widget.value.every(entry => !entry.active)).toBe(true);
+    expect(node.history).toHaveLength(2);
+    panels(node)[0].querySelector('.lm-group-power').click();
+    doubleClick(row(node, 'A'));
+    expect(node.widget.value.every(entry => !entry.active)).toBe(true);
+    const multi = await mount([value('A'), value('B', 'group-1', false)]);
+    doubleClick(row(multi, 'B').querySelector('.lm-lora-name'));
+    expect(multi.widget.value.every(entry => entry.active)).toBe(true);
+  });
+
   it('settles captured name clicks before bubbling and applies modified selection only once', async () => {
     const node = await mount([value('A'), value('B')]);
     const a = row(node, 'A'); const b = row(node, 'B');
