@@ -74,6 +74,8 @@
         "enableAll": "全部启用",
         "strength": "模型权重",
         "clip": "CLIP 权重",
+        "allWeights": "[TODO: Translate] Set all LoRA weights",
+        "mixedWeights": "[TODO: Translate] Mixed",
         "cancel": "取消",
         "confirm": "确认",
         "search": "搜索文件名或模型名称",

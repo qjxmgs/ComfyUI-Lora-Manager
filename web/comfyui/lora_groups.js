@@ -595,11 +595,11 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       power.setAttribute('aria-checked', String(group.enabled));
       power.addEventListener('pointerdown', event => event.stopPropagation());
       power.addEventListener('contextmenu', event => { event.preventDefault(); event.stopPropagation(); });
-      titleSlot.append(power);
       const controls = element('div', 'lm-group-actions');
       const modeSwitch = element('div', 'lm-group-mode-switch');
       modeSwitch.setAttribute('role', 'group');
       modeSwitch.setAttribute('aria-label', `${t('single')} / ${t('multi')}`);
+      modeSwitch.inert = !group.enabled;
       for (const mode of ['single', 'multi']) {
         const toggle = button(t(mode), () => {
           const old = getEntries();
@@ -612,9 +612,8 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
         toggle.setAttribute('aria-pressed', String(group.mode === mode));
         modeSwitch.append(toggle);
       }
+      titleSlot.append(modeSwitch, power);
       controls.inert = !group.enabled;
-      controls.append(modeSwitch);
-      controls.append(button('+', () => addLoras(group.id), t('add')), button('⋯', () => groupActions(group), t('menu')));
       const sort = button('⇅', () => {
         closeOverlay?.();
         closeOverlay = openGroupSort({ anchor: sort, rules: config().groups.find(item => item.id === group.id).sortRules, t,
@@ -630,7 +629,51 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       }, t('sort'));
       sort.classList.add('lm-group-sort-button');
       sort.append(element('span', 'lm-group-sort-label', t('sort')));
-      controls.append(sort);
+      controls.append(sort, button('+', () => addLoras(group.id), t('add')), button('⋯', () => groupActions(group), t('menu')));
+      const members = getEntries().filter(entry => entry.groupId === group.id);
+      const strengths = members.map(entry => Number(entry.strength));
+      const uniform = strengths.length > 0 && strengths.every(value => Number.isFinite(value) && value === strengths[0]);
+      const initialStrength = uniform ? strengths[0].toFixed(2) : '';
+      const bulkStrength = element('input', 'lm-group-bulk-strength-input');
+      bulkStrength.type = 'text';
+      bulkStrength.inputMode = 'decimal';
+      bulkStrength.value = initialStrength;
+      bulkStrength.placeholder = members.length ? t('mixedWeights') : '—';
+      bulkStrength.setAttribute('aria-label', t('allWeights'));
+      bulkStrength.title = t('allWeights');
+      bulkStrength.addEventListener('focus', () => bulkStrength.select());
+      bulkStrength.addEventListener('pointerdown', event => event.stopPropagation());
+      bulkStrength.addEventListener('keydown', event => {
+        event.stopPropagation();
+        if (!event.isComposing && event.key === 'Enter') {
+          event.preventDefault();
+          bulkStrength.blur();
+        }
+      });
+      bulkStrength.addEventListener('blur', () => {
+        const raw = bulkStrength.value.trim();
+        if (bulkStrength.value === initialStrength || !members.length
+          || !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(raw)) {
+          bulkStrength.value = initialStrength;
+          return;
+        }
+        const value = Number(raw);
+        if (!Number.isFinite(value) || value < -10 || value > 10) {
+          bulkStrength.value = initialStrength;
+          return;
+        }
+        const normalized = value.toFixed(2);
+        const entries = getEntries();
+        const changed = entries.some(entry => entry.groupId === group.id
+          && (Number(entry.strength) !== value || Number(entry.clipStrength ?? entry.strength) !== value));
+        if (!changed) {
+          bulkStrength.value = initialStrength;
+          return;
+        }
+        commit(entries.map(entry => entry.groupId === group.id
+          ? { ...entry, strength: normalized, clipStrength: normalized } : entry));
+      });
+      controls.append(bulkStrength);
       header.append(titleSlot, controls);
       const body = element('div', 'lm-group-body');
       body.dataset.groupId = group.id;

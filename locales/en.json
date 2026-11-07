@@ -74,6 +74,8 @@
     "enableAll": "Enable all",
     "strength": "Model strength",
     "clip": "CLIP strength",
+    "allWeights": "Set all LoRA weights",
+    "mixedWeights": "Mixed",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "search": "Search filename or model name",

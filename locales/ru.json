@@ -74,6 +74,8 @@
         "enableAll": "[TODO: Translate] Enable all",
         "strength": "[TODO: Translate] Model strength",
         "clip": "[TODO: Translate] CLIP strength",
+        "allWeights": "[TODO: Translate] Set all LoRA weights",
+        "mixedWeights": "[TODO: Translate] Mixed",
         "cancel": "[TODO: Translate] Cancel",
         "confirm": "[TODO: Translate] Confirm",
         "search": "[TODO: Translate] Search filename or model name",

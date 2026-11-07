@@ -782,6 +782,72 @@ describe('grouped LoRA Loader interactions', () => {
     expect(node.widget.value.map(item => item.active)).toEqual([false, true]);
   });
 
+  it('places the mode capsule in the title and sort and weight controls in the action row', async () => {
+    const node = await mount([value('A')]);
+    const panel = panels(node)[0];
+    const title = panel.querySelector('.lm-group-title-slot');
+    const actions = panel.querySelector('.lm-group-actions');
+    const modes = title.querySelector('.lm-group-mode-switch');
+    expect(modes).not.toBeNull();
+    expect(title.querySelector('.lm-group-power')).not.toBeNull();
+    expect([...modes.querySelectorAll('button')].map(button => button.getAttribute('aria-pressed'))).toEqual(['false', 'true']);
+    expect(actions.firstElementChild.classList.contains('lm-group-sort-button')).toBe(true);
+    expect(actions.lastElementChild.classList.contains('lm-group-bulk-strength-input')).toBe(true);
+    expect([...actions.querySelectorAll('button')].map(button => button.textContent)).toEqual(['⇅Sort', '+', '⋯']);
+    modes.querySelector('button').click();
+    expect(panels(node)[0].querySelector('.lm-group-mode-switch button').getAttribute('aria-pressed')).toBe('true');
+    expect(panels(node)[0].querySelector('.lm-group-actions').firstElementChild.classList.contains('lm-group-sort-button')).toBe(true);
+  });
+
+  it('applies a changed group weight on blur to both strengths, including inactive and expanded LoRAs', async () => {
+    const node = await mount([
+      { ...value('A'), strength: .4, clipStrength: .1, expanded: true },
+      { ...value('B', 'group-1', false), strength: .8, clipStrength: .2 },
+      { ...value('C', 'group-2'), strength: .9, clipStrength: .3 },
+    ], normalizeGroupConfig({ rows: 1, columns: 2 }));
+    const first = panels(node)[0].querySelector('.lm-group-bulk-strength-input');
+    expect(first.value).toBe('');
+    expect(first.placeholder).toBe('Mixed');
+    expect(first.getAttribute('aria-label')).toBe('Set all LoRA weights');
+    first.focus(); first.value = '0.65';
+    expect(node.widget.value.map(entry => entry.strength)).toEqual([.4, .8, .9]);
+    expect(node.history).toHaveLength(0);
+    first.blur();
+    expect(node.widget.value.map(entry => [entry.strength, entry.clipStrength])).toEqual([
+      ['0.65', '0.65'], ['0.65', '0.65'], [.9, .3],
+    ]);
+    expect(node.widget.value.map(entry => entry.active)).toEqual([true, false, true]);
+    expect(node.widget.value[0].expanded).toBe(true);
+    expect(panels(node)[0].querySelector('.lm-group-bulk-strength-input').value).toBe('0.65');
+    expect(node.history).toHaveLength(1);
+    const saved = snapshot(node);
+    const restored = await mount();
+    restored.properties = structuredClone(saved.properties); restored.onConfigure(saved);
+    expect(restored.widget.value.map(entry => [entry.strength, entry.clipStrength])).toEqual([
+      ['0.65', '0.65'], ['0.65', '0.65'], [.9, .3],
+    ]);
+    expect(panels(restored)[0].querySelector('.lm-group-bulk-strength-input').value).toBe('0.65');
+  });
+
+  it('shows a common Model weight even if CLIP differs, and rejects empty, unchanged or invalid edits', async () => {
+    const node = await mount([
+      { ...value('A'), strength: .8, clipStrength: .1, expanded: true },
+      { ...value('B'), strength: '0.80', clipStrength: .3 },
+    ], normalizeGroupConfig({ rows: 1, columns: 2 }));
+    const input = () => panels(node)[0].querySelector('.lm-group-bulk-strength-input');
+    expect(input().value).toBe('0.80');
+    expect(panels(node)[1].querySelector('.lm-group-bulk-strength-input').value).toBe('');
+    expect(panels(node)[1].querySelector('.lm-group-bulk-strength-input').placeholder).toBe('—');
+    const initial = snapshot(node);
+    for (const text of ['0.80', '', 'bad', '0.7extra', '11', '-10.01']) {
+      const field = input();
+      field.focus(); field.value = text; field.blur();
+      expect(input().value).toBe('0.80');
+      expect(snapshot(node)).toEqual(initial);
+      expect(node.history).toHaveLength(0);
+    }
+  });
+
   it('edits only clicked title text inline and handles Escape, empty names and IME confirmation', async () => {
     const node = await mount();
     const saved = snapshot(node);
