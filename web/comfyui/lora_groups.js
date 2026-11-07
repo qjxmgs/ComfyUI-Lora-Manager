@@ -42,6 +42,8 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
   let strengthHistoryOpen = false;
   let selectionAnchor = null;
   let suppressClick = false;
+  let lastNameClick = null;
+  let handledDoubleClick = null;
   let clickTimer = null;
   const scrollPositions = new Map();
   const bodies = new Map();
@@ -765,6 +767,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       if (dragging || clickSelection) { event?.stopPropagation(); event?.preventDefault(); }
       const target = destination;
       const didDrag = dragging;
+      if (didDrag || !accept) lastNameClick = null;
       if (didDrag || clickSelection) {
         suppressClick = true;
         clearTimeout(clickTimer);
@@ -786,6 +789,17 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       if (clickSelection) {
         selectItem(name, modifiers);
         container.focus({ preventScroll: true });
+        const now = performance.now();
+        const plain = !modifiers.ctrlKey && !modifiers.metaKey && !modifiers.shiftKey;
+        const twice = plain && lastNameClick?.name === name && now - lastNameClick.time <= 500
+          && Math.hypot(modifiers.x - lastNameClick.x, modifiers.y - lastNameClick.y) <= 6;
+        lastNameClick = plain && !twice ? { name, time: now, x: modifiers.x, y: modifiers.y } : null;
+        if (twice) {
+          handledDoubleClick = { name, time: now };
+          const entry = getEntries().find(item => item.name === name);
+          const group = config().groups.find(item => item.id === entry?.groupId);
+          if (entry && group?.enabled) commit(setGroupedActive(getEntries(), config(), name, !entry.active));
+        }
       } else if (accept && didDrag && target && groupId) {
         const next = config();
         const from = next.groups.findIndex(group => group.id === groupId);
@@ -937,6 +951,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
 
   return {
     commit, config, render, bindDrag, keydown, moveDialog, selectItem, t,
+    handledNameDoubleClick(name) { return handledDoubleClick?.name === name && performance.now() - handledDoubleClick.time < 750; },
     beginStrengthEdit() {
       if (strengthHistoryOpen) return;
       strengthHistoryOpen = true;

@@ -217,7 +217,9 @@ export function addLorasWidget(node, name, opts, callback) {
   container.tabIndex = 0;
   
   // Function to render loras from data
+  let renderedGroupConfig = null;
   const renderLoras = (value, widget) => {
+    renderedGroupConfig = JSON.stringify(node.properties?.lmLoraGroups);
     groupsController?.beforeRender();
     // Clear existing content
     while (container.firstChild) {
@@ -433,6 +435,7 @@ export function addLorasWidget(node, name, opts, callback) {
           if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey ||
               event.target.closest('button,input,select,textarea,a,.lm-lora-toggle,.lm-lora-arrow')) return;
           event.preventDefault(); event.stopPropagation();
+          if (groupsController.handledNameDoubleClick(name)) return;
           const entry = widget.value.find(item => item.name === name);
           const group = groupsController.config().groups.find(item => item.id === entry?.groupId);
           if (entry && group?.enabled) groupsController.setActive(name, !entry.active);
@@ -470,7 +473,8 @@ export function addLorasWidget(node, name, opts, callback) {
       const toggle = createToggle(checked, (newActive) => {
         if (groupPaused) return;
         if (groupsController) {
-          groupsController.setActive(name, newActive);
+          const current = widget.value.find(entry => entry.name === name);
+          if (current) groupsController.setActive(name, !current.active);
           return;
         }
         // Update this lora's active state
@@ -504,7 +508,8 @@ export function addLorasWidget(node, name, opts, callback) {
           if (groupPaused) return;
           if (event.key === ' ' || event.key === 'Enter') {
             event.preventDefault(); event.stopPropagation();
-            groupsController.setActive(name, !active);
+            const current = widget.value.find(entry => entry.name === name);
+            if (current) groupsController.setActive(name, !current.active);
           }
         });
       }
@@ -959,7 +964,16 @@ export function addLorasWidget(node, name, opts, callback) {
         };
       });
 
+      const previousValue = widgetValue;
       widgetValue = groupsController ? groupsController.normalize(updatedValue) : updatedValue;
+      const withoutActivation = entry => {
+        const { active, selected, ...rest } = entry;
+        return JSON.stringify(rest);
+      };
+      const activationOnly = groupsController && previousValue.length === widgetValue.length
+        && previousValue.some((entry, index) => entry.active !== widgetValue[index].active)
+        && renderedGroupConfig === JSON.stringify(node.properties?.lmLoraGroups)
+        && previousValue.every((entry, index) => withoutActivation(entry) === withoutActivation(widgetValue[index]));
       if (grouped) {
         const existing = new Set(widgetValue.map(entry => entry.name));
         selectedNames = new Set([...selectedNames].filter(name => existing.has(name)));
@@ -978,7 +992,26 @@ export function addLorasWidget(node, name, opts, callback) {
 
       // Skip DOM re-render during drag to preserve pointer capture and event listeners.
       // The strength inputs are updated directly via the pointermove handler instead.
-      if (!widget.__dragActive) {
+      if (!widget.__dragActive && activationOnly) {
+        // Keep rows mounted so selection, hover and focus do not flash on activation changes.
+        currentLorasData = widgetValue;
+        const entries = new Map(widgetValue.map(entry => [entry.name, entry]));
+        container.querySelectorAll('.lm-lora-entry, .lm-lora-clip-entry').forEach(row => {
+          const entry = entries.get(row.dataset.loraName);
+          if (!entry) return;
+          row.dataset.active = String(!!entry.active);
+          const toggle = row.querySelector('.lm-lora-toggle');
+          if (toggle) {
+            const group = groupsController.config().groups.find(group => group.id === entry.groupId);
+            const checked = group?.enabled === false ? group.pausedActive.includes(entry.name) : entry.active;
+            toggle.classList.toggle('lm-lora-toggle--active', !!checked);
+            toggle.setAttribute('aria-checked', String(!!checked));
+          }
+        });
+        const available = getAvailableLorasSync();
+        if (available) updateNodeErrorFlag(widgetValue.some(entry => entry.active && !isLoraNameAvailable(entry.name, available)));
+        if (selectedLora) emitSelectionChange(buildSelectionPayload(selectedLora));
+      } else if (!widget.__dragActive) {
         renderLoras(widgetValue, widget);
       }
     },

@@ -68,6 +68,44 @@ afterEach(() => {
 });
 
 describe('grouped LoRA Loader interactions', () => {
+  it('keeps selected rows and toggles mounted across repeated activation changes', async () => {
+    const node = await mount([value('A'), value('B', 'group-2', false), value('C', 'group-2')], normalizeGroupConfig({ columns: 2, groups: [{ id: 'group-1' }, { id: 'group-2', mode: 'single' }] }));
+    const a = row(node, 'A'); a.querySelector('.lm-lora-name').click();
+    const b = row(node, 'B'); const toggle = b.querySelector('.lm-lora-toggle');
+    toggle.click();
+    expect(row(node, 'A')).toBe(a); expect(row(node, 'B')).toBe(b);
+    expect(a.dataset.selected).toBe('true');
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
+    expect(row(node, 'C').querySelector('.lm-lora-toggle').getAttribute('aria-checked')).toBe('false');
+    toggle.click();
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+    toggle.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    expect(toggle.getAttribute('aria-checked')).toBe('true');
+    expect(row(node, 'A')).toBe(a);
+    expect(node.history).toHaveLength(3);
+  });
+
+  it('recognizes a real captured pointer double click even without a native dblclick', async () => {
+    const node = await mount([value('A', 'group-1', false)]);
+    const tap = () => {
+      const name = row(node, 'A').querySelector('.lm-lora-name');
+      for (const type of ['pointerdown', 'pointerup', 'click']) {
+        const event = new MouseEvent(type, { bubbles: true, cancelable: true, button: 0, clientX: 10, clientY: 10 });
+        Object.defineProperty(event, 'pointerId', { value: 1 }); name.dispatchEvent(event);
+      }
+    };
+    tap();
+    expect(node.widget.value[0].active).toBe(false);
+    tap();
+    expect(node.widget.value[0].active).toBe(true);
+    expect(node.history).toHaveLength(1);
+    row(node, 'A').querySelector('.lm-lora-name').dispatchEvent(new MouseEvent('dblclick', { bubbles: true, button: 0 }));
+    expect(node.widget.value[0].active).toBe(true);
+    expect(node.history).toHaveLength(1);
+    tap(); tap();
+    expect(node.widget.value[0].active).toBe(false);
+  });
+
   it('toggles enabled state on row double click, preserving single-group exclusivity', async () => {
     const config = normalizeGroupConfig({ groups: [{ id: 'group-1', mode: 'single' }] });
     const node = await mount([value('A'), value('B', 'group-1', false)], config);
