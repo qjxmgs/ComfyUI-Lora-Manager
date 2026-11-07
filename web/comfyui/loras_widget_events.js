@@ -775,14 +775,18 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
   );
 
   // Delete option with trash icon
+  const entriesAtOpen = parseLoraValue(widget.value);
+  const deleteNames = new Set(groups && entriesAtOpen.some(entry => entry.name === loraName && entry.selected)
+    ? entriesAtOpen.filter(entry => entry.selected).map(entry => entry.name)
+    : [loraName]);
   const deleteOption = createMenuItem(
-    'Delete', 
+    deleteNames.size > 1 ? `Delete (${deleteNames.size})` : 'Delete',
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>',
     () => {
       menu.remove();
       document.removeEventListener('click', closeMenu);
       
-      const lorasData = parseLoraValue(widget.value).filter(l => l.name !== loraName);
+      const lorasData = parseLoraValue(widget.value).filter(l => !deleteNames.has(l.name));
       widget.value = formatLoraValue(lorasData);
 
       if (widget.callback) {

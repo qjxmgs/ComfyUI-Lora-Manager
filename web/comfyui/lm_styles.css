@@ -286,6 +286,22 @@
   transform: none;
 }
 .lm-group-body .lm-lora-radio { border-radius: 50%; }
+.lm-group-body .lm-lora-toggle { position: relative; }
+.lm-group-body .lm-lora-toggle--active {
+  border-color: var(--lm-toggle-active);
+  background-color: var(--lm-toggle-active-soft);
+}
+.lm-group-body .lm-lora-toggle--active::after {
+  content: "";
+  position: absolute;
+  box-sizing: border-box;
+  width: 5px; height: 9px;
+  left: 50%; top: 50%;
+  border: solid var(--lm-toggle-active);
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -60%) rotate(45deg);
+  pointer-events: none;
+}
 .lm-group-body .lm-lora-name { font-size: 11px; margin-left: 1px; display: flex; min-width: 0; }
 .lm-lora-name-prefix { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; min-width: 0; }
 .lm-lora-name-suffix { flex-shrink: 0; max-width: 100%; overflow: hidden; }

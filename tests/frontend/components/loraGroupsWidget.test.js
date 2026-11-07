@@ -68,6 +68,42 @@ afterEach(() => {
 });
 
 describe('grouped LoRA Loader interactions', () => {
+  it('deletes the selected batch across groups through the context menu in one undoable operation', async () => {
+    const node = await mount([value('A'), value('B'), value('C', 'group-2')], normalizeGroupConfig({ rows: 1, columns: 2 }));
+    row(node, 'A').querySelector('.lm-lora-name').click();
+    row(node, 'C').querySelector('.lm-lora-name').dispatchEvent(new MouseEvent('click', { ctrlKey: true, bubbles: true }));
+    const saved = snapshot(node);
+    row(node, 'A').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
+    [...document.querySelectorAll('.lm-lora-menu-item')].find(item => item.textContent === 'Delete (2)').click();
+    expect(node.widget.value.map(item => item.name)).toEqual(['B']);
+    expect(node.history).toHaveLength(1);
+    node.properties = structuredClone(saved.properties); node.onConfigure(saved);
+    expect(snapshot(node)).toEqual(saved);
+    row(node, 'B').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
+    [...document.querySelectorAll('.lm-lora-menu-item')].find(item => item.textContent === 'Delete').click();
+    expect(node.widget.value.map(item => item.name)).toEqual(['A', 'C']);
+    expect(node.widget.value.every(item => item.selected)).toBe(true);
+  });
+
+  it('adjusts only the hovered focused weight by the configured step and keeps focus and scroll position', async () => {
+    const node = await mount([value('A'), { ...value('B'), expanded: true }]);
+    const body = panels(node)[0].querySelector('.lm-group-body'); body.scrollTop = 25;
+    const input = row(node, 'A').querySelector('.lm-lora-strength-input'); input.focus();
+    const wheel = (target, deltaY, ctrlKey = false) => target.dispatchEvent(new WheelEvent('wheel', { deltaY, ctrlKey, bubbles: true, cancelable: true }));
+    wheel(input, -100); wheel(input, -100);
+    expect(Number(node.widget.value[0].strength)).toBe(.9);
+    expect(Number(node.widget.value[0].clipStrength)).toBe(.9);
+    expect(document.activeElement).toBe(input); expect(input.isConnected).toBe(true);
+    expect(body.scrollTop).toBe(25);
+    wheel(input, 100); expect(Number(node.widget.value[0].strength)).toBe(.85);
+    wheel(input, -100, true); expect(Number(node.widget.value[0].strength)).toBe(.85);
+    const clip = node.container.querySelector('.lm-lora-clip-strength-input'); clip.focus();
+    wheel(clip, 100); expect(Number(node.widget.value[1].clipStrength)).toBe(-.05);
+    expect(Number(node.widget.value[1].strength)).toBe(.8);
+    wheel(input, 100); expect(Number(node.widget.value[0].strength)).toBe(.85);
+    expect(body.scrollTop).toBe(125);
+  });
+
   it.each([0.5, 1, 2])('centers the item marker between rows including expanded CLIP at scale %s', async scale => {
     const node = await mount([{ ...value('A'), expanded: true }, value('B'), value('C')]);
     const body = panels(node)[0].querySelector('.lm-group-body');

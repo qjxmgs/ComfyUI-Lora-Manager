@@ -42,6 +42,8 @@
   /* Brand accent */
   --lm-accent: #4299e1;
   --lm-drop-indicator: #22c55e;
+  --lm-toggle-active: #22c55e;
+  --lm-toggle-active-soft: color-mix(in srgb, var(--lm-toggle-active) 18%, var(--lm-surface));
   --lm-accent-text: color-mix(in oklab, var(--lm-accent) 60%, var(--lm-fg));
   --lm-accent-soft: color-mix(in srgb, var(--lm-accent) 18%, transparent);
   --lm-accent-track: color-mix(in srgb, var(--lm-accent) 15%, transparent);

@@ -2,6 +2,8 @@ import { app } from '../../scripts/app.js';
 import { api } from '../../scripts/api.js';
 import { GROUP_MESSAGES, loadGroupMessages } from './lora_groups_i18n.js';
 import { openGroupSort } from './lora_groups_sort.js';
+import { getStrengthStepPreference } from './settings.js';
+import { applyStrengthRangeCue, getLoraStrengthRange } from './loras_widget_utils.js';
 import {
   GROUPS_PROPERTY, GROUP_MIN_WIDTH, GROUP_MIN_HEIGHT, normalizeGroupConfig,
   normalizeGroupedEntries, changeGroupMode, setGroupedActive, moveGroupedEntry, moveGroupedEntries,
@@ -692,6 +694,29 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
     if (event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
     const body = event.target.closest?.('.lm-group-body');
     if (!body || !container.contains(body)) return;
+    const input = event.target.closest?.('.lm-lora-strength-input');
+    if (input && document.activeElement === input && event.deltaY !== 0) {
+      event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation();
+      const name = input.closest('[data-lora-name]')?.dataset.loraName;
+      const entries = getEntries();
+      const entry = entries.find(entry => entry.name === name);
+      if (!entry) return;
+      const clip = input.classList.contains('lm-lora-clip-strength-input');
+      const field = clip ? 'clipStrength' : 'strength';
+      const typed = Number.parseFloat(input.value);
+      const current = Number.isFinite(typed) ? typed : Number(entry[field]) || 0;
+      const next = (current + (event.deltaY < 0 ? 1 : -1) * getStrengthStepPreference()).toFixed(2);
+      const changed = entries.map(item => item.name !== name ? item : {
+        ...item, [field]: next, ...(!clip && !item.expanded ? { clipStrength: next } : {}),
+      });
+      // Keep the focused input mounted across consecutive wheel events.
+      const wasDragging = widget.__dragActive;
+      widget.__dragActive = true;
+      try { commit(changed); } finally { widget.__dragActive = wasDragging; }
+      input.value = next;
+      applyStrengthRangeCue(input, Number(next), getLoraStrengthRange(name));
+      return;
+    }
     const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? body.clientHeight : 1;
     body.scrollTop += event.deltaY * unit;
     event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation();
