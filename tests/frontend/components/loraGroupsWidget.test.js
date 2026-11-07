@@ -68,13 +68,39 @@ afterEach(() => {
 });
 
 describe('grouped LoRA Loader interactions', () => {
+  it('settles captured name clicks before bubbling and applies modified selection only once', async () => {
+    const node = await mount([value('A'), value('B')]);
+    const a = row(node, 'A'); const b = row(node, 'B');
+    a.querySelector('.lm-lora-name').click();
+    const name = b.querySelector('.lm-lora-name');
+    const pointer = (type, extra = {}) => {
+      const event = new MouseEvent(type, { bubbles: true, cancelable: true, button: 0, clientX: 10, clientY: 10, ...extra });
+      Object.defineProperty(event, 'pointerId', { value: 1 });
+      name.dispatchEvent(event);
+    };
+    const bubbled = vi.fn(); node.container.addEventListener('pointerup', bubbled);
+    pointer('pointerdown', { ctrlKey: true });
+    pointer('pointerup', { ctrlKey: true });
+    expect(bubbled).not.toHaveBeenCalled();
+    name.dispatchEvent(new MouseEvent('click', { bubbles: true, ctrlKey: true }));
+    expect(node.widget.value.filter(item => item.selected).map(item => item.name)).toEqual(['A', 'B']);
+    expect(row(node, 'A')).toBe(a); expect(row(node, 'B')).toBe(b);
+    expect(node.history).toHaveLength(0);
+    await flush();
+    pointer('pointerdown'); pointer('pointerup'); name.click();
+    expect(node.widget.value.filter(item => item.selected).map(item => item.name)).toEqual(['B']);
+    expect(a.dataset.selected).toBe('false'); expect(b.dataset.selected).toBe('true');
+    expect(row(node, 'A')).toBe(a);
+  });
+
   it('counts active local entries and shows full names and model/CLIP strengths', async () => {
     const node = await mount([{ ...value('long/full-name'), strength: 0, clipStrength: -0.5 }, value('off', 'group-1', false), value('second', 'group-2')], normalizeGroupConfig({ rows: 1, columns: 2 }));
     const count = () => node.container.querySelector('.lm-active-count');
     expect(count().textContent).toBe('Active: 2');
     count().dispatchEvent(new Event('pointerenter'));
     expect(document.querySelector('.lm-active-summary').textContent).toContain('long/full-name');
-    expect(document.querySelector('.lm-active-summary').textContent).toContain('0 · CLIP: -0.5');
+    expect(document.querySelector('.lm-active-summary-heading').textContent).toBe('LoRA (2)');
+    expect(document.querySelector('.lm-active-summary').textContent).toContain('CLIP -0.5');
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     expect(document.querySelector('.lm-active-summary')).toBeNull();
     panels(node)[1].querySelector('.lm-group-power').click();
@@ -82,7 +108,7 @@ describe('grouped LoRA Loader interactions', () => {
     panels(node)[0].querySelector('.lm-group-power').click();
     expect(count().textContent).toBe('Active: 0');
     count().focus();
-    expect(document.querySelector('.lm-active-summary').textContent).toBe('No active LoRAs');
+    expect(document.querySelector('.lm-active-summary').textContent).toBe('LoRA (0)No active LoRAs');
   });
 
   it('keeps settings edits as a draft until applied, with one undo snapshot', async () => {

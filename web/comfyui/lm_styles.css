@@ -1298,7 +1298,27 @@ body.lm-lora-reordering * {
 .lm-active-count { border: 0; background: transparent; color: var(--lm-fg-muted); padding: 3px; font: inherit; cursor: help; }
 .lm-active-count:focus-visible { outline: 1px solid var(--lm-accent); }
 .lm-node-settings { font-size: 16px; line-height: 18px; }
-.lm-active-summary { position: fixed; z-index: 100010; box-sizing: border-box; width: max-content; max-width: min(520px, calc(100vw - 16px)); max-height: min(360px, calc(100vh - 16px)); overflow: auto; overscroll-behavior: contain; padding: 10px; border: 1px solid var(--lm-border); border-radius: 6px; background: var(--lm-surface); color: var(--lm-fg); box-shadow: var(--lm-shadow-lg); font: 12px/1.5 sans-serif; }
-.lm-active-summary-row { display: flex; flex-direction: column; gap: 2px; padding: 5px 0; }
-.lm-active-summary-row + .lm-active-summary-row { border-top: 1px solid var(--lm-border-soft); }
-.lm-active-summary-name { overflow-wrap: anywhere; font-weight: 600; }
+.lm-active-summary {
+  position: fixed; z-index: 100010; box-sizing: border-box;
+  width: 350px; max-width: calc(100vw - 16px); max-height: min(360px, calc(100vh - 16px));
+  overflow: auto; overscroll-behavior: contain; padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--lm-accent) 22%, var(--lm-border-soft));
+  border-radius: 12px;
+  /* Static translucent layers give a frosted finish without live backdrop filtering. */
+  background: linear-gradient(135deg, color-mix(in srgb, var(--lm-fg) 5%, transparent), transparent 55%), color-mix(in srgb, var(--lm-surface-raised) 92%, transparent);
+  color: var(--lm-fg); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--lm-fg) 8%, transparent), var(--lm-shadow-lg);
+  font: 12px/1.5 "Segoe UI", sans-serif;
+}
+.lm-active-summary-heading { margin-bottom: 8px; font-weight: 600; font-size: 11px; color: var(--lm-fg-muted); }
+.lm-active-summary-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 3px 0; }
+.lm-active-summary-name { min-width: 0; overflow-wrap: anywhere; font-weight: 400; }
+.lm-active-summary-weights { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.lm-active-summary-weight { white-space: nowrap; padding: 1px 8px; border: 1px solid var(--lm-accent-border); border-radius: 5px; color: var(--lm-accent-text); background: var(--lm-accent-soft); font-size: 11px; }
+
+
+.lm-node-settings-dialog { box-sizing: border-box; width: min(420px, calc(100vw - 32px)); }
+.lm-node-settings-option { display: flex; align-items: center; justify-content: flex-start; gap: 8px; margin: 0; cursor: pointer; }
+.lm-node-settings-option > input[type="checkbox"] { appearance: auto; flex: 0 0 16px; width: 16px; height: 16px; min-height: 16px; padding: 0; margin: 0; accent-color: var(--lm-accent); }
+.lm-node-settings-help { margin: 0; padding-left: 24px; font-size: 12px; line-height: 1.6; color: var(--lm-fg-muted); overflow-wrap: anywhere; }
+
+.lm-active-count-number { color: var(--lm-toggle-active); font-weight: 700; }

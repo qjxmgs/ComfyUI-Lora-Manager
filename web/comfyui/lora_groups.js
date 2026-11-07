@@ -412,16 +412,27 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
 
   function updateStats(entries = getEntries()) {
     const active = activeEntries(entries);
-    if (statsButton) statsButton.textContent = t('activeCount', { count: active.length });
+    if (statsButton) {
+      const [before, ...after] = t('activeCount', { count: '{count}' }).split('{count}');
+      statsButton.replaceChildren(
+        document.createTextNode(before),
+        element('strong', 'lm-active-count-number', String(active.length)),
+        document.createTextNode(after.join('{count}')),
+      );
+    }
     if (!statsPopup) return;
     statsPopup.replaceChildren();
+    statsPopup.append(element('div', 'lm-active-summary-heading', `LoRA (${active.length})`));
     if (!active.length) statsPopup.append(element('div', '', t('noActive')));
     for (const entry of active) {
       const row = element('div', 'lm-active-summary-row');
       row.append(element('span', 'lm-active-summary-name', entry.name));
       const model = Number(entry.strength);
       const clip = Number(entry.clipStrength ?? entry.strength);
-      row.append(element('span', '', `${t('strength')}: ${model}${clip !== model ? ` · CLIP: ${clip}` : ''}`));
+      const weights = element('span', 'lm-active-summary-weights');
+      weights.append(element('span', 'lm-active-summary-weight', `${t('strength')} ${model}`));
+      if (clip !== model) weights.append(element('span', 'lm-active-summary-weight', `CLIP ${clip}`));
+      row.append(weights);
       statsPopup.append(row);
     }
   }
@@ -472,12 +483,13 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
     closeStats?.();
     const backing = node._animaModeWidget || node.widgets?.find(item => item.name === 'anima_mode');
     const view = modal(t('nodeSettings'));
-    const label = element('label', 'lm-group-field');
+    view.content.parentElement.classList.add('lm-node-settings-dialog');
+    const label = element('label', 'lm-node-settings-option');
     const input = element('input'); input.type = 'checkbox';
     input.checked = backing?.value === true || backing?.value === 'true';
     input.disabled = !backing;
     label.append(input, document.createTextNode(t('animaMode')));
-    view.content.append(label, element('p', '', t('animaHelp')));
+    view.content.append(label, element('p', 'lm-node-settings-help', t('animaHelp')));
     view.footer.append(button(t('apply'), () => {
       const value = input.checked;
       view.close();
@@ -748,10 +760,12 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
     const tick = () => { locate(); animation = requestAnimationFrame(tick); };
     const finish = (event, accept) => {
       if (!start || (event?.pointerId !== undefined && event.pointerId !== start.id)) return;
-      if (dragging) { event?.stopPropagation(); event?.preventDefault(); }
+      const clickSelection = accept && !dragging && !groupId;
+      const modifiers = start;
+      if (dragging || clickSelection) { event?.stopPropagation(); event?.preventDefault(); }
       const target = destination;
       const didDrag = dragging;
-      if (didDrag) {
+      if (didDrag || clickSelection) {
         suppressClick = true;
         clearTimeout(clickTimer);
         clickTimer = setTimeout(() => { suppressClick = false; }, 0);
@@ -769,7 +783,10 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       indicator?.remove(); ghost?.remove(); indicator = ghost = null;
       window.removeEventListener('keydown', escape, true);
       window.removeEventListener('blur', cancel);
-      if (accept && didDrag && target && groupId) {
+      if (clickSelection) {
+        selectItem(name, modifiers);
+        container.focus({ preventScroll: true });
+      } else if (accept && didDrag && target && groupId) {
         const next = config();
         const from = next.groups.findIndex(group => group.id === groupId);
         const to = next.groups.findIndex(group => group.id === target.id);
