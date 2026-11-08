@@ -2382,6 +2382,7 @@ class SettingsManager:
         _copy_dir("logs")
         _copy_dir("stats")
         _copy_dir("wildcards")
+        _copy_dir("grid_archives")
 
     def _get_user_config_directory(self) -> str:
         """Return the user configuration directory, falling back to ~/.config."""

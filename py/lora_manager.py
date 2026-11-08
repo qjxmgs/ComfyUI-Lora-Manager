@@ -23,6 +23,7 @@ from .services.model_service_factory import (
 )
 from .routes.recipe_routes import RecipeRoutes
 from .routes.stats_routes import StatsRoutes
+from .routes.grid_archive_routes import GridArchiveRoutes
 from .routes.update_routes import UpdateRoutes
 from .routes.misc_routes import MiscRoutes
 from .routes.pending_delete_routes import PendingDeleteRoutes
@@ -170,6 +171,7 @@ class LoraManager:
         # Setup non-model-specific routes
         stats_routes = StatsRoutes()
         stats_routes.setup_routes(app)
+        GridArchiveRoutes.setup_routes(app)
         RecipeRoutes.setup_routes(app)
         UpdateRoutes.setup_routes(app)
         MiscRoutes.setup_routes(app)

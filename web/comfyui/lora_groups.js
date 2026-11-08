@@ -2,6 +2,8 @@ import { app } from '../../scripts/app.js';
 import { api } from '../../scripts/api.js';
 import { GROUP_MESSAGES, loadGroupMessages } from './lora_groups_i18n.js';
 import { openGroupSort } from './lora_groups_sort.js';
+import { createArchiveController } from './lora_archives.js';
+import { ARCHIVE_PROPERTY, gridSnapshot } from './lora_archives_state.js';
 import { getStrengthStepPreference } from './settings.js';
 import { applyStrengthRangeCue, getLoraStrengthRange } from './loras_widget_utils.js';
 import {
@@ -29,6 +31,7 @@ function button(text, action, title = text) {
 
 export function createLoraGroupsController({ node, container, widget, getSelected, getSelection = () => [getSelected()].filter(Boolean), select }) {
   let messages = GROUP_MESSAGES;
+  let archives = null;
   let messagesLoaded = false;
   const pendingDefaultTitles = new Map();
   let activeGroupId = null;
@@ -86,12 +89,22 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
   };
   container.addEventListener('click', blockDragClick, true);
 
-  function commit(entries, nextConfig = config()) {
+  function commit(entries, nextConfig = config(), archive = null) {
     const before = getEntries();
     app.canvas?.emitBeforeChange?.();
     node.graph?.beforeChange?.(node);
     try {
       node.properties ||= {};
+      if (archive) {
+        node.properties[ARCHIVE_PROPERTY] = archive.id;
+        if (archive.snapshot) {
+          previousEntries = []; activeGroupId = null; selectionAnchor = null;
+          pendingDefaultTitles.clear(); scrollPositions.clear(); bodies.clear();
+          select(null, { names: [] });
+          if (node.setSize) node.setSize([...archive.snapshot.nodeSize]);
+          else node.size = [...archive.snapshot.nodeSize];
+        }
+      }
       node.properties[GROUPS_PROPERTY] = nextConfig;
       widget.value = entries;
       node.onWidgetChanged?.(widget.name, widget.value, before, widget);
@@ -105,6 +118,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
     }
     node.graph?.change?.();
     node.graph?.setDirtyCanvas?.(true, true);
+    archives?.schedule();
   }
 
   function setTarget(id) {
@@ -533,6 +547,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       dimensions.columns.value = current.columns;
     };
     toolbar.append(button(t('apply'), apply));
+    if (archives) toolbar.append(archives.render());
     toolbar.addEventListener('keydown', event => { if (event.key === 'Enter') apply(); });
     closeStats?.();
     const status = element('div', 'lm-groups-status');
@@ -977,6 +992,15 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
   };
   window.addEventListener('wheel', wheel, { capture: true, passive: false });
   container.classList.add('lm-loras-grouped');
+  archives = createArchiveController({
+    node, t,
+    snapshot: () => gridSnapshot(config(), getEntries(), node.size),
+    associate: id => commit(getEntries(), config(), { id }),
+    apply: (snapshot, id) => {
+      const copy = JSON.parse(JSON.stringify(snapshot));
+      commit(copy.entries, copy.groupConfig, { id, snapshot: copy });
+    },
+  });
   loadGroupMessages().then(value => {
     if (removed) return;
     messages = value;
@@ -1007,6 +1031,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       node._lmFlushLoraText?.();
       node.graph?.afterChange?.(node);
       app.canvas?.emitAfterChange?.();
+      archives?.schedule();
     },
     normalize(entries) {
       const state = config();
@@ -1017,9 +1042,10 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       const normalized = normalizeGroupedEntries(assigned.entries, state, previousEntries, activeGroupId);
       previousEntries = normalized.map(entry => ({ ...entry }));
       updateStats(normalized);
+      archives?.schedule();
       return normalized;
     },
-    restore() { previousEntries = []; activeGroupId = null; selectionAnchor = null; pendingDefaultTitles.clear(); scrollPositions.clear(); bodies.clear(); closeOverlay?.(); },
+    restore() { previousEntries = []; activeGroupId = null; selectionAnchor = null; pendingDefaultTitles.clear(); scrollPositions.clear(); bodies.clear(); closeOverlay?.(); archives?.schedule(); },
     setActive(name, active) { commit(setGroupedActive(getEntries(), config(), name, active)); },
     isSingle(id) { return config().groups.find(group => group.id === id)?.mode === 'single'; },
     body(id) { return bodies.get(id); },
@@ -1030,6 +1056,6 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
         body.scrollTop = scrollPositions.get(id) || 0;
       });
     },
-    dispose() { closeStats?.(); removed = true; cancelDrag?.(); clearTimeout(clickTimer); container.removeEventListener('click', blockDragClick, true); closeOverlay?.(); window.removeEventListener('wheel', wheel, true); },
+    dispose() { archives?.dispose(); closeStats?.(); removed = true; cancelDrag?.(); clearTimeout(clickTimer); container.removeEventListener('click', blockDragClick, true); closeOverlay?.(); window.removeEventListener('wheel', wheel, true); },
   };
 }

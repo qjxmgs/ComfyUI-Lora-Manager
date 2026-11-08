@@ -1,9 +1,11 @@
 import { api } from '../../scripts/api.js';
 import { app } from '../../scripts/app.js';
 import { lmUrl } from './base_path.js';
+import { ARCHIVE_MESSAGES } from './lora_archives_i18n.js';
 
 // Keep the synchronous widget factory usable before locale requests finish.
 export const GROUP_MESSAGES = {
+  ...ARCHIVE_MESSAGES,
   "nodeSettings": "Node settings",
   "activeCount": "Active: {count}",
   "noActive": "No active LoRAs",

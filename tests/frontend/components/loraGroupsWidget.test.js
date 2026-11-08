@@ -25,6 +25,8 @@ import { addLorasWidget } from '../../../web/comfyui/loras_widget.js';
 import { mergeLoras } from '../../../web/comfyui/utils.js';
 import { normalizeGroupConfig } from '../../../web/comfyui/lora_groups_state.js';
 import chineseLocale from '../../../locales/zh-CN.json';
+import { gridArchiveClient } from '../../../web/comfyui/lora_archives_client.js';
+import { gridSnapshot, snapshotFingerprint } from '../../../web/comfyui/lora_archives_state.js';
 
 const mounted = [];
 const value = (name, groupId = 'group-1', active = true) => ({ name, groupId, active, strength: .8, clipStrength: 0, expanded: false });
@@ -936,5 +938,76 @@ describe('grouped LoRA Loader interactions', () => {
     expect(row(node, name).querySelector('.lm-lora-name-suffix').textContent).toBe('_step1800');
     expect(row(node, name).querySelector('.lm-lora-name').hasAttribute('title')).toBe(false);
     expect(row(node, name).querySelector('.lm-lora-name').getAttribute('aria-label')).toBe(name);
+  });
+});
+
+describe('grid archives integrated with the LoRA widget', () => {
+  const installLibrary = () => {
+    const library = { revision: 1, categories: [
+      { id: 'uncategorized', parentId: null, name: 'Uncategorized', order: 0 },
+      { id: 'default', parentId: 'uncategorized', name: 'Default', order: 0 },
+    ], archives: [] };
+    gridArchiveClient.data = library; gridArchiveClient.ready = true; gridArchiveClient.error = null;
+    fetchApi.mockImplementation(async path => ({ ok: true, json: async () => String(path).includes('grid-archives') ? library : { loras: [] } }));
+    return library;
+  };
+
+  it('restores a complete archive without borrowing the previous single-selection winner or added order', async () => {
+    const library = installLibrary();
+    const state = normalizeGroupConfig({ groups: [{ id: 'group-1', title: 'Existing', mode: 'single' }], nextAddedOrder: 41 });
+    const node = await mount([
+      { ...value('A', 'group-1', false), addedOrder: 40 },
+      { ...value('B', 'group-1', true), addedOrder: 30 },
+    ], state);
+    node.size = [700, 400];
+    const target = gridSnapshot(normalizeGroupConfig({ rows: 1, columns: 2, nextAddedOrder: 3, groups: [
+      { id: 'group-1', title: 'Saved', mode: 'single', titleColor: 'blue' },
+      { id: 'group-2', title: 'Paused', enabled: false, pausedActive: ['C'] },
+    ] }), [
+      { ...value('A'), addedOrder: 0, clipStrength: .3, expanded: true, locked: true },
+      { ...value('B', 'group-1', false), addedOrder: 1 },
+      { ...value('C', 'group-2', false), addedOrder: 2 },
+    ], [1200, 800]);
+    library.archives.push({ id: 'saved', categoryId: 'default', name: 'Saved grid', snapshot: target, revision: 1, order: 0 });
+    gridArchiveClient.emit(); await flush();
+    const before = { ...snapshot(node), size: [...node.size] };
+    const select = node.container.querySelector('.lm-archive-select'); select.value = 'saved'; select.dispatchEvent(new Event('change'));
+    await flush(); click(document, 'Discard and switch'); await flush();
+    expect(snapshotFingerprint(gridSnapshot(node.properties.lmLoraGroups, node.widget.value, node.size))).toBe(snapshotFingerprint(target));
+    expect(node.properties.lmGridArchiveId).toBe('saved'); expect(node.history).toHaveLength(1);
+    expect(node.container.querySelector('[data-action="save"]').disabled).toBe(true);
+    node.properties = before.properties; node.size = before.size; node.onConfigure(before); await flush();
+    expect(node.widget.value.find(item => item.name === 'B').active).toBe(true);
+    expect(node.properties.lmGridArchiveId).toBeUndefined(); expect(node.size).toEqual([700, 400]);
+  });
+
+  it('tracks activation-only and drag-style updates while retaining mounted rows', async () => {
+    const library = installLibrary();
+    const node = await mount([value('A')]); node.size = [700, 400];
+    library.archives.push({ id: 'saved', categoryId: 'default', name: 'Saved grid',
+      snapshot: gridSnapshot(node.properties.lmLoraGroups, node.widget.value, node.size), revision: 1, order: 0 });
+    node.properties.lmGridArchiveId = 'saved'; gridArchiveClient.emit(); await flush();
+    const mountedRow = row(node, 'A'); const toolbar = node.container.querySelector('.lm-grid-archives');
+    mountedRow.querySelector('.lm-lora-toggle').click(); await flush();
+    expect(row(node, 'A')).toBe(mountedRow); expect(node.container.querySelector('.lm-grid-archives')).toBe(toolbar);
+    expect(toolbar.querySelector('select').selectedOptions[0].textContent).toBe('* Saved grid');
+    node.widget.__dragActive = true;
+    node.widget.value = node.widget.value.map(entry => ({ ...entry, active: true, strength: 2 })); await flush();
+    expect(toolbar.querySelector('[data-action="save"]').disabled).toBe(false);
+    node.widget.value = node.widget.value.map(entry => ({ ...entry, strength: .8 })); await flush();
+    expect(toolbar.querySelector('[data-action="save"]').disabled).toBe(true);
+    node.widget.__dragActive = false;
+  });
+
+  it('loads a workflow snapshot without replacing it with the linked archive', async () => {
+    const library = installLibrary();
+    const node = await mount([value('A')]); node.size = [700, 400];
+    library.archives.push({ id: 'saved', categoryId: 'default', name: 'Saved grid',
+      snapshot: gridSnapshot(node.properties.lmLoraGroups, node.widget.value, node.size), revision: 1, order: 0 });
+    const workflow = snapshot(node); workflow.properties.lmGridArchiveId = 'saved'; workflow.widgets_values[0][0].strength = 3;
+    node.properties = workflow.properties; node.onConfigure(workflow); gridArchiveClient.emit(); await flush();
+    expect(node.widget.value[0].strength).toBe(3);
+    expect(node.container.querySelector('.lm-archive-select').selectedOptions[0].textContent).toBe('* Saved grid');
+    expect(node.history).toHaveLength(0);
   });
 });

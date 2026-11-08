@@ -5,6 +5,15 @@ from __future__ import annotations
 from typing import Optional
 
 
+class GridArchiveError(ValueError):
+    """A recoverable grid archive validation, conflict or storage error."""
+
+    def __init__(self, code: str, status: int = 400) -> None:
+        super().__init__(code)
+        self.code = code
+        self.status = status
+
+
 class RateLimitError(RuntimeError):
     """Raised when a remote provider rejects a request due to rate limiting."""
 
