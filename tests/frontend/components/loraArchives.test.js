@@ -74,6 +74,16 @@ beforeEach(() => { localStorage.clear(); });
 afterEach(() => { controllers.splice(0).forEach(controller => controller.dispose()); document.body.replaceChildren(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('archive snapshot semantics', () => {
+  it('ignores the next allocation counter after reload but preserves actual ordering changes', () => {
+    const saved = example(), restored = clone(saved);
+    saved.groupConfig.nextAddedOrder = 2104;
+    restored.groupConfig.nextAddedOrder = 2047;
+    expect(snapshotFingerprint(restored)).toBe(snapshotFingerprint(saved));
+    expect(saved.groupConfig.nextAddedOrder).toBe(2104);
+    expect(gridSnapshot(saved.groupConfig, saved.entries, saved.nodeSize).groupConfig.nextAddedOrder).toBe(2104);
+    restored.entries[0].addedOrder = 10;
+    expect(snapshotFingerprint(restored)).not.toBe(snapshotFingerprint(saved));
+  });
   it('ignores selection and numeric formatting, preserves complete meaningful state', () => {
     const original = example(), next = clone(original);
     next.entries[0].selected = true; next.entries[0].strength = '1.00';
@@ -92,6 +102,14 @@ describe('archive snapshot semantics', () => {
 });
 
 describe('archive toolbar and persistence', () => {
+  it('keeps the saved name clean when workflow restoration changes only the allocation counter', async () => {
+    const m = mount(); await flush();
+    m.change(snapshot => { snapshot.groupConfig.nextAddedOrder += 57; }); await flush();
+    expect(m.toolbar.querySelector('.lm-archive-dirty').textContent).toBe('');
+    expect(m.toolbar.querySelector('[data-action="save"]').disabled).toBe(true);
+    m.change(snapshot => { snapshot.entries[0].strength = 2; }); await flush();
+    expect(m.toolbar.querySelector('.lm-archive-dirty').textContent).toBe('*');
+  });
   it('saves an edited name as a new archive without overwriting the original', async () => {
     const m = mount(); await flush();
     const input = m.toolbar.querySelector('.lm-archive-name');
@@ -107,8 +125,11 @@ describe('archive toolbar and persistence', () => {
     m.toolbar.querySelector('.lm-archive-expand').click(); await flush();
     const picker = document.querySelector('.lm-archive-picker');
     expect(picker.textContent).toContain('Uncategorized');
-    expect(picker.textContent).toContain('Default');
-    [...picker.querySelectorAll('button')].find(button => button.textContent === 'Second').click(); await flush();
+    picker.querySelector('[data-choice]').click(); await flush();
+    const secondary = document.querySelector('.lm-archive-picker[data-level="1"]');
+    expect(secondary.textContent).toContain('Default');
+    secondary.querySelector('[data-choice]').click(); await flush();
+    document.querySelector('.lm-archive-picker[data-level="2"] [data-choice="two"]').click(); await flush();
     expect(m.node.properties[ARCHIVE_PROPERTY]).toBe('two');
     expect(m.toolbar.querySelector('.lm-archive-name').value).toBe('Second');
     expect(document.querySelector('.lm-archive-picker')).toBeNull();
@@ -269,5 +290,93 @@ describe('archive HTTP client', () => {
     await client.write('/archives/one', 'PATCH', { name: 'new' });
     finish({ ok: true, json: async () => library() }); await reading;
     expect(client.data.revision).toBe(2);
+  });
+});
+
+
+describe('cascade archive rows and deletion', () => {
+  async function expand(m) {
+    m.toolbar.querySelector('.lm-archive-expand').click(); await flush();
+    document.querySelector('.lm-archive-picker[data-level="0"] [data-choice]').click(); await flush();
+    document.querySelector('.lm-archive-picker[data-level="1"] [data-choice]').click(); await flush();
+  }
+  it('shows saved active summaries without back buttons and preserves branches on refresh', async () => {
+    const m = mount(); await flush();
+    m.client.data.archives[1].snapshot.groupConfig.groups[0].enabled = false;
+    await expand(m);
+    expect(document.querySelectorAll('.lm-archive-picker')).toHaveLength(3);
+    expect(document.querySelector('.lm-archive-cascade-back')).toBeNull();
+    expect(document.querySelector('[data-choice="one"]').textContent).toContain('(1)');
+    expect(document.querySelector('[data-choice="one"]').textContent).toContain('Model 1 / CLIP 0.5');
+    expect(document.querySelector('[data-choice="two"]').textContent).toContain('(0)');
+    expect(document.querySelector('[data-choice="two"]').textContent).toContain('No active LoRAs');
+    m.client.emit(); await flush();
+    expect(document.querySelectorAll('.lm-archive-picker')).toHaveLength(3);
+    expect(document.querySelector('[data-choice="default"]').getAttribute('aria-expanded')).toBe('true');
+  });
+  it('cancels deletion without closing the cascade and restores focus', async () => {
+    const m = mount(); await flush(); await expand(m);
+    const button = document.querySelector('[data-delete-id="one"]'); button.focus(); button.click(); await flush();
+    document.querySelector('.lm-archive-dialog').dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(document.querySelectorAll('.lm-archive-picker')).toHaveLength(3);
+    await click('Cancel');
+    expect(document.activeElement).toBe(button);
+    expect(m.client.write).not.toHaveBeenCalled(); expect(m.history).toHaveLength(0);
+  });
+  it('deletes the current archive without loading another and keeps its category open', async () => {
+    const m = mount(); await flush(); await expand(m);
+    document.querySelector('[data-delete-id="one"]').click(); await flush(); await click('Delete');
+    expect(document.querySelectorAll('.lm-archive-picker')).toHaveLength(3);
+    expect(document.querySelector('[data-choice="one"]')).toBeNull();
+    expect(document.querySelector('[data-choice="two"]')).not.toBeNull();
+    expect(m.node.properties[ARCHIVE_PROPERTY]).toBeUndefined();
+    expect(m.live()).toEqual(example()); expect(m.history).toHaveLength(0);
+  });
+  it('keeps the menu and archive when deletion has a revision conflict', async () => {
+    const m = mount(); await flush(); await expand(m);
+    m.client.write.mockRejectedValueOnce(Object.assign(new Error('conflict'), { code: 'conflict' }));
+    document.querySelector('[data-delete-id="one"]').click(); await flush(); await click('Delete');
+    expect(document.querySelector('.lm-archive-dialog .lm-archive-error').textContent).toContain('changed elsewhere');
+    expect(m.client.data.archives).toHaveLength(2); expect(m.history).toHaveLength(0);
+    await click('Cancel'); expect(document.querySelectorAll('.lm-archive-picker')).toHaveLength(3);
+  });
+  it('toggles expanded categories and navigates back with the keyboard without a back row', async () => {
+    vi.stubGlobal('innerWidth', 280);
+    const m = mount(); await flush(); await expand(m);
+    const secondary = document.querySelector('[data-choice="default"]'); secondary.click(); await flush();
+    expect(document.querySelectorAll('.lm-archive-picker')).toHaveLength(2);
+    secondary.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })); await flush();
+    expect(document.querySelectorAll('.lm-archive-picker')).toHaveLength(3);
+    document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    expect(document.querySelectorAll('.lm-archive-picker')).toHaveLength(2);
+    expect(document.activeElement).toBe(secondary);
+  });
+});
+
+
+describe('cascade positioning', () => {
+  it.each([20, 800])('keeps panels in the viewport near anchor x=%s', async x => {
+    vi.stubGlobal('innerWidth', 1024); vi.stubGlobal('innerHeight', 600);
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
+      let left = x, top = 550, width = 180, height = 28;
+      if (this.classList.contains('lm-archive-picker')) {
+        left = parseFloat(this.style.left) || 0; top = parseFloat(this.style.top) || 0; width = 196; height = 160;
+      } else if (this.closest('.lm-archive-picker')) {
+        const parent = this.closest('.lm-archive-picker'); left = parseFloat(parent.style.left); top = parseFloat(parent.style.top); width = 188; height = 31;
+      }
+      return { left, top, right: left + width, bottom: top + height, width, height, x: left, y: top };
+    });
+    const m = mount(); await flush(); m.toolbar.querySelector('.lm-archive-expand').click(); await flush();
+    const first = document.querySelector('.lm-archive-picker');
+    first.querySelector('[data-choice]').dispatchEvent(new Event('pointerenter')); await flush();
+    const second = document.querySelector('.lm-archive-picker[data-level="1"]');
+    expect(second).toBeTruthy();
+    second.querySelector('[data-choice]').dispatchEvent(new Event('pointerenter')); await flush();
+    for (const panel of document.querySelectorAll('.lm-archive-picker')) {
+      const rect = panel.getBoundingClientRect();
+      expect(rect.left).toBeGreaterThanOrEqual(8); expect(rect.right).toBeLessThanOrEqual(1016);
+      expect(rect.top).toBeGreaterThanOrEqual(8); expect(rect.bottom).toBeLessThanOrEqual(592);
+      expect(panel.style.maxHeight).toBe('360px');
+    }
   });
 });

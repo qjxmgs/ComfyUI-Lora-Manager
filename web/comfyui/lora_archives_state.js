@@ -20,7 +20,11 @@ export function gridSnapshot(config, entries, size) {
 }
 
 export function snapshotFingerprint(snapshot) {
-  return JSON.stringify(gridSnapshot(snapshot.groupConfig, snapshot.entries, snapshot.nodeSize));
+  const normalized = gridSnapshot(snapshot.groupConfig, snapshot.entries, snapshot.nodeSize);
+  // Allocation may advance during workflow restoration without changing any entry.
+  // Keep each entry's addedOrder: it determines the user-visible added-order sort.
+  delete normalized.groupConfig.nextAddedOrder;
+  return JSON.stringify(normalized);
 }
 
 export function activeArchiveEntries(snapshot) {

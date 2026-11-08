@@ -1,3 +1,4 @@
+import { openArchiveCascade } from './lora_archives_picker.js';
 import { gridArchiveClient } from './lora_archives_client.js';
 import { ARCHIVE_PROPERTY, archivePath, ordered, snapshotFingerprint } from './lora_archives_state.js';
 import { archiveDetails, categoryLabel, openArchiveManager } from './lora_archives_manager.js';
@@ -104,46 +105,10 @@ export function createArchiveController({ node, t, snapshot, apply, associate, c
   }
   function openPicker(anchor) {
     if (closePicker) { closePicker(); return; }
-    const menu = el('div', 'lm-popover lm-archive-picker');
-    menu.setAttribute('role', 'dialog'); menu.setAttribute('aria-label', t('archiveList'));
-    const draw = () => {
-      menu.replaceChildren();
-      for (const primary of ordered(client.data.categories.filter(item => item.parentId === null))) {
-        const section = el('section'); section.append(el('strong', '', categoryLabel(primary, t)));
-        for (const secondary of ordered(client.data.categories.filter(item => item.parentId === primary.id))) {
-          const group = el('div', 'lm-archive-picker-category');
-          group.append(el('span', '', categoryLabel(secondary, t)));
-          const items = ordered(client.data.archives.filter(item => item.categoryId === secondary.id));
-          for (const item of items) group.append(action(item.name, () => { closePicker?.(); run(() => load(item)); }));
-          if (!items.length) group.append(el('small', '', t('archiveEmpty')));
-          section.append(group);
-        }
-        menu.append(section);
-      }
-      if (!menu.children.length) menu.append(el('span', '', t('archiveEmpty')));
-    };
-    const outside = event => { if (!menu.contains(event.target) && !anchor.contains(event.target)) closePicker?.(); };
-    const closeOnScroll = event => { if (!menu.contains(event.target)) closePicker?.(); };
-    const unsubscribePicker = client.subscribe(draw);
-    closePicker = () => {
-      menu.remove(); unsubscribePicker(); anchor.setAttribute('aria-expanded', 'false');
-      document.removeEventListener('pointerdown', outside, true);
-      window.removeEventListener('resize', closeOnScroll); document.removeEventListener('scroll', closeOnScroll, true);
-      closePicker = null;
-    };
-    draw(); document.body.append(menu);
-    const rect = anchor.parentElement.getBoundingClientRect();
-    menu.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - 288))}px`;
-    menu.style.top = `${rect.bottom + 4}px`;
-    menu.style.maxHeight = `${Math.max(60, window.innerHeight - rect.bottom - 12)}px`;
-    anchor.setAttribute('aria-expanded', 'true');
-    menu.addEventListener('pointerdown', event => event.stopPropagation());
-    menu.addEventListener('wheel', event => event.stopPropagation(), { passive: true });
-    menu.addEventListener('keydown', event => { event.stopPropagation(); if (event.key === 'Escape') { closePicker?.(); anchor.focus(); } });
-    document.addEventListener('pointerdown', outside, true);
-    document.addEventListener('scroll', closeOnScroll, true); window.addEventListener('resize', closeOnScroll);
-    menu.querySelector('button')?.focus(); client.refresh().catch(() => {});
+    closePicker = openArchiveCascade({ anchor, client, t, currentId, onChoose: item => run(() => load(item)),
+      onClose: () => { closePicker = null; } });
   }
+
   function schedule() {
     if (queued || disposed) return;
     queued = true;

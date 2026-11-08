@@ -1424,8 +1424,18 @@ body.lm-lora-reordering * {
 .lm-archive-combo .lm-archive-name { box-sizing: border-box; width: 0; min-width: 0; height: 26px; min-height: 0; flex: 1; border: 0; outline: none; margin: 0; padding: 0; color: var(--lm-fg); background: transparent; font: inherit; line-height: 26px; }
 .lm-archive-combo:focus-within { outline: 1px solid var(--lm-accent); }
 .lm-archive-combo .lm-archive-expand { display: grid; place-items: center; flex: 0 0 26px; width: 26px; height: 26px; padding: 0; border: 0; border-left: 1px solid var(--lm-border); border-radius: 0; line-height: 1; }
-.lm-archive-picker { position: fixed; z-index: 2147483605; width: 280px; max-width: calc(100vw - 16px); overflow: auto; padding: 8px; border: 1px solid var(--lm-accent); border-radius: 6px; background: var(--lm-surface); color: var(--lm-fg); box-shadow: 0 8px 24px #0006; font: 12px/1.5 system-ui, sans-serif; }
-.lm-archive-picker section + section { margin-top: 10px; }
-.lm-archive-picker-category { display: flex; flex-direction: column; gap: 3px; padding: 4px 0 4px 10px; }
-.lm-archive-picker-category > span, .lm-archive-picker-category > small { color: var(--lm-fg-muted); }
-.lm-archive-picker-category button { text-align: left; overflow: hidden; text-overflow: ellipsis; }
+.lm-archive-picker { position: fixed; z-index: 2147483605; box-sizing: border-box; overflow: auto; padding: 4px; border: 1px solid var(--lm-border); border-radius: 6px; background: var(--lm-surface); color: var(--lm-fg); box-shadow: 0 8px 24px #0006; font: 12px/1.5 system-ui, sans-serif; }
+.lm-archive-picker > button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 31px; padding: 5px 8px; border: 0; background: transparent; text-align: left; }
+.lm-archive-picker > button > span:first-child { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lm-archive-cascade-arrow { flex: 0 0 12px; text-align: center; color: var(--lm-fg-muted); }
+.lm-archive-picker > button[aria-expanded="true"], .lm-archive-picker > .lm-archive-cascade-current { background: color-mix(in srgb, var(--lm-accent) 25%, var(--lm-surface)); }
+.lm-archive-cascade-empty { color: var(--lm-fg-muted); padding: 7px; }
+
+.lm-archive-cascade-entry { display: flex; align-items: stretch; border-radius: 4px; margin-bottom: 1px; }
+.lm-archive-cascade-entry:hover { background: color-mix(in srgb, var(--lm-accent) 18%, transparent); }
+.lm-archive-cascade-entry .lm-archive-cascade-choice { display: flex; flex-direction: column; align-items: stretch; gap: 3px; flex: 1; min-width: 0; border: 0; padding: 7px 8px; background: transparent; text-align: left; }
+.lm-archive-cascade-title { display: flex; align-items: baseline; gap: 4px; min-width: 0; }
+.lm-archive-cascade-title strong { color: #8cbcf1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lm-archive-cascade-title > span { color: var(--lm-fg-muted); flex-shrink: 0; }
+.lm-archive-cascade-summary { color: var(--lm-fg-muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lm-archive-cascade-entry .lm-archive-cascade-delete { flex: 0 0 24px; align-self: flex-start; margin-top: 4px; padding: 3px; border: 0; color: #ff5353; background: transparent; font-size: 16px; }
