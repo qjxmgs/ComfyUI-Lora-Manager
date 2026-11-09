@@ -115,26 +115,37 @@ describe('grouped LoRA Loader interactions', () => {
     const finish = id => {
       emit('execution_start', { prompt_id: id }); emit('executing', '7'); emit('execution_success', { prompt_id: id });
     };
-    const first = await submit(); const second = await submit();
+    const first = await submit(); const second = await submit(); const third = await submit();
     const input = row(node, 'A').querySelector('.lm-lora-strength-input'); input.focus();
     const body = panels(node)[0].querySelector('.lm-group-body');
-    body.getBoundingClientRect = () => ({ top: 0, bottom: 100 });
-    row(node, 'B').getBoundingClientRect = () => ({ top: 120, bottom: 140 });
+    Object.defineProperties(body, { clientHeight: { value: 100 }, scrollHeight: { value: 300 } });
+    for (const [name, top] of [['A', 3], ['B', 120], ['C', 277]]) {
+      Object.defineProperties(row(node, name), { offsetTop: { value: top }, offsetHeight: { value: 20 } });
+    }
+    // Screen coordinates include canvas zoom; scrolling must use layout coordinates.
+    body.getBoundingClientRect = () => ({ top: 0, bottom: 50 });
+    row(node, 'B').getBoundingClientRect = () => ({ top: 60, bottom: 70 });
+    body.scrollTop = 60;
     vi.useFakeTimers();
     try {
       finish(first.prompt_id);
       expect(node.widget.value.filter(entry => entry.active).map(entry => entry.name)).toEqual(['B']);
       expect(row(node, 'B').classList.contains('lm-lora-cycle-sweep')).toBe(true);
       expect(row(node, 'A').classList.contains('lm-lora-cycle-sweep')).toBe(false);
-      expect(body.scrollTop).toBe(40); expect(document.activeElement).toBe(input);
+      expect(body.scrollTop).toBe(80); expect(document.activeElement).toBe(input);
       vi.advanceTimersByTime(1000);
       finish(second.prompt_id);
       expect(row(node, 'B').classList.contains('lm-lora-cycle-sweep')).toBe(false);
       expect(row(node, 'C').classList.contains('lm-lora-cycle-sweep')).toBe(true);
+      expect(body.scrollTop).toBe(200);
       vi.advanceTimersByTime(2999);
       expect(row(node, 'C').classList.contains('lm-lora-cycle-sweep')).toBe(true);
       vi.advanceTimersByTime(1);
       expect(node.container.querySelector('.lm-lora-cycle-sweep')).toBeNull();
+      finish(third.prompt_id);
+      expect(row(node, 'A').classList.contains('lm-lora-cycle-sweep')).toBe(true);
+      expect(body.scrollTop).toBe(0);
+      expect(document.activeElement).toBe(input);
       expect(node.widget.callback).toHaveBeenCalled();
     } finally { vi.useRealTimers(); }
   });

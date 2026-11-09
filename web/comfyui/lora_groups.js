@@ -91,10 +91,10 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
     sweep.row = row;
     row.style.setProperty('--lm-cycle-delay', `${-(performance.now() - sweep.started)}ms`);
     row.classList.add('lm-lora-cycle-sweep');
-    const rowRect = row.getBoundingClientRect();
-    const bodyRect = body.getBoundingClientRect();
-    if (rowRect.top < bodyRect.top) body.scrollTop += rowRect.top - bodyRect.top;
-    else if (rowRect.bottom > bodyRect.bottom) body.scrollTop += rowRect.bottom - bodyRect.bottom;
+    // Use layout coordinates so canvas zoom does not affect the scroll distance.
+    const centeredTop = row.offsetTop + (row.offsetHeight - body.clientHeight) / 2;
+    const maxScrollTop = Math.max(0, body.scrollHeight - body.clientHeight);
+    body.scrollTop = Math.max(0, Math.min(maxScrollTop, centeredTop));
   }
 
   function startSweep(groupId, name) {
