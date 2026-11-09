@@ -13,9 +13,9 @@ export function categoryOptions(client, t) {
   }));
 }
 
-export async function editCategory(client, t, category, parentId, signal) {
+export async function editCategory(client, t, category, parentId, signal, onMessage) {
   const revision = client.data.revision;
-  return archiveDialog({ title: t(category ? 'archiveEdit' : 'archiveAdd'), t, signal,
+  return archiveDialog({ title: t(category ? 'archiveEdit' : 'archiveAdd'), t, signal, onMessage,
     build(body) {
       const name = el('input'); name.maxLength = 100; name.value = category?.name || '';
       body.append(field(t('archiveName'), name));
@@ -35,21 +35,21 @@ export async function editCategory(client, t, category, parentId, signal) {
   });
 }
 
-export async function archiveDetails({ client, t, archive, snapshot, categoryId = DEFAULT_SECONDARY, signal }) {
+export async function archiveDetails({ client, t, archive, snapshot, categoryId = DEFAULT_SECONDARY, signal, onMessage }) {
   // Keep the revision captured when opening the form, including across background refreshes.
   let revision = client.data.revision;
-  return archiveDialog({ title: t(archive ? 'archiveEdit' : 'archiveSaveAs'), t, signal,
+  return archiveDialog({ title: t(archive ? 'archiveEdit' : 'archiveSaveAs'), t, signal, onMessage,
     build(body) {
       const name = el('input'); name.maxLength = 100; name.value = archive?.name || '';
       let category = selectOptions(categoryOptions(client, t), archive?.categoryId || categoryId);
       const categoryField = field(t('archiveCategory'), category);
       const addPrimary = action(`+ ${t('archivePrimary')}`, async () => {
-        const result = await editCategory(client, t, null, null, signal);
+        const result = await editCategory(client, t, null, null, signal, onMessage);
         if (result) { revision = result.revision; refresh(category.value); }
       });
       const addSecondary = action(`+ ${t('archiveSecondary')}`, async () => {
         const current = client.data.categories.find(item => item.id === category.value);
-        const result = await editCategory(client, t, null, current?.parentId || DEFAULT_PRIMARY, signal);
+        const result = await editCategory(client, t, null, current?.parentId || DEFAULT_PRIMARY, signal, onMessage);
         if (result) { revision = result.revision; refresh(result.resultId); }
       });
       function refresh(id) {
@@ -73,7 +73,8 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
   const root = el('section', 'lm-popover lm-archive-manager');
   root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', t('archiveManage')); root.tabIndex = -1;
   const header = el('header', 'lm-archive-manager-header');
-  const status = el('div', 'lm-archive-error'); status.setAttribute('role', 'alert');
+  const status = el('div', 'lm-archive-error lm-archive-header-status');
+  status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite'); status.setAttribute('aria-atomic', 'true');
   const panels = el('div', 'lm-archive-panels');
   const preview = el('aside', 'lm-archive-preview');
   const resize = el('div', 'lm-archive-resize'); resize.tabIndex = 0;
@@ -94,18 +95,25 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
     signal?.removeEventListener('abort', close); window.removeEventListener('resize', constrain);
     root.remove(); if (previous?.isConnected) previous.focus({ preventScroll: true }); onClose?.();
   };
-  const run = async task => {
-    if (busy || closed) return;
-    busy = true; root.setAttribute('aria-busy', 'true'); status.textContent = '';
-    try { await task(); }
-    catch (error) { status.textContent = errorText(t, error); }
-    finally { busy = false; root.removeAttribute('aria-busy'); }
+  const setMessage = (message = '', tone = 'error') => {
+    if (closed) return;
+    status.textContent = message; status.title = message; status.dataset.tone = tone;
   };
-  header.append(el('strong', '', t('archiveManage')),
-    action(t('archiveSaveAs'), () => run(() => saveAs(secondaryId))),
-    action(t('archiveRetry'), () => run(() => client.refresh())),
+  const run = async (task, message = '') => {
+    if (busy || closed) return;
+    busy = true; root.setAttribute('aria-busy', 'true'); setMessage(message, 'info');
+    try { await task(); }
+    catch (error) { setMessage(errorText(t, error)); }
+    finally {
+      busy = false; root.removeAttribute('aria-busy');
+      if (message && status.textContent === message && status.dataset.tone === 'info') setMessage('');
+    }
+  };
+  header.append(el('strong', '', t('archiveManage')), status,
+    action(t('archiveSaveAs'), () => run(() => saveAs(secondaryId, setMessage))),
+    action(t('archiveRetry'), () => run(() => client.refresh(), t('archiveLoading'))),
     action('×', close, t('archiveClose')));
-  root.append(header, status, panels, resize); document.body.append(root);
+  root.append(header, panels, resize); document.body.append(root);
 
   function remember() {
     const rect = root.getBoundingClientRect();
@@ -167,7 +175,7 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
       ? client.data.categories.some(value => value.parentId === item.id)
       : client.data.archives.some(value => value.categoryId === item.id));
     const candidates = category ? client.data.categories.filter(value => value.id !== item.id && (value.parentId === null) === (item.parentId === null)) : [];
-    await archiveDialog({ title: t('archiveDelete'), t, signal: localAbort.signal,
+    await archiveDialog({ title: t('archiveDelete'), t, signal: localAbort.signal, onMessage: setMessage,
       build(body) {
         body.append(el('p', '', t(category ? 'archiveDeleteCategory' : 'archiveDeleteConfirm')));
         let destination;
@@ -212,7 +220,7 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
     const panel = el('section', 'lm-archive-panel'); panel.dataset.level = panelLevel;
     const heading = el('div', 'lm-archive-panel-heading');
     if (panelLevel > 0) heading.append(action('‹', () => { level--; render(); }, t('archiveBack')));
-    heading.append(el('strong', '', t(title)), action('+', () => run(() => editCategory(client, t, null, parentId, localAbort.signal)), t('archiveAdd')));
+    heading.append(el('strong', '', t(title)), action('+', () => run(() => editCategory(client, t, null, parentId, localAbort.signal, setMessage)), t('archiveAdd')));
     const list = el('div', 'lm-archive-list');
     for (const item of items) {
       const row = el('div', 'lm-archive-row');
@@ -223,7 +231,7 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
         level = panelLevel + 1; previewId = null; render();
       }));
       if (![DEFAULT_PRIMARY, DEFAULT_SECONDARY].includes(item.id)) {
-        row.append(action('✎', () => run(() => editCategory(client, t, item, item.parentId, localAbort.signal)), t('archiveEdit')),
+        row.append(action('✎', () => run(() => editCategory(client, t, item, item.parentId, localAbort.signal, setMessage)), t('archiveEdit')),
           action('×', () => run(() => remove('categories', item)), t('archiveDelete')));
       }
       bindReorder(row, 'categories', item, items, 'parentId'); list.append(row);
@@ -305,17 +313,17 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
     if (!archives.some(item => item.id === previewId)) previewId = archives[0]?.id;
     const archivePanel = el('section', 'lm-archive-panel'); archivePanel.dataset.level = 2;
     const heading = el('div', 'lm-archive-panel-heading');
-    const add = action('+', () => run(() => saveAs(secondaryId)), t('archiveSaveAs')); add.disabled = !secondaryId;
+    const add = action('+', () => run(() => saveAs(secondaryId, setMessage)), t('archiveSaveAs')); add.disabled = !secondaryId;
     heading.append(action('‹', () => { level = 1; render(); }, t('archiveBack')), el('strong', '', t('archiveList')), add);
     const list = el('div', 'lm-archive-list');
     for (const archive of archives) {
       const row = el('div', 'lm-archive-row');
       row.classList.toggle('lm-archive-selected', archive.id === currentId());
-      const choose = action(archive.name, () => run(async () => { if (await load(archive)) close(); }));
+      const choose = action(archive.name, () => run(async () => { if (await load(archive, setMessage)) close(); }));
       choose.title = `${archivePath(client.data, archive, item => categoryLabel(item, t))} / ${archive.name}`;
       const show = () => { if (previewId !== archive.id) { previewId = archive.id; renderPreview(); } };
       row.addEventListener('pointerenter', show); row.addEventListener('focusin', show);
-      row.append(choose, action(t('archiveEdit'), () => run(() => archiveDetails({ client, t, archive, signal: localAbort.signal }))),
+      row.append(choose, action(t('archiveEdit'), () => run(() => archiveDetails({ client, t, archive, signal: localAbort.signal, onMessage: setMessage }))),
         action('×', () => run(() => remove('archives', archive)), t('archiveDelete')));
       bindReorder(row, 'archives', archive, archives, 'categoryId'); list.append(row);
     }
@@ -325,7 +333,10 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
       categoryPanel('archiveSecondary', secondaries, 1, primaryId), archivePanel, preview);
     root.dataset.level = level; renderPreview();
   }
-  const unsubscribe = client.subscribe(render);
+  const unsubscribe = client.subscribe(() => {
+    render();
+    if (client.error) setMessage(errorText(t, client.error));
+  });
   signal?.addEventListener('abort', close, { once: true });
   root.addEventListener('keydown', event => trapKeys(event, root, close));
   root.addEventListener('paste', event => {
@@ -335,6 +346,6 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
   root.addEventListener('wheel', event => event.stopPropagation(), { passive: true });
   getAvailableLoras().then(result => { available = result; if (!closed) renderPreview(); }).catch(() => {});
   render(); root.focus();
-  run(() => client.refresh());
+  run(() => client.refresh(), t('archiveLoading'));
   return close;
 }

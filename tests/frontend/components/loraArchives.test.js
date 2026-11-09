@@ -202,6 +202,29 @@ describe('archive toolbar and persistence', () => {
 });
 
 describe('three-level archive manager', () => {
+  it('keeps loading and error messages in a persistent header slot', async () => {
+    const m = mount(); await flush();
+    let fail;
+    m.client.refresh.mockImplementationOnce(() => new Promise((resolve, reject) => { fail = reject; }));
+    m.toolbar.querySelector('[data-action="manage"]').click(); await flush();
+    const manager = document.querySelector('.lm-archive-manager');
+    const header = manager.querySelector('.lm-archive-manager-header');
+    const status = header.querySelector('.lm-archive-header-status');
+    expect(header.firstElementChild.textContent).toBe('LoRA grid archive manager');
+    expect(header.firstElementChild.nextElementSibling).toBe(status);
+    expect(status.textContent).toBe(t('archiveLoading'));
+    expect(status.getAttribute('role')).toBe('status');
+    expect(manager.querySelector(':scope > .lm-archive-error')).toBeNull();
+    fail(new Error('storage')); await flush();
+    expect(status.textContent).toBe(t('archiveStorage'));
+    expect(status.title).toBe(status.textContent);
+    expect(status.dataset.tone).toBe('error');
+    await click('Reload library');
+    expect(header.querySelector('.lm-archive-header-status')).toBe(status);
+    expect(status.textContent).toBe('');
+    m.client.error = new Error('corrupt'); m.client.emit(); await flush();
+    expect(status.textContent).toBe(t('archiveCorrupt'));
+  });
   it('previews saved weights on hover, keeps preview on leave and marks missing models', async () => {
     const m = mount(); await flush();
     m.change(snapshot => { snapshot.entries[0].strength = 9; }); await flush();
@@ -241,7 +264,8 @@ describe('three-level archive manager', () => {
     await click('Edit'); document.querySelector('.lm-archive-dialog input').value = 'Renamed';
     m.client.data = { ...m.client.data, revision: 2 }; m.client.emit();
     await click('Confirm');
-    expect(document.querySelector('.lm-archive-error').textContent || document.querySelector('.lm-archive-dialog .lm-archive-error').textContent).toContain('changed elsewhere');
+    expect(document.querySelector('.lm-archive-header-status').textContent).toContain('changed elsewhere');
+    expect(document.querySelector('.lm-archive-dialog .lm-archive-error')).toBeNull();
     expect(m.history).toHaveLength(0); await click('Cancel');
     await click('Edit'); document.querySelector('.lm-archive-dialog input').value = 'Renamed'; await click('Confirm');
     expect(m.client.data.archives[0].name).toBe('Renamed'); expect(m.history).toHaveLength(0);

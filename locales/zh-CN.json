@@ -1,6 +1,6 @@
 {
     "loraGroups": {
-        "archiveManage": "网格存档管理",
+        "archiveManage": "LoRA网格存档管理",
         "archiveUntitled": "未命名",
         "archiveSave": "保存网格存档",
         "archiveReset": "重置到保存状态",

@@ -1,5 +1,5 @@
 export const ARCHIVE_MESSAGES = {
-  "archiveManage": "Grid archive manager",
+  "archiveManage": "LoRA grid archive manager",
   "archiveUntitled": "Untitled",
   "archiveSave": "Save grid archive",
   "archiveReset": "Restore saved grid",

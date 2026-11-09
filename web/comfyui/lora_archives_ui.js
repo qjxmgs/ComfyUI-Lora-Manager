@@ -43,7 +43,7 @@ export function trapKeys(event, root, close) {
   }
 }
 
-export function archiveDialog({ title, t, build, actions, signal }) {
+export function archiveDialog({ title, t, build, actions, signal, onMessage }) {
   if (signal?.aborted) return Promise.resolve(null);
   return new Promise(resolve => {
     const previous = document.activeElement;
@@ -65,17 +65,22 @@ export function archiveDialog({ title, t, build, actions, signal }) {
     for (const option of actions) {
       const button = action(option.label, async () => {
         if (busy) return;
-        busy = true; message.textContent = '';
+        busy = true; message.textContent = ''; onMessage?.('');
         footer.querySelectorAll('button').forEach(item => { item.disabled = true; });
         try { const result = await option.run(context); close(result); }
-        catch (error) { message.textContent = errorText(t, error); }
+        catch (error) {
+          const detail = errorText(t, error);
+          if (onMessage) onMessage(detail); else message.textContent = detail;
+        }
         finally { busy = false; footer.querySelectorAll('button').forEach(item => { item.disabled = false; }); }
       });
       if (option.primary) button.classList.add('lm-archive-primary');
       footer.append(button);
     }
     footer.append(action(t('archiveCancel'), () => { if (!busy) close(null); }));
-    dialog.append(el('h3', '', title), body, message, footer); overlay.append(dialog); document.body.append(overlay);
+    dialog.append(el('h3', '', title), body);
+    if (!onMessage) dialog.append(message);
+    dialog.append(footer); overlay.append(dialog); document.body.append(overlay);
     overlay.addEventListener('pointerdown', event => { event.stopPropagation(); });
     overlay.addEventListener('wheel', event => event.stopPropagation(), { passive: true });
     overlay.addEventListener('keydown', event => trapKeys(event, dialog, () => { if (!busy) close(null); }));

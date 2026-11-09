@@ -1,6 +1,6 @@
 {
     "loraGroups": {
-        "archiveManage": "[TODO: Translate] Grid archive manager",
+        "archiveManage": "[TODO: Translate] LoRA grid archive manager",
         "archiveUntitled": "[TODO: Translate] Untitled",
         "archiveSave": "[TODO: Translate] Save grid archive",
         "archiveReset": "[TODO: Translate] Restore saved grid",

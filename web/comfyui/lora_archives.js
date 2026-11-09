@@ -25,19 +25,19 @@ export function createArchiveController({ node, t, snapshot, apply, associate, c
       actions: [{ label: t('archiveRetry'), run: () => client.refresh() }],
     });
   };
-  async function run(task) {
+  async function run(task, onMessage) {
     if (busy || disposed) return false;
     busy = true; update();
     try { return await task(); }
-    catch (error) { await report(error); return false; }
+    catch (error) { if (onMessage) onMessage(errorText(t, error)); else await report(error); return false; }
     finally { busy = false; update(); }
   }
-  async function saveAs(categoryId) {
-    const result = await archiveDetails({ client, t, snapshot: snapshot(), categoryId, signal: lifetime.signal });
+  async function saveAs(categoryId, onMessage) {
+    const result = await archiveDetails({ client, t, snapshot: snapshot(), categoryId, signal: lifetime.signal, onMessage });
     if (!result || disposed) return false;
     draftName = null; associate(result.resultId); update(); return true;
   }
-  async function save() {
+  async function save(onMessage) {
     const archive = current();
     if (draftName !== null && draftName.trim() !== (archive?.name || '')) {
       const name = draftName.trim();
@@ -45,22 +45,22 @@ export function createArchiveController({ node, t, snapshot, apply, associate, c
       const result = await client.write('/archives', 'POST', { name, categoryId: archive?.categoryId || 'default', snapshot: snapshot() });
       draftName = null; associate(result.resultId); update(); return true;
     }
-    if (!archive) return saveAs();
+    if (!archive) return saveAs(undefined, onMessage);
     await client.write(`/archives/${archive.id}`, 'PATCH', { snapshot: snapshot() });
     update(); return true;
   }
-  async function load(archive) {
+  async function load(archive, onMessage) {
     if (disposed) return false;
     if (archive.id === currentId() && !dirty()) return true;
     if (dirty()) {
-      const choice = await archiveDialog({ title: t('archiveManage'), t, signal: lifetime.signal,
+      const choice = await archiveDialog({ title: t('archiveManage'), t, signal: lifetime.signal, onMessage,
         build: body => { body.append(el('p', '', t('archiveUnsaved'))); },
         actions: [
           { label: t('archiveSaveSwitch'), primary: true, run: () => 'save' },
           { label: t('archiveDiscardSwitch'), run: () => 'discard' },
         ],
       });
-      if (!choice || (choice === 'save' && !await save())) return false;
+      if (!choice || (choice === 'save' && !await save(onMessage))) return false;
     }
     const latest = client.data.archives.find(item => item.id === archive.id);
     if (!latest) throw new Error('notFound');
@@ -155,8 +155,8 @@ export function createArchiveController({ node, t, snapshot, apply, associate, c
         }),
         manage: () => {
           if (closeManager) return;
-          closeManager = openArchiveManager({ client, t, currentId, load: target => run(() => load(target)),
-            saveAs: categoryId => run(() => saveAs(categoryId)), signal: lifetime.signal,
+          closeManager = openArchiveManager({ client, t, currentId, load: (target, onMessage) => run(() => load(target, onMessage), onMessage),
+            saveAs: (categoryId, onMessage) => run(() => saveAs(categoryId, onMessage), onMessage), signal: lifetime.signal,
             onClose: () => { closeManager = null; } });
         },
       };
