@@ -127,16 +127,16 @@
         "enableAll": "全部启用",
         "strength": "模型权重",
         "clip": "CLIP 权重",
-        "allWeights": "[TODO: Translate] Set all LoRA weights",
-        "mixedWeights": "[TODO: Translate] Mixed",
+        "allWeights": "统一设置所有 LoRA 的权重",
+        "mixedWeights": "混合",
         "cancel": "取消",
         "confirm": "确认",
         "search": "搜索文件名或模型名称",
         "loading": "正在加载 LoRA...",
         "loadFailed": "无法加载 LoRA，请重试。",
         "selectResults": "选择所有匹配结果",
-        "refreshList": "[TODO: Translate] Refresh LoRA files",
-        "autoCycle": "[TODO: Translate] Cycle LoRAs after each successful task (including batch queues)",
+        "refreshList": "刷新 LoRA 文件列表",
+        "autoCycle": "每次任务成功完成后切换到下一个 LoRA（支持批量队列）",
         "clearSelection": "清空选择",
         "more": "当前显示 {shown} 个匹配结果，共 {total} 个。请缩小搜索范围。",
         "selected": "已选择 {count} 项",
@@ -419,7 +419,7 @@
                 "loraName": "LoRA 文件名",
                 "loraModel": "LoRA 模型名称",
                 "prompt": "提示词",
-                "triggerWords": "[TODO: Translate] Trigger Words"
+                "triggerWords": "触发词"
             }
         },
         "filter": {
@@ -915,12 +915,12 @@
                 "customTemplate": "自定义模板"
             },
             "customTemplatePlaceholder": "输入自定义模板（如：{base_model}/{author}/{first_tag}）",
-            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
+            "workflowHint": "适用于工作流下载及工作流页面的自动整理。",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
                 "embedding": "Embedding",
-                "workflow": "[TODO: Translate] Workflow"
+                "workflow": "工作流"
             },
             "baseModelPathMappings": "基础模型路径映射",
             "baseModelPathMappingsHelp": "为特定基础模型自定义文件夹名称（如“Flux.1 D”→“flux”）",
@@ -1194,7 +1194,7 @@
             "viewSelected": "查看已选中",
             "addTags": "为所选中添加标签",
             "setBaseModel": "为所选中设置基础模型",
-            "setTriggerWords": "[TODO: Translate] Set Trigger Words for Selected",
+            "setTriggerWords": "为所选模型设置触发词",
             "setContentRating": "为所选中设置内容评级",
             "copyAll": "复制所选中语法",
             "refreshAll": "刷新所选中元数据",
@@ -2116,11 +2116,11 @@
             "saveChanges": "保存更改"
         },
         "bulkTriggerWords": {
-            "title": "[TODO: Translate] Set Trigger Words for Multiple LoRAs",
-            "description": "[TODO: Translate] Replace trigger words for {count} selected LoRA(s).",
-            "placeholder": "[TODO: Translate] Enter one trigger word or phrase per line...",
-            "help": "[TODO: Translate] One entry per line. Commas within a phrase are preserved. These entries replace all existing trigger words on each selected LoRA.",
-            "save": "[TODO: Translate] Replace Trigger Words"
+            "title": "批量设置 LoRA 触发词",
+            "description": "替换所选 {count} 个 LoRA 的触发词。",
+            "placeholder": "每行输入一个触发词或短语...",
+            "help": "每行一条，短语中的逗号会保留。输入内容将替换每个所选 LoRA 的全部现有触发词。",
+            "save": "替换触发词"
         },
         "bulkBaseModel": {
             "title": "批量设置基础模型",
@@ -3012,9 +3012,9 @@
             "baseModelUpdateFailed": "基础模型更新失败",
             "baseModelNotSelected": "请选择基础模型",
             "bulkBaseModelUpdating": "正在为 {count} 个模型更新基础模型...",
-            "bulkTriggerWordsEmpty": "[TODO: Translate] Enter at least one trigger word or phrase",
-            "bulkTriggerWordsSuccess": "[TODO: Translate] Updated trigger words for {count} LoRA(s)",
-            "bulkTriggerWordsFailed": "[TODO: Translate] Failed to update trigger words for {count} LoRA(s)",
+            "bulkTriggerWordsEmpty": "请至少输入一个触发词或短语",
+            "bulkTriggerWordsSuccess": "已更新 {count} 个 LoRA 的触发词",
+            "bulkTriggerWordsFailed": "有 {count} 个 LoRA 的触发词更新失败",
             "bulkBaseModelUpdateSuccess": "成功为 {count} 个模型更新基础模型",
             "bulkBaseModelUpdatePartial": "更新了 {success} 个模型，{failed} 个失败",
             "bulkBaseModelUpdateFailed": "为选中模型更新基础模型失败",
