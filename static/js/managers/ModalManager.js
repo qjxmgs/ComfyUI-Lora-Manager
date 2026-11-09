@@ -332,6 +332,17 @@ export class ModalManager {
             });
         }
 
+        const bulkTriggerWordsModal = document.getElementById('bulkTriggerWordsModal');
+        if (bulkTriggerWordsModal) {
+            this.registerModal('bulkTriggerWordsModal', {
+                element: bulkTriggerWordsModal,
+                onClose: () => {
+                    bulkTriggerWordsModal.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                }
+            });
+        }
+
         // Register bulkBaseModelModal
         const bulkBaseModelModal = document.getElementById('bulkBaseModelModal');
         if (bulkBaseModelModal) {

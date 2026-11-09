@@ -1330,3 +1330,34 @@ async def test_relink_keeps_the_existing_payload_values(tmp_path):
 
     assert result["sha256"] == "original"
     assert result["model_name"] == "Remote"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("existing_civitai", [None, {"id": 123, "trainedWords": ["old"], "model": {"name": "Keep"}}])
+async def test_save_trigger_words_persists_and_preserves_other_metadata(tmp_path, existing_civitai):
+    from py.utils.metadata_manager import MetadataManager
+    from py.utils.sidecar_paths import get_metadata_path
+
+    helpers = build_service()
+    helpers.metadata_manager.save_metadata.side_effect = MetadataManager.save_metadata
+    file_path = str(tmp_path / "model.safetensors")
+    original = {"civitai": existing_civitai, "tags": ["style"], "favorite": True}
+    assert await MetadataManager.save_metadata(file_path, original)
+    update_cache = AsyncMock(return_value=True)
+    words = ["Soleil style", "red dress, white lace"]
+
+    await helpers.service.save_metadata_updates(
+        file_path=file_path,
+        updates={"civitai": {"trainedWords": words}},
+        metadata_loader=helpers.service.load_local_metadata,
+        update_cache=update_cache,
+    )
+
+    reloaded = await helpers.service.load_local_metadata(get_metadata_path(file_path))
+    assert reloaded["civitai"]["trainedWords"] == words
+    assert reloaded["tags"] == ["style"]
+    assert reloaded["favorite"] is True
+    if existing_civitai:
+        assert reloaded["civitai"]["id"] == 123
+        assert reloaded["civitai"]["model"] == {"name": "Keep"}
+    update_cache.assert_awaited_once_with(file_path, file_path, reloaded)

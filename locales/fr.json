@@ -1186,6 +1186,7 @@
             "viewSelected": "Voir la sélection",
             "addTags": "Ajouter des tags à tous",
             "setBaseModel": "Définir le modèle de base pour tous",
+            "setTriggerWords": "[TODO: Translate] Set Trigger Words for Selected",
             "setContentRating": "Définir la classification du contenu pour tous",
             "copyAll": "Copier toute la syntaxe",
             "refreshAll": "Actualiser toutes les métadonnées",
@@ -2106,6 +2107,13 @@
             "replaceTags": "Remplacer les tags",
             "saveChanges": "Enregistrer les modifications"
         },
+        "bulkTriggerWords": {
+            "title": "[TODO: Translate] Set Trigger Words for Multiple LoRAs",
+            "description": "[TODO: Translate] Replace trigger words for {count} selected LoRA(s).",
+            "placeholder": "[TODO: Translate] Enter one trigger word or phrase per line...",
+            "help": "[TODO: Translate] One entry per line. Commas within a phrase are preserved. These entries replace all existing trigger words on each selected LoRA.",
+            "save": "[TODO: Translate] Replace Trigger Words"
+        },
         "bulkBaseModel": {
             "title": "Définir le modèle de base pour plusieurs modèles",
             "description": "Définir le modèle de base pour",
@@ -2996,6 +3004,9 @@
             "baseModelUpdateFailed": "Échec de la mise à jour du modèle de base",
             "baseModelNotSelected": "Veuillez sélectionner un modèle de base",
             "bulkBaseModelUpdating": "Mise à jour du modèle de base pour {count} modèle(s)...",
+            "bulkTriggerWordsEmpty": "[TODO: Translate] Enter at least one trigger word or phrase",
+            "bulkTriggerWordsSuccess": "[TODO: Translate] Updated trigger words for {count} LoRA(s)",
+            "bulkTriggerWordsFailed": "[TODO: Translate] Failed to update trigger words for {count} LoRA(s)",
             "bulkBaseModelUpdateSuccess": "Modèle de base mis à jour avec succès pour {count} modèle(s)",
             "bulkBaseModelUpdatePartial": "{success} modèle(s) mis à jour, {failed} modèle(s) en échec",
             "bulkBaseModelUpdateFailed": "Échec de la mise à jour du modèle de base pour les modèles sélectionnés",

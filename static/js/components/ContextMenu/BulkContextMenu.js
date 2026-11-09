@@ -30,6 +30,10 @@ export class BulkContextMenu extends BaseContextMenu {
 
         // Update button visibility based on model type
         const addTagsItem = this.menu.querySelector('[data-action="add-tags"]');
+        const setTriggerWordsItem = this.menu.querySelector('[data-action="set-trigger-words"]');
+        if (setTriggerWordsItem) {
+            setTriggerWordsItem.style.display = config.setTriggerWords ? 'flex' : 'none';
+        }
         const setBaseModelItem = this.menu.querySelector('[data-action="set-base-model"]');
         const setContentRatingItem = this.menu.querySelector('[data-action="set-content-rating"]');
         const sendToWorkflowAppendItem = this.menu.querySelector('[data-action="send-to-workflow-append"]');
@@ -242,6 +246,9 @@ export class BulkContextMenu extends BaseContextMenu {
                 break;
             case 'set-base-model':
                 bulkManager.showBulkBaseModelModal();
+                break;
+            case 'set-trigger-words':
+                bulkManager.showBulkTriggerWordsModal();
                 break;
             case 'set-content-rating':
                 bulkManager.showBulkContentRatingSelector();

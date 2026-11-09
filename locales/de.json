@@ -1186,6 +1186,7 @@
             "viewSelected": "Auswahl anzeigen",
             "addTags": "Allen Tags hinzufügen",
             "setBaseModel": "Basismodell für alle festlegen",
+            "setTriggerWords": "[TODO: Translate] Set Trigger Words for Selected",
             "setContentRating": "Inhaltsbewertung für alle festlegen",
             "copyAll": "Alle Syntax kopieren",
             "refreshAll": "Alle Metadaten aktualisieren",
@@ -2106,6 +2107,13 @@
             "replaceTags": "Tags ersetzen",
             "saveChanges": "Änderungen speichern"
         },
+        "bulkTriggerWords": {
+            "title": "[TODO: Translate] Set Trigger Words for Multiple LoRAs",
+            "description": "[TODO: Translate] Replace trigger words for {count} selected LoRA(s).",
+            "placeholder": "[TODO: Translate] Enter one trigger word or phrase per line...",
+            "help": "[TODO: Translate] One entry per line. Commas within a phrase are preserved. These entries replace all existing trigger words on each selected LoRA.",
+            "save": "[TODO: Translate] Replace Trigger Words"
+        },
         "bulkBaseModel": {
             "title": "Basismodell für mehrere Modelle festlegen",
             "description": "Basismodell festlegen für",
@@ -2996,6 +3004,9 @@
             "baseModelUpdateFailed": "Fehler beim Aktualisieren des Basismodells",
             "baseModelNotSelected": "Bitte ein Basismodell auswählen",
             "bulkBaseModelUpdating": "Basismodell wird für {count} Modell(e) aktualisiert...",
+            "bulkTriggerWordsEmpty": "[TODO: Translate] Enter at least one trigger word or phrase",
+            "bulkTriggerWordsSuccess": "[TODO: Translate] Updated trigger words for {count} LoRA(s)",
+            "bulkTriggerWordsFailed": "[TODO: Translate] Failed to update trigger words for {count} LoRA(s)",
             "bulkBaseModelUpdateSuccess": "Basismodell erfolgreich für {count} Modell(e) aktualisiert",
             "bulkBaseModelUpdatePartial": "{success} Modelle aktualisiert, {failed} fehlgeschlagen",
             "bulkBaseModelUpdateFailed": "Aktualisierung des Basismodells für ausgewählte Modelle fehlgeschlagen",

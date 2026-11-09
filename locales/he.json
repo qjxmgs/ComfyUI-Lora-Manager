@@ -1186,6 +1186,7 @@
             "viewSelected": "הצג נבחרים",
             "addTags": "הוסף תגיות לכל",
             "setBaseModel": "הגדר מודל בסיס לכל",
+            "setTriggerWords": "[TODO: Translate] Set Trigger Words for Selected",
             "setContentRating": "הגדר דירוג תוכן לכל המודלים",
             "copyAll": "העתק את כל התחבירים",
             "refreshAll": "רענן את כל המטא-נתונים",
@@ -2106,6 +2107,13 @@
             "replaceTags": "החלף תגיות",
             "saveChanges": "שמור שינויים"
         },
+        "bulkTriggerWords": {
+            "title": "[TODO: Translate] Set Trigger Words for Multiple LoRAs",
+            "description": "[TODO: Translate] Replace trigger words for {count} selected LoRA(s).",
+            "placeholder": "[TODO: Translate] Enter one trigger word or phrase per line...",
+            "help": "[TODO: Translate] One entry per line. Commas within a phrase are preserved. These entries replace all existing trigger words on each selected LoRA.",
+            "save": "[TODO: Translate] Replace Trigger Words"
+        },
         "bulkBaseModel": {
             "title": "הגדר מודל בסיס למספר מודלים",
             "description": "הגדר מודל בסיס עבור",
@@ -2996,6 +3004,9 @@
             "baseModelUpdateFailed": "עדכון מודל הבסיס נכשל",
             "baseModelNotSelected": "אנא בחר מודל בסיס",
             "bulkBaseModelUpdating": "מעדכן מודל בסיס עבור {count} מודל(ים)...",
+            "bulkTriggerWordsEmpty": "[TODO: Translate] Enter at least one trigger word or phrase",
+            "bulkTriggerWordsSuccess": "[TODO: Translate] Updated trigger words for {count} LoRA(s)",
+            "bulkTriggerWordsFailed": "[TODO: Translate] Failed to update trigger words for {count} LoRA(s)",
             "bulkBaseModelUpdateSuccess": "עודכן בהצלחה מודל הבסיס עבור {count} מודל(ים)",
             "bulkBaseModelUpdatePartial": "עודכנו {success} מודל(ים), נכשלו {failed} מודל(ים)",
             "bulkBaseModelUpdateFailed": "עדכון מודל הבסיס עבור המודלים שנבחרו נכשל",

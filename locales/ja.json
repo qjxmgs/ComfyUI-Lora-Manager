@@ -1186,6 +1186,7 @@
             "viewSelected": "選択中を表示",
             "addTags": "すべてにタグを追加",
             "setBaseModel": "すべてにベースモデルを設定",
+            "setTriggerWords": "[TODO: Translate] Set Trigger Words for Selected",
             "setContentRating": "すべてのモデルのコンテンツレーティングを設定",
             "copyAll": "すべての構文をコピー",
             "refreshAll": "すべてのメタデータを更新",
@@ -2106,6 +2107,13 @@
             "replaceTags": "タグを置換",
             "saveChanges": "変更を保存"
         },
+        "bulkTriggerWords": {
+            "title": "[TODO: Translate] Set Trigger Words for Multiple LoRAs",
+            "description": "[TODO: Translate] Replace trigger words for {count} selected LoRA(s).",
+            "placeholder": "[TODO: Translate] Enter one trigger word or phrase per line...",
+            "help": "[TODO: Translate] One entry per line. Commas within a phrase are preserved. These entries replace all existing trigger words on each selected LoRA.",
+            "save": "[TODO: Translate] Replace Trigger Words"
+        },
         "bulkBaseModel": {
             "title": "複数モデルのベースモデルを設定",
             "description": "ベースモデルを設定するモデル：",
@@ -2996,6 +3004,9 @@
             "baseModelUpdateFailed": "ベースモデルの更新に失敗しました",
             "baseModelNotSelected": "ベースモデルを選択してください",
             "bulkBaseModelUpdating": "{count} モデルのベースモデルを更新中...",
+            "bulkTriggerWordsEmpty": "[TODO: Translate] Enter at least one trigger word or phrase",
+            "bulkTriggerWordsSuccess": "[TODO: Translate] Updated trigger words for {count} LoRA(s)",
+            "bulkTriggerWordsFailed": "[TODO: Translate] Failed to update trigger words for {count} LoRA(s)",
             "bulkBaseModelUpdateSuccess": "{count} モデルのベースモデルが正常に更新されました",
             "bulkBaseModelUpdatePartial": "{success} モデルを更新、{failed} モデルは失敗しました",
             "bulkBaseModelUpdateFailed": "選択したモデルのベースモデルの更新に失敗しました",

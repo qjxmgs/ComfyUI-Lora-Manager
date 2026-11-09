@@ -37,6 +37,9 @@ export class BulkManager {
         this.bulkBaseModelPicker = null;
         this.bulkBaseModelValue = '';
 
+        this.bulkTriggerWordsPaths = null;
+        this.savingBulkTriggerWords = false;
+
         // Drag detection properties
         this.dragThreshold = 5; // Pixels to move before considering it a drag
         this.dragDelayMs = 100; // Minimum hold time before a drag is treated as a marquee
@@ -53,6 +56,7 @@ export class BulkManager {
         this.actionConfig = {
             [MODEL_TYPES.LORA]: {
                 addTags: true,
+                setTriggerWords: true,
                 sendToWorkflow: true,
                 copyAll: true,
                 refreshAll: true,
@@ -1695,6 +1699,74 @@ export class BulkManager {
 
         // Initialize the bulk base model interface
         this.initializeBulkBaseModelInterface();
+    }
+
+    showBulkTriggerWordsModal() {
+        if (!this.actionConfig[state.currentPageType]?.setTriggerWords || this.savingBulkTriggerWords) return;
+        if (state.selectedModels.size === 0) {
+            showToast(this._noSelectionKey(), {}, 'warning');
+            return;
+        }
+
+        this.bulkTriggerWordsPaths = Array.from(state.selectedModels);
+        document.getElementById('bulkTriggerWordsDescription').textContent = translate(
+            'modals.bulkTriggerWords.description', { count: this.bulkTriggerWordsPaths.length }
+        );
+        const input = document.getElementById('bulkTriggerWordsInput');
+        input.value = '';
+        modalManager.showModal('bulkTriggerWordsModal', null, null, () => {
+            this.bulkTriggerWordsPaths = null;
+        });
+        input.focus();
+    }
+
+    async saveBulkTriggerWords() {
+        if (this.savingBulkTriggerWords || !this.actionConfig[state.currentPageType]?.setTriggerWords) return;
+        const filePaths = this.bulkTriggerWordsPaths;
+        if (!filePaths?.length) {
+            showToast(this._noSelectionKey(), {}, 'warning');
+            return;
+        }
+        const words = [...new Set(document.getElementById('bulkTriggerWordsInput').value
+            .split(/\r?\n/).map(word => word.trim()).filter(Boolean))];
+        if (words.length === 0) {
+            showToast('toast.models.bulkTriggerWordsEmpty', {}, 'warning');
+            return;
+        }
+        // Match the single-model trigger word editor's limits.
+        if (words.length > 100) {
+            showToast('toast.triggerWords.tooMany', {}, 'warning');
+            return;
+        }
+        if (words.some(word => word.split(/\s+/).length > 500)) {
+            showToast('toast.triggerWords.tooLong', {}, 'warning');
+            return;
+        }
+
+        this.savingBulkTriggerWords = true;
+        let successCount = 0;
+        let failedCount = 0;
+        try {
+            const apiClient = getModelApiClient();
+            modalManager.closeModal('bulkTriggerWordsModal');
+            for (const filePath of filePaths) {
+                try {
+                    await apiClient.saveModelMetadata(filePath, { civitai: { trainedWords: words } });
+                    successCount++;
+                } catch (error) {
+                    failedCount++;
+                    console.error(`Failed to update trigger words for ${filePath}:`, error);
+                }
+            }
+            if (successCount > 0) {
+                showToast('toast.models.bulkTriggerWordsSuccess', { count: successCount }, 'success');
+            }
+            if (failedCount > 0) {
+                showToast('toast.models.bulkTriggerWordsFailed', { count: failedCount }, 'error');
+            }
+        } finally {
+            this.savingBulkTriggerWords = false;
+        }
     }
 
     showBulkContentRatingSelector() {

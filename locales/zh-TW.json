@@ -1186,6 +1186,7 @@
             "viewSelected": "檢視已選取",
             "addTags": "新增標籤到全部",
             "setBaseModel": "設定全部基礎模型",
+            "setTriggerWords": "[TODO: Translate] Set Trigger Words for Selected",
             "setContentRating": "為全部設定內容分級",
             "copyAll": "複製全部語法",
             "refreshAll": "刷新全部 metadata",
@@ -2106,6 +2107,13 @@
             "replaceTags": "取代標籤",
             "saveChanges": "儲存變更"
         },
+        "bulkTriggerWords": {
+            "title": "[TODO: Translate] Set Trigger Words for Multiple LoRAs",
+            "description": "[TODO: Translate] Replace trigger words for {count} selected LoRA(s).",
+            "placeholder": "[TODO: Translate] Enter one trigger word or phrase per line...",
+            "help": "[TODO: Translate] One entry per line. Commas within a phrase are preserved. These entries replace all existing trigger words on each selected LoRA.",
+            "save": "[TODO: Translate] Replace Trigger Words"
+        },
         "bulkBaseModel": {
             "title": "設定多個模型的基礎模型",
             "description": "設定基礎模型給",
@@ -2996,6 +3004,9 @@
             "baseModelUpdateFailed": "更新基礎模型失敗",
             "baseModelNotSelected": "請選擇基礎模型",
             "bulkBaseModelUpdating": "正在為 {count} 個模型更新基礎模型...",
+            "bulkTriggerWordsEmpty": "[TODO: Translate] Enter at least one trigger word or phrase",
+            "bulkTriggerWordsSuccess": "[TODO: Translate] Updated trigger words for {count} LoRA(s)",
+            "bulkTriggerWordsFailed": "[TODO: Translate] Failed to update trigger words for {count} LoRA(s)",
             "bulkBaseModelUpdateSuccess": "已成功為 {count} 個模型更新基礎模型",
             "bulkBaseModelUpdatePartial": "已更新 {success} 個模型，{failed} 個模型失敗",
             "bulkBaseModelUpdateFailed": "更新所選模型的基礎模型失敗",

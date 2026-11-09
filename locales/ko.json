@@ -1186,6 +1186,7 @@
             "viewSelected": "선택 항목 보기",
             "addTags": "모두에 태그 추가",
             "setBaseModel": "모두에 베이스 모델 설정",
+            "setTriggerWords": "[TODO: Translate] Set Trigger Words for Selected",
             "setContentRating": "모든 모델에 콘텐츠 등급 설정",
             "copyAll": "모든 문법 복사",
             "refreshAll": "모든 메타데이터 새로고침",
@@ -2106,6 +2107,13 @@
             "replaceTags": "태그 교체",
             "saveChanges": "변경사항 저장"
         },
+        "bulkTriggerWords": {
+            "title": "[TODO: Translate] Set Trigger Words for Multiple LoRAs",
+            "description": "[TODO: Translate] Replace trigger words for {count} selected LoRA(s).",
+            "placeholder": "[TODO: Translate] Enter one trigger word or phrase per line...",
+            "help": "[TODO: Translate] One entry per line. Commas within a phrase are preserved. These entries replace all existing trigger words on each selected LoRA.",
+            "save": "[TODO: Translate] Replace Trigger Words"
+        },
         "bulkBaseModel": {
             "title": "여러 모델의 베이스 모델 설정",
             "description": "다음 모델의 베이스 모델을 설정합니다:",
@@ -2996,6 +3004,9 @@
             "baseModelUpdateFailed": "베이스 모델 업데이트에 실패했습니다",
             "baseModelNotSelected": "베이스 모델을 선택해주세요",
             "bulkBaseModelUpdating": "{count}개의 모델에 베이스 모델을 업데이트 중...",
+            "bulkTriggerWordsEmpty": "[TODO: Translate] Enter at least one trigger word or phrase",
+            "bulkTriggerWordsSuccess": "[TODO: Translate] Updated trigger words for {count} LoRA(s)",
+            "bulkTriggerWordsFailed": "[TODO: Translate] Failed to update trigger words for {count} LoRA(s)",
             "bulkBaseModelUpdateSuccess": "{count}개의 모델에 베이스 모델이 성공적으로 업데이트되었습니다",
             "bulkBaseModelUpdatePartial": "{success}개의 모델이 업데이트되었고, {failed}개의 모델이 실패했습니다",
             "bulkBaseModelUpdateFailed": "선택한 모델의 베이스 모델 업데이트에 실패했습니다",

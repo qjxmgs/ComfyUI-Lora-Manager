@@ -1,0 +1,20 @@
+<div id="bulkTriggerWordsModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>{{ t('modals.bulkTriggerWords.title') }}</h2>
+            <span class="close" onclick="modalManager.closeModal('bulkTriggerWordsModal')">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p id="bulkTriggerWordsDescription"></p>
+            <label for="bulkTriggerWordsInput">{{ t('modals.model.triggerWords.label') }}</label>
+            <textarea id="bulkTriggerWordsInput" rows="6" aria-describedby="bulkTriggerWordsHelp" placeholder="{{ t('modals.bulkTriggerWords.placeholder') }}"></textarea>
+            <p id="bulkTriggerWordsHelp">{{ t('modals.bulkTriggerWords.help') }}</p>
+        </div>
+        <div class="modal-actions">
+            <button class="cancel-btn" onclick="modalManager.closeModal('bulkTriggerWordsModal')">{{ t('modals.bulkBaseModel.cancel') }}</button>
+            <button class="primary-btn" onclick="bulkManager.saveBulkTriggerWords()">
+                <i class="fas fa-save"></i> {{ t('modals.bulkTriggerWords.save') }}
+            </button>
+        </div>
+    </div>
+</div>

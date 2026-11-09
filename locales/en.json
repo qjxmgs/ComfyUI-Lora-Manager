@@ -1186,6 +1186,7 @@
       "viewSelected": "View Selected",
       "addTags": "Add Tags to Selected",
       "setBaseModel": "Set Base Model for Selected",
+      "setTriggerWords": "Set Trigger Words for Selected",
       "setContentRating": "Set Content Rating for Selected",
       "copyAll": "Copy Selected Syntax",
       "refreshAll": "Refresh Selected Metadata",
@@ -2106,6 +2107,13 @@
       "replaceTags": "Replace Tags",
       "saveChanges": "Save changes"
     },
+    "bulkTriggerWords": {
+      "title": "Set Trigger Words for Multiple LoRAs",
+      "description": "Replace trigger words for {count} selected LoRA(s).",
+      "placeholder": "Enter one trigger word or phrase per line...",
+      "help": "One entry per line. Commas within a phrase are preserved. These entries replace all existing trigger words on each selected LoRA.",
+      "save": "Replace Trigger Words"
+    },
     "bulkBaseModel": {
       "title": "Set Base Model for Multiple Models",
       "description": "Set base model for",
@@ -2996,6 +3004,9 @@
       "baseModelUpdateFailed": "Failed to update base model",
       "baseModelNotSelected": "Please select a base model",
       "bulkBaseModelUpdating": "Updating base model for {count} model(s)...",
+      "bulkTriggerWordsEmpty": "Enter at least one trigger word or phrase",
+      "bulkTriggerWordsSuccess": "Updated trigger words for {count} LoRA(s)",
+      "bulkTriggerWordsFailed": "Failed to update trigger words for {count} LoRA(s)",
       "bulkBaseModelUpdateSuccess": "Successfully updated base model for {count} model(s)",
       "bulkBaseModelUpdatePartial": "Updated {success} model(s), failed {failed} model(s)",
       "bulkBaseModelUpdateFailed": "Failed to update base model for selected models",
