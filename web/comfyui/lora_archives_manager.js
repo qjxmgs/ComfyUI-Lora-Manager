@@ -1,6 +1,7 @@
 import { DEFAULT_PRIMARY, DEFAULT_SECONDARY, activeArchiveEntries, archivePath, ordered } from './lora_archives_state.js';
 import { action, archiveDialog, el, errorText, field, selectOptions, trapKeys } from './lora_archives_ui.js';
 import { getAvailableLoras, isLoraNameAvailable } from './loras_widget_utils.js';
+import { openArchiveCategoryMenu } from './lora_archive_category_menu.js';
 
 export function categoryLabel(category, t) {
   return category.id === DEFAULT_PRIMARY ? t('archiveUncategorized')
@@ -81,6 +82,7 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
   resize.setAttribute('role', 'separator'); resize.setAttribute('aria-label', t('archiveResize'));
   let primaryId = DEFAULT_PRIMARY, secondaryId = DEFAULT_SECONDARY, previewId = null, level = 0;
   let closed = false, busy = false, dragging = null, pointerCleanup = null, available = null;
+  let closeCategoryMenu = null;
   const nameObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(updateNameMarquees) : null;
   const selected = client.data.archives.find(item => item.id === currentId());
   if (selected) {
@@ -91,7 +93,7 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
   const localAbort = new AbortController();
   const close = () => {
     if (closed) return;
-    closed = true; pointerCleanup?.(); observer?.disconnect(); nameObserver?.disconnect(); unsubscribe(); localAbort.abort();
+    closed = true; closeCategoryMenu?.(); pointerCleanup?.(); observer?.disconnect(); nameObserver?.disconnect(); unsubscribe(); localAbort.abort();
     signal?.removeEventListener('abort', close); window.removeEventListener('resize', constrain);
     root.remove(); if (previous?.isConnected) previous.focus({ preventScroll: true }); onClose?.();
   };
@@ -218,6 +220,39 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
     });
   }
 
+  function categoryContext(event, row, item, siblings) {
+    event.preventDefault(); event.stopPropagation(); closeCategoryMenu?.();
+    if (busy) return;
+    const revision = client.data.revision;
+    const anchor = row.querySelector('button');
+    const rect = anchor.getBoundingClientRect();
+    const keyboard = event.type === 'keydown' || (!event.clientX && !event.clientY);
+    closeCategoryMenu = openArchiveCategoryMenu({
+      anchor, x: keyboard ? rect.left : event.clientX, y: keyboard ? rect.bottom : event.clientY,
+      item, siblings, primaries: ordered(client.data.categories.filter(value => value.parentId === null)),
+      t, label: value => categoryLabel(value, t), onClose: () => { closeCategoryMenu = null; },
+      onRename: () => run(() => archiveDialog({ title: t('archiveRename'), t, signal: localAbort.signal, onMessage: setMessage,
+        build(body) {
+          const name = el('input'); name.value = item.name; name.maxLength = 100;
+          body.append(field(t('archiveName'), name)); return { name };
+        }, actions: [{ label: t('archiveConfirm'), primary: true, run: ({ name }) => {
+          if (!name.value.trim()) throw new Error('invalid');
+          return client.write(`/categories/${item.id}`, 'PATCH', { name: name.value.trim() }, revision);
+        } }],
+      })),
+      onReorder: index => run(() => {
+        const ids = siblings.map(value => value.id).filter(id => id !== item.id);
+        ids.splice(index, 0, item.id);
+        return client.write('/categories/reorder', 'PATCH', { ids, parentId: item.parentId }, revision);
+      }),
+      onMove: parentId => run(async () => {
+        await client.write(`/categories/${item.id}`, 'PATCH', { parentId }, revision);
+        primaryId = parentId; secondaryId = item.id; render();
+      }),
+      onDelete: () => run(() => remove('categories', item)),
+    });
+  }
+
   function categoryPanel(title, items, panelLevel, parentId) {
     const panel = el('section', 'lm-archive-panel'); panel.dataset.level = panelLevel;
     const heading = el('div', 'lm-archive-panel-heading');
@@ -226,6 +261,11 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
     const list = el('div', 'lm-archive-list');
     for (const item of items) {
       const row = el('div', 'lm-archive-row');
+      row.dataset.categoryId = item.id;
+      row.addEventListener('contextmenu', event => categoryContext(event, row, item, items));
+      row.addEventListener('keydown', event => {
+        if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) categoryContext(event, row, item, items);
+      });
       row.classList.toggle('lm-archive-selected', item.id === (panelLevel === 0 ? primaryId : secondaryId));
       row.append(action(categoryLabel(item, t), () => {
         if (panelLevel === 0) { primaryId = item.id; secondaryId = null; }
@@ -306,6 +346,7 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
 
   function render() {
     if (closed) return;
+    closeCategoryMenu?.();
     const categories = client.data.categories;
     const primaries = ordered(categories.filter(item => item.parentId === null));
     if (!primaries.some(item => item.id === primaryId)) primaryId = primaries[0]?.id;

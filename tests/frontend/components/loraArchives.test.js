@@ -201,6 +201,92 @@ describe('archive toolbar and persistence', () => {
   });
 });
 
+describe('archive category context menus', () => {
+  async function setup() {
+    const client = fakeClient();
+    client.data.categories.push(
+      { id: 'p1', parentId: null, name: 'Styles', order: 1 },
+      { id: 'p2', parentId: null, name: 'Trials', order: 2 },
+      { id: 's1', parentId: 'uncategorized', name: 'Portraits', order: 1 },
+      { id: 's2', parentId: 'uncategorized', name: 'Landscape', order: 2 });
+    const m = mount({ client }); await flush();
+    m.toolbar.querySelector('[data-action="manage"]').click(); await flush(); return m;
+  }
+  function open(id, keyboard = false) {
+    const row = document.querySelector(`[data-category-id="${id}"]`);
+    row.querySelector('button').focus();
+    row.dispatchEvent(keyboard ? new KeyboardEvent('keydown', { key: 'F10', shiftKey: true, bubbles: true })
+      : new MouseEvent('contextmenu', { clientX: 100, clientY: 120, bubbles: true, cancelable: true }));
+    return document.querySelector('.lm-archive-category-menu');
+  }
+  const menuButton = name => [...document.querySelectorAll('.lm-archive-category-menu button')].find(button => button.textContent.replace('›', '') === name);
+  async function chooseMenu(name) { menuButton(name).click(); await flush(); }
+
+  it.each(['p1', 's1'])('renames category %s without modifying its parent or workflow', async id => {
+    const m = await setup(); const saved = m.live(); open(id);
+    await chooseMenu('Rename');
+    document.querySelector('.lm-archive-dialog input').value = 'Renamed'; await click('Confirm');
+    expect(m.client.write).toHaveBeenCalledWith(`/categories/${id}`, 'PATCH', { name: 'Renamed' }, 1);
+    expect(m.client.data.categories.find(item => item.id === id).name).toBe('Renamed');
+    expect(m.live()).toEqual(saved); expect(m.history).toHaveLength(0);
+  });
+  it.each(['p', 's'].flatMap(prefix => ['Move to top', 'Move up', 'Move down', 'Move to bottom'].map(command => [prefix, command])))('reorders %s siblings using %s', async (prefix, command) => {
+    const m = await setup(); open(`${prefix}1`);
+    const first = prefix === 'p' ? 'uncategorized' : 'default';
+    const ids = command === 'Move to top' || command === 'Move up' ? [`${prefix}1`, first, `${prefix}2`] : [first, `${prefix}2`, `${prefix}1`];
+    await chooseMenu(command);
+    expect(m.client.write).toHaveBeenCalledWith('/categories/reorder', 'PATCH', { ids, parentId: prefix === 'p' ? null : 'uncategorized' }, 1);
+    expect(ids.map(id => m.client.data.categories.find(item => item.id === id).order)).toEqual([0, 1, 2]);
+  });
+  it('disables boundary actions and protects built-in categories', async () => {
+    await setup(); open('uncategorized');
+    for (const label of ['Rename', 'Move to top', 'Move up', 'Delete']) expect(menuButton(label).disabled).toBe(true);
+    expect(menuButton('Move to category')).toBeUndefined();
+    open('default'); expect(menuButton('Move to category').disabled).toBe(true);
+    open('p2'); expect(menuButton('Move down').disabled).toBe(true); expect(menuButton('Move to bottom').disabled).toBe(true);
+  });
+  it('moves a secondary category through its destination submenu and follows it', async () => {
+    const m = await setup(); open('s1', true);
+    const move = menuButton('Move to category'); move.focus();
+    move.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(document.querySelectorAll('.lm-archive-category-menu')).toHaveLength(2);
+    expect(menuButton('Uncategorized').disabled).toBe(true);
+    expect(document.activeElement.textContent).toBe('Styles');
+    await chooseMenu('Styles');
+    expect(m.client.write).toHaveBeenCalledWith('/categories/s1', 'PATCH', { parentId: 'p1' }, 1);
+    expect(document.querySelector('[data-category-id="p1"]').classList.contains('lm-archive-selected')).toBe(true);
+    expect(document.querySelector('[data-category-id="s1"]')).not.toBeNull();
+    expect(m.history).toHaveLength(0);
+  });
+  it('keeps the original category when a destination rejects the move', async () => {
+    const m = await setup(); m.client.write.mockRejectedValueOnce(new Error('duplicate'));
+    open('s1'); await chooseMenu('Move to category'); await chooseMenu('Styles');
+    expect(m.client.data.categories.find(item => item.id === 's1').parentId).toBe('uncategorized');
+    expect(document.querySelector('.lm-archive-header-status').textContent).toBe(t('archiveDuplicate'));
+  });
+  it('deletes only after confirmation and requests migration for nonempty categories', async () => {
+    const m = await setup(); open('s1'); await chooseMenu('Delete'); await click('Cancel');
+    expect(m.client.write).not.toHaveBeenCalled();
+    open('s1'); await chooseMenu('Delete'); await click('Delete');
+    expect(m.client.write).toHaveBeenCalledWith('/categories/s1', 'DELETE', { destinationId: null }, 1);
+    m.client.data.categories.push({ id: 'child', parentId: 'p1', name: 'Child', order: 0 }); m.client.emit();
+    open('p1'); await chooseMenu('Delete'); await click('Delete');
+    expect(document.querySelector('.lm-archive-header-status').textContent).toBe(t('archiveInvalid'));
+    document.querySelector('.lm-archive-dialog select').value = 'p2'; await click('Delete');
+    expect(m.client.write).toHaveBeenLastCalledWith('/categories/p1', 'DELETE', { destinationId: 'p2' }, 2);
+  });
+  it('dismisses on Escape, outside click, refresh and manager close', async () => {
+    const m = await setup(); let menu = open('p1', true);
+    menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(document.querySelector('.lm-archive-category-menu')).toBeNull();
+    expect(document.activeElement.closest('[data-category-id]').dataset.categoryId).toBe('p1');
+    open('s1'); document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(document.querySelector('.lm-archive-category-menu')).toBeNull();
+    open('p1'); m.client.emit(); expect(document.querySelector('.lm-archive-category-menu')).toBeNull();
+    open('p1'); m.controller.dispose(); expect(document.querySelector('.lm-archive-category-menu')).toBeNull();
+  });
+});
+
 describe('three-level archive manager', () => {
   it('keeps loading and error messages in a persistent header slot', async () => {
     const m = mount(); await flush();

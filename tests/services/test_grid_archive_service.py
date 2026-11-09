@@ -83,6 +83,29 @@ def test_categories_move_archive_reorder_and_delete_with_migration(store):
     assert len(store.list_library()["categories"]) == 2
 
 
+def test_category_menu_changes_persist_without_changing_archives_or_images(store):
+    primary = mutate(store, "categories", name="Styles", parentId=None)["resultId"]
+    secondary = mutate(store, "categories", name="Portraits", parentId="uncategorized")["resultId"]
+    data = create(store, category=secondary)
+    identifier = data["resultId"]
+    image = io.BytesIO()
+    Image.new("RGB", (16, 16), "blue").save(image, "PNG")
+    store.set_image(identifier, data["revision"], image.getvalue())
+    original = store.list_library()["archives"]
+    image_bytes = store.image(identifier).read_bytes()
+    mutate(store, "categories", "PATCH", "reorder", parentId=None, ids=[primary, "uncategorized"])
+    mutate(store, "categories", "PATCH", "reorder", parentId="uncategorized", ids=[secondary, "default"])
+    mutate(store, "categories", "PATCH", secondary, name="Renamed", parentId=primary)
+    restored = GridArchiveService(store.directory).list_library()
+    categories = {item["id"]: item for item in restored["categories"]}
+    assert categories[primary]["order"] == 0
+    assert categories["uncategorized"]["order"] == 1
+    assert categories[secondary]["parentId"] == primary
+    assert categories[secondary]["name"] == "Renamed"
+    assert restored["archives"] == original
+    assert store.image(identifier).read_bytes() == image_bytes
+
+
 def test_primary_delete_moves_children_and_rejects_duplicate_destination(store):
     primary = mutate(store, "categories", name="Styles", parentId=None)["resultId"]
     secondary = mutate(store, "categories", name="Default", parentId=primary)["resultId"]
