@@ -680,6 +680,94 @@ describe('grouped LoRA Loader interactions', () => {
     ]);
   });
 
+  it('refreshes files before reloading the picker, preserving search, size and valid selections', async () => {
+    const node = await mount();
+    let files = ['folder/epoch1', 'folder/epoch2'];
+    let finishScan;
+    const scan = new Promise(resolve => { finishScan = resolve; });
+    fetchApi.mockImplementation(async url => {
+      if (url === '/lm/loras/scan') return scan;
+      return { ok: true, json: async () => ({ loras: files.map(file_name => ({ file_name })) }) };
+    });
+    click(panels(node)[0], '+'); await flush();
+    const dialog = document.querySelector('.lm-group-picker-dialog');
+    // Native resizing changes inline dimensions, which redraws must preserve.
+    dialog.style.width = '780px'; dialog.style.height = '600px';
+    const search = dialog.querySelector('input[type="search"]');
+    search.value = 'epoch'; search.dispatchEvent(new Event('input'));
+    click(dialog, 'Select matching results');
+    const listRequests = () => fetchApi.mock.calls.filter(([url]) => url === '/lm/loras/cycler-list').length;
+    const beforeRefresh = listRequests();
+    click(dialog, 'Refresh LoRA files');
+    click(dialog, 'Refresh LoRA files'); await flush();
+    expect(fetchApi.mock.calls.filter(([url]) => url === '/lm/loras/scan')).toHaveLength(1);
+    expect(listRequests()).toBe(beforeRefresh);
+    expect(dialog.querySelector('.lm-groups-dialog-footer button:last-child').disabled).toBe(true);
+    files = ['folder/epoch1', 'folder/epoch3', 'unrelated'];
+    finishScan({ ok: true, json: async () => ({ status: 'success' }) }); await flush();
+    expect(listRequests()).toBe(beforeRefresh + 1);
+    expect(search.value).toBe('epoch');
+    expect(dialog.style.width).toBe('780px'); expect(dialog.style.height).toBe('600px');
+    expect([...dialog.querySelectorAll('.lm-group-picker-row span')].map(el => el.textContent))
+      .toEqual(['folder/epoch1', 'folder/epoch3']);
+    expect(dialog.querySelectorAll('input[type="checkbox"]:checked')).toHaveLength(1);
+    click(dialog, 'Add LoRAs (1)');
+    expect(node.widget.value.map(entry => entry.name)).toEqual(['folder/epoch1']);
+    expect(row(node, 'folder/epoch1').querySelector('.lm-lora-name').textContent).toBe('epoch1');
+  });
+
+  it.each([false, true])('can retry a failed picker request (scan failure: %s)', async scanFailure => {
+    const node = await mount();
+    let fail = true;
+    fetchApi.mockImplementation(async url => {
+      if (url === '/lm/loras/scan') return { ok: !fail || !scanFailure, json: async () => ({ status: 'success' }) };
+      return { ok: !fail || scanFailure, json: async () => ({ loras: [{ file_name: 'epoch1' }] }) };
+    });
+    click(panels(node)[0], '+'); await flush();
+    const dialog = document.querySelector('.lm-group-picker-dialog');
+    if (scanFailure) {
+      click(dialog, 'Select matching results');
+      click(dialog, 'Refresh LoRA files'); await flush();
+      expect(dialog.querySelector('input[type="checkbox"]').checked).toBe(true);
+    }
+    expect(dialog.querySelector('[role="status"]').textContent).toBe('Could not load LoRAs. Try again.');
+    fail = false;
+    click(dialog, 'Refresh LoRA files'); await flush();
+    expect(dialog.querySelector('[role="status"]').textContent).toBe('');
+    expect(dialog.querySelectorAll('.lm-group-picker-row')).toHaveLength(1);
+  });
+
+  it('does not reopen or update a closed picker when a scan completes', async () => {
+    const node = await mount();
+    let finishScan;
+    fetchApi.mockImplementation(async url => url === '/lm/loras/scan'
+      ? new Promise(resolve => { finishScan = resolve; })
+      : { ok: true, json: async () => ({ loras: [] }) });
+    click(panels(node)[0], '+'); await flush();
+    const dialog = document.querySelector('.lm-group-picker-dialog');
+    click(dialog, 'Refresh LoRA files');
+    const requests = fetchApi.mock.calls.length;
+    click(dialog, 'Cancel');
+    finishScan({ ok: true, json: async () => ({ status: 'success' }) }); await flush();
+    expect(fetchApi.mock.calls).toHaveLength(requests);
+    expect(document.querySelector('.lm-group-picker-dialog')).toBeNull();
+    expect(node.widget.value).toEqual([]);
+  });
+
+  it('keeps folder-qualified references distinct while displaying filenames in the grid and CLIP rows', async () => {
+    const names = ['styleA/epoch1', 'styleB/epoch1', 'E:\\models\\styleC\\epoch2.safetensors'];
+    const node = await mount();
+    fetchApi.mockResolvedValue({ ok: true, json: async () => ({ loras: names.map(file_name => ({ file_name })) }) });
+    click(panels(node)[0], '+'); await flush();
+    const dialog = document.querySelector('.lm-group-picker-dialog');
+    click(dialog, 'Select matching results'); click(dialog, 'Add LoRAs (3)');
+    expect(node.widget.value.map(entry => entry.name)).toEqual(names);
+    expect(names.map(name => row(node, name).querySelector('.lm-lora-name').textContent)).toEqual(['epoch1', 'epoch1', 'epoch2']);
+    node.widget.value = node.widget.value.map(entry => ({ ...entry, expanded: true }));
+    expect([...node.container.querySelectorAll('.lm-lora-clip-entry .lm-lora-name')].map(el => el.textContent))
+      .toEqual(['[clip] epoch1', '[clip] epoch1', '[clip] epoch2.safetensors']);
+  });
+
   it('does not mutate on canceled shrink and requires explicit merge conflict resolution', async () => {
     const state = normalizeGroupConfig({ rows: 1, columns: 2 }); state.groups[0].mode = 'single';
     const node = await mount([value('A'), value('B', 'group-2')], state);

@@ -129,6 +129,7 @@
     "loading": "Loading LoRAs...",
     "loadFailed": "Could not load LoRAs. Try again.",
     "selectResults": "Select matching results",
+    "refreshList": "Refresh LoRA files",
     "clearSelection": "Clear selection",
     "more": "Showing {shown} of {total} matches. Refine your search.",
     "selected": "{count} selected",

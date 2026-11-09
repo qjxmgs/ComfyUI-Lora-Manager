@@ -70,6 +70,7 @@ export const GROUP_MESSAGES = {
   target: 'New LoRAs will be added to this group', disableAll: 'Disable all', enableAll: 'Enable all',
   strength: 'Model strength', clip: 'CLIP strength', allWeights: 'Set all LoRA weights', mixedWeights: 'Mixed', cancel: 'Cancel', confirm: 'Confirm',
   search: 'Search filename or model name', loading: 'Loading LoRAs...', loadFailed: 'Could not load LoRAs. Try again.',
+  refreshList: 'Refresh LoRA files',
   selectResults: 'Select matching results', clearSelection: 'Clear selection', more: 'Showing {shown} of {total} matches. Refine your search.',
   selected: '{count} selected', existing: 'Already in {group}', moveTo: 'Move to group',
   resize: 'Merge groups before resizing', destination: 'Merge {group} into', choose: 'Choose...',

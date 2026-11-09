@@ -467,6 +467,20 @@
 .lm-group-picker-row:hover { background: var(--lm-surface-hover); }
 .lm-group-picker-row input { flex-shrink: 0; }
 .lm-group-picker-row small { margin-left: auto; color: var(--lm-fg-muted); min-width: 90px; }
+.lm-group-picker-dialog {
+  box-sizing: border-box;
+  height: min(720px, calc(100vh - 48px));
+  min-height: min(320px, calc(100vh - 48px));
+  min-width: min(360px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  resize: both;
+  overflow: hidden;
+}
+.lm-group-picker-dialog > h3,
+.lm-group-picker-dialog > .lm-groups-dialog-footer { flex-shrink: 0; }
+.lm-group-picker-dialog > .lm-groups-dialog-content { flex: 1; overflow: hidden; }
+.lm-group-picker-dialog .lm-groups-dialog-content > :not(.lm-group-picker-list) { flex-shrink: 0; }
+.lm-group-picker-dialog .lm-group-picker-list { flex: 1; min-height: 0; max-height: none; }
 .lm-group-status { color: var(--lm-fg-muted); }
 .lm-group-field { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 4px 0; }
 .lm-group-field input { width: 90px; margin-left: auto; }

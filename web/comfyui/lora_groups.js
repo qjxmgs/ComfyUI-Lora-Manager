@@ -247,6 +247,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
   async function addLoras(groupId) {
     setTarget(groupId);
     const view = modal(t('add'));
+    view.content.parentElement.classList.add('lm-group-picker-dialog');
     const search = element('input');
     search.type = 'search';
     search.placeholder = t('search');
@@ -254,12 +255,16 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
     const actions = element('div', 'lm-group-actions');
     const list = element('div', 'lm-group-picker-list');
     const status = element('div', 'lm-group-status', t('loading'));
+    status.setAttribute('role', 'status');
     view.content.append(search, actions, list, status);
     const chosen = new Set();
     let library = [];
+    let loading = false;
+    let loadFailed = false;
     const existing = () => new Map(getEntries().map(item => [item.name, item]));
     const matching = () => library.filter(item => `${item.file_name} ${item.model_name || ''}`.toLowerCase().includes(search.value.toLowerCase().trim()));
     const submit = button(t('add'), () => {
+      if (loading) return;
       const old = getEntries();
       const known = new Set(old.map(item => item.name));
       const additions = library.filter(item => chosen.has(item.file_name) && !known.has(item.file_name)).map(item => ({
@@ -279,7 +284,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
         const checkbox = element('input');
         checkbox.type = 'checkbox';
         checkbox.checked = chosen.has(item.file_name);
-        checkbox.disabled = known.has(item.file_name);
+        checkbox.disabled = loading || known.has(item.file_name);
         checkbox.addEventListener('change', () => {
           if (checkbox.checked) chosen.add(item.file_name); else chosen.delete(item.file_name);
           updateCount();
@@ -293,31 +298,59 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
         }
         list.append(label);
       }
-      status.textContent = matches.length > 200 ? t('more', { shown: 200, total: matches.length }) : '';
+      status.textContent = loading ? t('loading') : loadFailed ? t('loadFailed')
+        : matches.length > 200 ? t('more', { shown: 200, total: matches.length }) : '';
+      list.setAttribute('aria-busy', String(loading));
+      actions.querySelectorAll('button').forEach(action => { action.disabled = loading; });
       updateCount();
     }
     function updateCount() {
       submit.textContent = `${t('add')} (${chosen.size})`;
-      submit.disabled = chosen.size === 0;
+      submit.disabled = loading || chosen.size === 0;
     }
     actions.append(button(t('selectResults'), () => {
       const known = existing();
       matching().forEach(item => { if (!known.has(item.file_name)) chosen.add(item.file_name); });
       draw();
-    }), button(t('clearSelection'), () => { chosen.clear(); draw(); }));
+    }), button(t('clearSelection'), () => { chosen.clear(); draw(); }),
+    button(t('refreshList'), () => loadLibrary(true)));
     search.addEventListener('input', draw);
-    try {
-      const response = await api.fetchApi('/lm/loras/cycler-list', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
-      });
-      if (!response?.ok) throw new Error('Library request failed');
-      const data = await response.json();
-      if (!view.alive()) return;
-      library = [...new Map((data.loras || []).filter(item => item?.file_name).map(item => [item.file_name, item])).values()];
+
+    async function loadLibrary(refresh = false) {
+      if (loading) return;
+      loading = true;
+      loadFailed = false;
       draw();
-    } catch {
-      if (view.alive()) status.textContent = t('loadFailed');
+      try {
+        if (refresh) {
+          // Reconcile local files before reading the scanner's cached list.
+          const response = await api.fetchApi('/lm/loras/scan', { cache: 'no-store' });
+          if (!response?.ok || (await response.json()).status !== 'success') {
+            throw new Error('Library scan failed');
+          }
+          if (!view.alive()) return;
+        }
+        const response = await api.fetchApi('/lm/loras/cycler-list', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+        });
+        if (!response?.ok) throw new Error('Library request failed');
+        const data = await response.json();
+        if (data.success === false || !Array.isArray(data.loras)) throw new Error('Invalid library response');
+        if (!view.alive()) return;
+        library = [...new Map(data.loras.filter(item => item?.file_name).map(item => [item.file_name, item])).values()];
+        const available = new Set(library.map(item => item.file_name));
+        const known = existing();
+        for (const name of chosen) {
+          if (!available.has(name) || known.has(name)) chosen.delete(name);
+        }
+      } catch {
+        loadFailed = true;
+      } finally {
+        loading = false;
+        if (view.alive()) draw();
+      }
     }
+    await loadLibrary();
   }
 
   function groupActions(group) {

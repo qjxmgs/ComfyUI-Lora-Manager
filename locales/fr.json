@@ -129,6 +129,7 @@
         "loading": "[TODO: Translate] Loading LoRAs...",
         "loadFailed": "[TODO: Translate] Could not load LoRAs. Try again.",
         "selectResults": "[TODO: Translate] Select matching results",
+        "refreshList": "[TODO: Translate] Refresh LoRA files",
         "clearSelection": "[TODO: Translate] Clear selection",
         "more": "[TODO: Translate] Showing {shown} of {total} matches. Refine your search.",
         "selected": "[TODO: Translate] {count} selected",

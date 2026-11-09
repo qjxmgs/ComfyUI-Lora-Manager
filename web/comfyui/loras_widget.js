@@ -543,15 +543,19 @@ export function addLorasWidget(node, name, opts, callback) {
       // stays in the dataset and the value, and the hover preview tooltip keeps
       // showing it.
       const displayName = getLoraDisplayName(name, getNodeLoraNameDisplayPreference());
+      // Keep the full reference for loading and identity; grid labels use only
+      // the filename when no library model title is being displayed.
+      const rowName = groupsController && displayName === name
+        ? displayName.replace(/\\/g, '/').split('/').pop() : displayName;
       const nameEl = document.createElement("div");
-      nameEl.textContent = displayName;
+      nameEl.textContent = rowName;
       nameEl.className = "lm-lora-name";
       if (groupsController) {
         // Split the label into flexible prefix and preserved suffix. CSS
         // truncates the prefix first, keeping training steps recognizable.
         const file = name.replace(/\.(safetensors|ckpt|pt|bin)$/i, '');
         const suffix = file.match(/(?:[_ -](?:step|epoch)[_ -]?\d+|[_ -]\d{3,})$/i)?.[0];
-        const label = suffix && !displayName.includes(suffix) ? `${displayName}${suffix}` : displayName.replace(/\.(safetensors|ckpt|pt|bin)$/i, '');
+        const label = suffix && !rowName.includes(suffix) ? `${rowName}${suffix}` : rowName.replace(/\.(safetensors|ckpt|pt|bin)$/i, '');
         const keep = suffix || label.slice(-Math.min(12, Math.ceil(label.length / 3)));
         const prefix = document.createElement('span');
         prefix.className = 'lm-lora-name-prefix';
@@ -750,7 +754,7 @@ export function addLorasWidget(node, name, opts, callback) {
 
         // Create clip name display
         const clipNameEl = document.createElement("div");
-        clipNameEl.textContent = "[clip] " + displayName;
+        clipNameEl.textContent = "[clip] " + rowName;
         clipNameEl.className = "lm-lora-name";
         if (missing) {
           clipNameEl.title = "LoRA not found in local library";
