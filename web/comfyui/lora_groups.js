@@ -846,7 +846,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
     let ghost = null;
     let dragNames = [name];
     const clearMarks = () => {
-      container.querySelectorAll('.lm-group-drop-target').forEach(el => el.classList.remove('lm-group-drop-target', 'lm-group-sort-target'));
+      container.querySelectorAll('.lm-group-drop-target').forEach(el => el.classList.remove('lm-group-drop-target', 'lm-group-sort-target', 'lm-group-swap-target'));
       if (indicator) indicator.hidden = true;
     };
     const groupMarker = (panels, boundary, columns) => {
@@ -874,13 +874,15 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       const hit = document.elementFromPoint?.(pointer.x, pointer.y);
       let panel = hit?.closest('.lm-lora-group');
       if (groupId) {
+        if (ghost) ghost.textContent = name;
         const grid = container.querySelector('.lm-groups-grid');
         if (!grid || !hit || !grid.contains(hit)) return;
         const state = config();
         const groups = state.groups;
         const panels = [...grid.querySelectorAll('.lm-lora-group')];
         const from = groups.findIndex(group => group.id === groupId);
-        let to = groups.findIndex(group => group.id === panel?.dataset.groupId);
+        const to = groups.findIndex(group => group.id === panel?.dataset.groupId);
+        if (from < 0) return;
         let boundary;
         if (!panel) {
           // Keep the gap itself droppable instead of losing the marker between panels.
@@ -893,12 +895,27 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
             if (distance < closest) { closest = distance; boundary = index; }
           }
           if (boundary === undefined) return;
-          to = boundary > from ? boundary - 1 : boundary;
-          panel = panels[to];
-        } else boundary = from < to ? to + 1 : to;
-        if (from === to) return;
-        if (from < 0 || to < 0) return;
-        destination = { id: panel.dataset.groupId };
+          panel = panels[boundary];
+        } else {
+          if (to < 0) return;
+          const rect = panel.getBoundingClientRect();
+          // Edge bands insert; the middle swaps. Screen ratios also work at any canvas zoom.
+          const fraction = state.columns === 1
+            ? (pointer.y - rect.top) / rect.height
+            : (pointer.x - rect.left) / rect.width;
+          if (fraction > .2 && fraction < .8) {
+            if (from === to) return;
+            destination = { id: groups[to].id, kind: 'swap' };
+            panel.classList.add('lm-group-drop-target', 'lm-group-swap-target');
+            if (ghost) ghost.textContent = `⇄ ${name} · ${groups[to].title}`;
+            return;
+          }
+          boundary = fraction <= .2 ? to : to + 1;
+        }
+        const insertionIndex = boundary > from ? boundary - 1 : boundary;
+        if (insertionIndex === from) return;
+        const anchor = groups[boundary] || groups.at(-1);
+        destination = { id: anchor.id, kind: 'insert', side: boundary < groups.length ? 'before' : 'after' };
         panel.classList.add('lm-group-drop-target', 'lm-group-sort-target');
         const marker = groupMarker(panels, boundary, state.columns);
         for (const [key, value] of Object.entries(marker)) indicator.style[key] = `${value}px`;
@@ -979,8 +996,14 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
         const from = next.groups.findIndex(group => group.id === groupId);
         const to = next.groups.findIndex(group => group.id === target.id);
         if (from >= 0 && to >= 0 && from !== to) {
-          const [group] = next.groups.splice(from, 1);
-          next.groups.splice(to, 0, group);
+          if (target.kind === 'swap') {
+            [next.groups[from], next.groups[to]] = [next.groups[to], next.groups[from]];
+          } else {
+            const insertionIndex = to + (target.side === 'after' ? 1 : 0) - (from < to ? 1 : 0);
+            if (insertionIndex === from) return;
+            const [group] = next.groups.splice(from, 1);
+            next.groups.splice(insertionIndex, 0, group);
+          }
           commit(getEntries(), next);
         }
       } else if (accept && didDrag && target) {

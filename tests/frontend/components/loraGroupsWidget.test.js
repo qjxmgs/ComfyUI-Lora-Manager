@@ -418,7 +418,12 @@ describe('grouped LoRA Loader interactions', () => {
     document.elementFromPoint.mockReturnValue(list[to]);
     const handle = list[from].querySelector('.lm-group-header');
     handle.dispatchEvent(new PointerEvent('pointerdown', { button: 0, pointerId: 1, bubbles: true }));
-    handle.dispatchEvent(new PointerEvent('pointermove', { clientX: 50, clientY: 50, pointerId: 1, bubbles: true }));
+    const rect = list[to].getBoundingClientRect();
+    const fraction = from < to ? .9 : .1;
+    handle.dispatchEvent(new PointerEvent('pointermove', {
+      clientX: rect.left + rect.width * (columns === 1 ? .5 : fraction),
+      clientY: rect.top + rect.height * (columns === 1 ? fraction : .5), pointerId: 1, bubbles: true,
+    }));
     const marker = document.querySelector('.lm-group-insertion-line');
     const position = parseFloat(marker.style[axis === 'x' ? 'left' : 'top']);
     const thickness = parseFloat(marker.style[axis === 'x' ? 'width' : 'height']);
@@ -585,10 +590,10 @@ describe('grouped LoRA Loader interactions', () => {
     const header = panels(node)[0].querySelector('.lm-group-header');
     header.setPointerCapture = vi.fn();
     const target = panels(node)[2];
-    target.getBoundingClientRect = () => ({ left: 0, right: 200 * scale, top: 200 * scale, height: 150 * scale });
+    target.getBoundingClientRect = () => ({ left: 0, right: 200 * scale, width: 200 * scale, top: 200 * scale, bottom: 350 * scale, height: 150 * scale });
     vi.spyOn(document, 'elementFromPoint').mockReturnValue(target.querySelector('.lm-group-header'));
     header.dispatchEvent(new PointerEvent('pointerdown', { button: 0, pointerId: 3, clientX: 20, clientY: 20, bubbles: true }));
-    header.dispatchEvent(new PointerEvent('pointermove', { pointerId: 3, clientX: 30, clientY: 220 * scale, bubbles: true }));
+    header.dispatchEvent(new PointerEvent('pointermove', { pointerId: 3, clientX: 180 * scale, clientY: 220 * scale, bubbles: true }));
     expect(header.isConnected).toBe(true);
     expect(target.classList.contains('lm-group-drop-target')).toBe(true);
     expect(document.querySelector('.lm-group-drag-ghost').textContent).toBe('Epoch trials');
@@ -603,6 +608,60 @@ describe('grouped LoRA Loader interactions', () => {
     vi.restoreAllMocks();
   });
 
+  it.each([.5, 2].flatMap(scale => [1, 3].flatMap(columns => [0, 2].map(from => ({ scale, columns, from })))))('swaps only the two groups on a center drop: %j', async ({ scale, columns, from }) => {
+    const state = normalizeGroupConfig({ rows: columns === 1 ? 3 : 1, columns });
+    state.groups[0].mode = 'single'; state.groups[0].autoCycle = true;
+    state.groups[2].enabled = false;
+    const node = await mount([value('A'), value('B', 'group-2'), value('C', 'group-3')], state);
+    const saved = snapshot(node);
+    const list = panels(node), target = list[2 - from];
+    list.forEach((panel, index) => {
+      const left = columns === 1 ? 0 : index * 206 * scale;
+      const top = columns === 1 ? index * 126 * scale : 0;
+      panel.getBoundingClientRect = () => ({ left, top, right: left + 200 * scale, bottom: top + 120 * scale, width: 200 * scale, height: 120 * scale });
+      panel.querySelector('.lm-group-body').scrollTop = (index + 1) * 25;
+    });
+    const handle = list[from].querySelector('.lm-group-header');
+    document.elementFromPoint.mockReturnValue(target);
+    const rect = target.getBoundingClientRect();
+    handle.dispatchEvent(new PointerEvent('pointerdown', { button: 0, pointerId: 4, bubbles: true }));
+    handle.dispatchEvent(new PointerEvent('pointermove', { pointerId: 4, clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2, bubbles: true }));
+    expect(target.classList.contains('lm-group-swap-target')).toBe(true);
+    expect(document.querySelector('.lm-group-insertion-line').hidden).toBe(true);
+    expect(document.querySelector('.lm-group-drag-ghost').textContent).toContain('⇄');
+    handle.dispatchEvent(new PointerEvent('pointerup', { pointerId: 4, bubbles: true }));
+    expect(node.properties.lmLoraGroups.groups).toEqual([...saved.properties.lmLoraGroups.groups].reverse());
+    expect(node.widget.value).toEqual([...saved.widgets_values[0]].reverse());
+    expect(panels(node).map(panel => panel.querySelector('.lm-group-body').scrollTop)).toEqual([75, 50, 25]);
+    expect(node.history).toHaveLength(1);
+    expect(document.querySelector('.lm-group-swap-target')).toBeNull();
+    node.properties = structuredClone(saved.properties); node.onConfigure(saved);
+    expect(snapshot(node)).toEqual(saved);
+  });
+
+  it.each([
+    [0, .1, ['group-1', 'group-2', 'group-3', 'group-4']],
+    [0, .9, ['group-2', 'group-1', 'group-3', 'group-4']],
+    [3, .1, ['group-1', 'group-4', 'group-2', 'group-3']],
+    [3, .9, ['group-1', 'group-2', 'group-4', 'group-3']],
+  ])('inserts on the chosen edge independently of source direction: %s, %s', async (from, fraction, expected) => {
+    const node = await mount([], normalizeGroupConfig({ rows: 1, columns: 4 }));
+    const list = panels(node);
+    list.forEach((panel, index) => {
+      panel.getBoundingClientRect = () => ({ left: index * 206, right: index * 206 + 200, width: 200, top: 0, bottom: 120, height: 120 });
+    });
+    document.elementFromPoint.mockReturnValue(list[1]);
+    const handle = list[from].querySelector('.lm-group-header');
+    handle.dispatchEvent(new PointerEvent('pointerdown', { button: 0, pointerId: 5, bubbles: true }));
+    handle.dispatchEvent(new PointerEvent('pointermove', { pointerId: 5, clientX: 306, clientY: 60, bubbles: true }));
+    expect(list[1].classList.contains('lm-group-swap-target')).toBe(true);
+    handle.dispatchEvent(new PointerEvent('pointermove', { pointerId: 5, clientX: 206 + 200 * fraction, clientY: 60, bubbles: true }));
+    expect(document.querySelector('.lm-group-swap-target')).toBeNull();
+    handle.dispatchEvent(new PointerEvent('pointerup', { pointerId: 5, bubbles: true }));
+    expect(node.properties.lmLoraGroups.groups.map(group => group.id)).toEqual(expected);
+    expect(node.history).toHaveLength(from === 0 && fraction === .1 ? 0 : 1);
+  });
+
   it('cancels group sorting with Esc and excludes header buttons from drag initiation', async () => {
     const node = await mount([value('A')], normalizeGroupConfig({ rows: 1, columns: 2 }));
     const saved = snapshot(node);
@@ -612,9 +671,11 @@ describe('grouped LoRA Loader interactions', () => {
       button.dispatchEvent(new PointerEvent('pointerdown', { button: 0, pointerId: 1, bubbles: true }));
     }
     expect(header.setPointerCapture).not.toHaveBeenCalled();
+    panels(node)[1].getBoundingClientRect = () => ({ left: 206, right: 406, width: 200, top: 0, bottom: 120, height: 120 });
     vi.spyOn(document, 'elementFromPoint').mockReturnValue(panels(node)[1]);
     header.dispatchEvent(new PointerEvent('pointerdown', { button: 0, pointerId: 2, bubbles: true }));
-    header.dispatchEvent(new PointerEvent('pointermove', { clientX: 220, clientY: 20, pointerId: 2, bubbles: true }));
+    header.dispatchEvent(new PointerEvent('pointermove', { clientX: 306, clientY: 60, pointerId: 2, bubbles: true }));
+    expect(panels(node)[1].classList.contains('lm-group-swap-target')).toBe(true);
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     header.dispatchEvent(new PointerEvent('pointerup', { pointerId: 2, bubbles: true }));
     expect(snapshot(node)).toEqual(saved);
