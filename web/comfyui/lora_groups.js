@@ -541,7 +541,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
     if (!active.length) statsPopup.append(element('div', '', t('noActive')));
     for (const entry of active) {
       const row = element('div', 'lm-active-summary-row');
-      row.append(element('span', 'lm-active-summary-name', entry.name));
+      row.append(element('span', 'lm-active-summary-name', entry.name.replace(/\\/g, '/').split('/').pop()));
       const model = Number(entry.strength);
       const clip = Number(entry.clipStrength ?? entry.strength);
       const weights = element('span', 'lm-active-summary-weights');

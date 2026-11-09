@@ -233,12 +233,13 @@ describe('grouped LoRA Loader interactions', () => {
     expect(row(node, 'A')).toBe(a);
   });
 
-  it('counts active local entries and shows full names and model/CLIP strengths', async () => {
-    const node = await mount([{ ...value('long/full-name'), strength: 0, clipStrength: -0.5 }, value('off', 'group-1', false), value('second', 'group-2')], normalizeGroupConfig({ rows: 1, columns: 2 }));
+  it('counts active local entries and shows names without directories and model/CLIP strengths', async () => {
+    const node = await mount([{ ...value('long/full-name'), strength: 0, clipStrength: -0.5 }, value('off', 'group-1', false), value('folder\\second', 'group-2')], normalizeGroupConfig({ rows: 1, columns: 2 }));
     const count = () => node.container.querySelector('.lm-active-count');
     expect(count().textContent).toBe('Active: 2');
     count().dispatchEvent(new Event('pointerenter'));
-    expect(document.querySelector('.lm-active-summary').textContent).toContain('long/full-name');
+    expect([...document.querySelectorAll('.lm-active-summary-name')].map(el => el.textContent)).toEqual(['full-name', 'second']);
+    expect(node.widget.value.filter(entry => entry.active).map(entry => entry.name)).toEqual(['long/full-name', 'folder\\second']);
     expect(document.querySelector('.lm-active-summary-heading').textContent).toBe('LoRA (2)');
     expect(document.querySelector('.lm-active-summary').textContent).toContain('CLIP -0.5');
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
