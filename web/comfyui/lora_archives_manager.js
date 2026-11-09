@@ -252,7 +252,6 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
       name.title = entry.name; row.classList.toggle('lm-archive-missing', !!missing);
       row.append(name, el('span', '', `Model ${Number(entry.strength)} · CLIP ${Number(entry.clipStrength ?? entry.strength)}`)); weights.append(row);
     }
-    frame.append(weights);
     const input = el('input'); input.type = 'file'; input.accept = 'image/png,image/jpeg,image/webp'; input.hidden = true;
     const upload = file => run(async () => {
       if (!file || file.size > 20 * 1024 * 1024 || !file.size) throw new Error('imageInvalid');
@@ -263,7 +262,9 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
     const removeButton = action(t('archiveRemoveImage'), () => run(() => client.image(archive.id, null)));
     removeButton.disabled = !archive.image;
     controls.append(action(t('archiveImage'), () => input.click()), removeButton);
-    preview.append(frame, controls, input);
+    const footer = el('div', 'lm-archive-preview-footer');
+    footer.append(weights, controls);
+    preview.append(frame, footer, input);
     preview.tabIndex = 0;
     preview.ondragover = event => { if (event.dataTransfer?.types.includes('Files')) event.preventDefault(); };
     preview.ondrop = event => {
