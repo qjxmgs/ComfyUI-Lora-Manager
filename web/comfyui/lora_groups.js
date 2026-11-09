@@ -5,6 +5,7 @@ import { openGroupSort } from './lora_groups_sort.js';
 import { createArchiveController } from './lora_archives.js';
 import { ARCHIVE_PROPERTY, gridSnapshot } from './lora_archives_state.js';
 import { getStrengthStepPreference } from './settings.js';
+import { getLoraCycleCoordinator } from './lora_groups_cycle.js';
 import { applyStrengthRangeCue, getLoraStrengthRange } from './loras_widget_utils.js';
 import {
   GROUP_COLORS, GROUPS_PROPERTY, GROUP_MIN_WIDTH, GROUP_MIN_HEIGHT, normalizeGroupConfig,
@@ -65,6 +66,70 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
   };
   const getEntries = () => widget.value || [];
   const notice = detail => app.extensionManager?.toast?.add?.({ severity: 'info', summary: 'LoRA Manager', detail, life: 5000 });
+  let automaticCycle = false;
+  const sweeps = new Map();
+  const cycle = getLoraCycleCoordinator(api).register({
+    node, widget, getRoot: () => app.rootGraph || app.graph || node.graph,
+    getState: () => ({ config: config(), entries: getEntries() }),
+    advance: advanceCycle,
+  });
+
+  function clearSweeps() {
+    for (const sweep of sweeps.values()) {
+      clearTimeout(sweep.timer);
+      sweep.row?.classList.remove('lm-lora-cycle-sweep');
+    }
+    sweeps.clear();
+  }
+
+  function renderSweep(groupId, sweep) {
+    const body = bodies.get(groupId);
+    const row = [...(body?.querySelectorAll('.lm-lora-entry') || [])]
+      .find(item => item.dataset.loraName === sweep.name);
+    if (!row || row === sweep.row) return;
+    sweep.row?.classList.remove('lm-lora-cycle-sweep');
+    sweep.row = row;
+    row.style.setProperty('--lm-cycle-delay', `${-(performance.now() - sweep.started)}ms`);
+    row.classList.add('lm-lora-cycle-sweep');
+    const rowRect = row.getBoundingClientRect();
+    const bodyRect = body.getBoundingClientRect();
+    if (rowRect.top < bodyRect.top) body.scrollTop += rowRect.top - bodyRect.top;
+    else if (rowRect.bottom > bodyRect.bottom) body.scrollTop += rowRect.bottom - bodyRect.bottom;
+  }
+
+  function startSweep(groupId, name) {
+    const previous = sweeps.get(groupId);
+    if (previous) {
+      clearTimeout(previous.timer);
+      previous.row?.classList.remove('lm-lora-cycle-sweep');
+    }
+    const sweep = { name, started: performance.now(), row: null, timer: null };
+    sweep.timer = setTimeout(() => {
+      sweep.row?.classList.remove('lm-lora-cycle-sweep');
+      if (sweeps.get(groupId) === sweep) sweeps.delete(groupId);
+    }, 3000);
+    sweeps.set(groupId, sweep);
+    renderSweep(groupId, sweep);
+  }
+
+  function advanceCycle(steps) {
+    const state = config();
+    let entries = getEntries();
+    const changed = [];
+    for (const step of steps) {
+      const group = state.groups.find(item => item.id === step.groupId);
+      if (!group?.autoCycle || group.mode !== 'single' || !group.enabled) continue;
+      const next = entries.find(item => item.groupId === group.id && item.name === step.next);
+      if (!next || next.active) continue;
+      entries = setGroupedActive(entries, state, next.name, true);
+      changed.push(step);
+    }
+    if (!changed.length) return;
+    automaticCycle = true;
+    try { commit(entries, state); }
+    finally { automaticCycle = false; }
+    changed.forEach(step => startSweep(step.groupId, step.next));
+  }
 
   function selectItem(name, event = {}) {
     const entries = getEntries();
@@ -90,6 +155,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
   container.addEventListener('click', blockDragClick, true);
 
   function commit(entries, nextConfig = config(), archive = null) {
+    if (archive) { cycle.invalidate(); clearSweeps(); }
     const before = getEntries();
     app.canvas?.emitBeforeChange?.();
     node.graph?.beforeChange?.(node);
@@ -678,6 +744,23 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       sort.classList.add('lm-group-sort-button');
       sort.append(element('span', 'lm-group-sort-label', t('sort')));
       controls.append(sort, button('+', () => addLoras(group.id), t('add')), button('⋯', () => groupActions(group), t('menu')));
+      if (group.mode === 'single') {
+        const toggleCycle = button('⟳', () => {
+          const next = config();
+          const current = next.groups.find(item => item.id === group.id);
+          current.autoCycle = !current.autoCycle;
+          let entries = getEntries();
+          const members = entries.filter(item => item.groupId === group.id);
+          if (current.autoCycle && members.length && !members.some(item => item.active)) {
+            entries = setGroupedActive(entries, next, members[0].name, true);
+          }
+          commit(entries, next);
+        }, t('autoCycle'));
+        toggleCycle.classList.add('lm-group-cycle-button');
+        toggleCycle.setAttribute('aria-pressed', String(group.autoCycle));
+        toggleCycle.addEventListener('pointerdown', event => event.stopPropagation());
+        controls.append(toggleCycle);
+      }
       const members = getEntries().filter(entry => entry.groupId === group.id);
       const strengths = members.map(entry => Number(entry.strength));
       const uniform = strengths.length > 0 && strengths.every(value => Number.isFinite(value) && value === strengths[0]);
@@ -1073,12 +1156,15 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       node.properties ||= {};
       node.properties[GROUPS_PROPERTY] = state;
       const normalized = normalizeGroupedEntries(assigned.entries, state, previousEntries, activeGroupId);
+      const previousRevision = cycle.revision;
+      cycle.observe(state, normalized, automaticCycle);
+      if (cycle.revision !== previousRevision) clearSweeps();
       previousEntries = normalized.map(entry => ({ ...entry }));
       updateStats(normalized);
       archives?.schedule();
       return normalized;
     },
-    restore() { previousEntries = []; activeGroupId = null; selectionAnchor = null; pendingDefaultTitles.clear(); scrollPositions.clear(); bodies.clear(); closeOverlay?.(); archives?.schedule(); },
+    restore() { cycle.invalidate(); clearSweeps(); previousEntries = []; activeGroupId = null; selectionAnchor = null; pendingDefaultTitles.clear(); scrollPositions.clear(); bodies.clear(); closeOverlay?.(); archives?.schedule(); },
     setActive(name, active) { commit(setGroupedActive(getEntries(), config(), name, active)); },
     isSingle(id) { return config().groups.find(group => group.id === id)?.mode === 'single'; },
     body(id) { return bodies.get(id); },
@@ -1088,7 +1174,8 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
         if (!body.children.length) body.append(button(t('empty'), () => addLoras(id)));
         body.scrollTop = scrollPositions.get(id) || 0;
       });
+      sweeps.forEach((sweep, id) => renderSweep(id, sweep));
     },
-    dispose() { archives?.dispose(); closeStats?.(); removed = true; cancelDrag?.(); clearTimeout(clickTimer); container.removeEventListener('click', blockDragClick, true); closeOverlay?.(); window.removeEventListener('wheel', wheel, true); },
+    dispose() { cycle.dispose(); clearSweeps(); archives?.dispose(); closeStats?.(); removed = true; cancelDrag?.(); clearTimeout(clickTimer); container.removeEventListener('click', blockDragClick, true); closeOverlay?.(); window.removeEventListener('wheel', wheel, true); },
   };
 }

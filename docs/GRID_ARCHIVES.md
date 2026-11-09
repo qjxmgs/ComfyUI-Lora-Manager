@@ -26,10 +26,32 @@ and are shared by nodes and workflows. Each node retains its own selected archiv
   The server stores a WebP preview with a longest side of at most 1024 pixels.
   Images can be replaced or removed without marking the grid as modified.
 
+## Cycling single-selection groups
+
+Single-selection groups have a cycle toggle after the group menu button. It is
+off by default. Enabling it starts from the active LoRA, or selects the first
+entry if none is active. A successful task advances to the next entry in display
+order, wrapping at the end. All enabled cycling groups advance independently.
+The new row is revealed within its group and receives three one-second light
+sweeps. Errors and interruptions leave the visible selection unchanged.
+
+Batch submissions reserve successive LoRAs without moving the visible selection
+ahead of completed tasks. Each submitted prompt and its embedded workflow contain
+the assigned entries. Existing queued tasks keep their parameters even if an
+earlier task fails or the user edits the grid. Manual activation, reordering,
+mode changes or archive replacement invalidate old completion updates; subsequent
+submissions start from the edited grid. The toggle never submits tasks itself.
+
+Switching to multi-selection mode or pausing the group suspends cycling without
+forgetting the preference. Workflow and archive snapshots store the `autoCycle`
+boolean (missing means false); the group schema stays at version 2. Queue tracking
+is local to the browser page and is not part of the saved snapshot. Closing the
+page does not cancel tasks already submitted to ComfyUI.
+
 ## Snapshot and workflow compatibility
 
 Snapshots contain grid dimensions; group order, names, colors, modes, sorting and
-pause state; all LoRAs with their group, order, strengths, activation, locks and
+pause/cycle state; all LoRAs with their group, order, strengths, activation, locks and
 CLIP expansion; and node width/height. Node position, connections, title, Anima
 mode and global preferences are not part of the archive.
 

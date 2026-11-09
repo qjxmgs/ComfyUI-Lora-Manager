@@ -86,6 +86,7 @@ export function normalizeGroupConfig(value, defaultTitle = 'Default group') {
       sortRules: normalizeSortRules(source?.sortRules),
       titleColor: GROUP_COLORS.includes(source?.titleColor) ? source.titleColor : null,
       enabled: source?.enabled !== false,
+      autoCycle: source?.autoCycle === true,
       pausedActive: Array.isArray(source?.pausedActive) ? [...new Set(source.pausedActive.filter(name => typeof name === 'string'))] : [],
     };
   });
@@ -136,6 +137,24 @@ export function setGroupedActive(entries, config, name, active) {
   const single = config.groups.find(group => group.id === item?.groupId)?.mode === 'single';
   return entries.map(entry => entry.name === name ? { ...entry, active }
     : active && single && entry.groupId === item.groupId ? { ...entry, active: false } : { ...entry });
+}
+
+// Reserve one step without mutating the editor's visible activation state.
+export function planGroupCycle(entries, config, nextNames = {}) {
+  const steps = [];
+  for (const group of config.groups) {
+    if (!group.autoCycle || group.mode !== 'single' || !group.enabled) continue;
+    const members = entries.filter(entry => entry.groupId === group.id);
+    if (!members.length) continue;
+    const preferred = nextNames[group.id];
+    const index = members.findIndex(entry => entry.name === preferred);
+    const activeIndex = members.findIndex(entry => entry.active);
+    const usedIndex = index >= 0 ? index : Math.max(0, activeIndex);
+    steps.push({ groupId: group.id, used: members[usedIndex].name, next: members[(usedIndex + 1) % members.length].name });
+  }
+  const choices = new Map(steps.map(step => [step.groupId, step.used]));
+  return { steps, entries: entries.map(entry => choices.has(entry.groupId)
+    ? { ...entry, active: entry.name === choices.get(entry.groupId) } : { ...entry }) };
 }
 
 export function moveGroupedEntry(entries, config, name, targetId, beforeName = null) {

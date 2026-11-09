@@ -130,6 +130,7 @@
     "loadFailed": "Could not load LoRAs. Try again.",
     "selectResults": "Select matching results",
     "refreshList": "Refresh LoRA files",
+    "autoCycle": "Cycle LoRAs after each successful task (including batch queues)",
     "clearSelection": "Clear selection",
     "more": "Showing {shown} of {total} matches. Refine your search.",
     "selected": "{count} selected",

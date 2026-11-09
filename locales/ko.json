@@ -130,6 +130,7 @@
         "loadFailed": "[TODO: Translate] Could not load LoRAs. Try again.",
         "selectResults": "[TODO: Translate] Select matching results",
         "refreshList": "[TODO: Translate] Refresh LoRA files",
+        "autoCycle": "[TODO: Translate] Cycle LoRAs after each successful task (including batch queues)",
         "clearSelection": "[TODO: Translate] Clear selection",
         "more": "[TODO: Translate] Showing {shown} of {total} matches. Refine your search.",
         "selected": "[TODO: Translate] {count} selected",

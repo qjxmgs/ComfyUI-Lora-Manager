@@ -385,6 +385,23 @@
 }
 .lm-group-body > .lm-group-button { width: 100%; white-space: normal; margin-top: 6px; }
 .lm-group-body .lm-lora-entry { padding: 3px 1px; margin-bottom: 3px; gap: 3px; border-radius: 3px; }
+.lm-group-cycle-button { flex: 0 0 26px; font-size: 18px; line-height: 20px; padding: 0 3px; }
+.lm-group-cycle-button[aria-pressed="true"] { color: var(--lm-accent); background: color-mix(in srgb, var(--lm-accent) 20%, var(--lm-surface)); border-color: var(--lm-accent); }
+.lm-group-body .lm-lora-entry.lm-lora-cycle-sweep { position: relative; overflow: hidden; }
+.lm-lora-cycle-sweep::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 25%, #ffffff55 50%, transparent 75%);
+  transform: translateX(-100%);
+  animation: lm-lora-cycle-sweep 1s linear 3;
+  animation-delay: var(--lm-cycle-delay, 0ms);
+}
+@keyframes lm-lora-cycle-sweep {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
 .lm-group-body .lm-lora-entry-left { gap: 4px; align-items: center; }
 .lm-group-body .lm-lora-drag-handle,
 .lm-group-body .lm-lora-toggle,

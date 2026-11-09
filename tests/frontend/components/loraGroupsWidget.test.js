@@ -1,16 +1,20 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
-const { APP, API, fetchApi, toast, callbacks, getSettingValue } = vi.hoisted(() => ({
+const { APP, API, fetchApi, toast, callbacks, getSettingValue, cycleQueue, apiListeners } = vi.hoisted(() => ({
   APP: new URL('../../../scripts/app.js', import.meta.url).pathname,
   API: new URL('../../../scripts/api.js', import.meta.url).pathname,
   fetchApi: vi.fn(), toast: vi.fn(), callbacks: { selection: vi.fn() }, getSettingValue: vi.fn(),
+  cycleQueue: vi.fn(), apiListeners: {},
 }));
 vi.mock(APP, () => ({ app: {
   registerExtension: vi.fn(), ui: { settings: { getSettingValue } },
   canvas: { emitBeforeChange: vi.fn(), emitAfterChange: vi.fn(), ds: { scale: 1 } },
   extensionManager: { toast: { add: toast } },
 } }));
-vi.mock(API, () => ({ api: { fetchApi, addEventListener: vi.fn() } }));
+vi.mock(API, () => ({ api: { fetchApi, queuePrompt: cycleQueue,
+  addEventListener: vi.fn((type, fn) => { (apiListeners[type] ??= new Set()).add(fn); }),
+  removeEventListener: vi.fn((type, fn) => apiListeners[type]?.delete(fn)),
+} }));
 vi.mock('../../../web/comfyui/lm_styles_loader.js', () => ({ ensureLmStyles: vi.fn() }));
 vi.mock('../../../web/comfyui/preview_tooltip.js', () => ({ PreviewTooltip: class { hide() {} cleanup() {} show() {} } }));
 vi.mock('../../../web/comfyui/settings.js', () => ({
@@ -29,6 +33,7 @@ import { gridArchiveClient } from '../../../web/comfyui/lora_archives_client.js'
 import { gridSnapshot, snapshotFingerprint } from '../../../web/comfyui/lora_archives_state.js';
 
 const mounted = [];
+let cyclePromptCounter = 0;
 const value = (name, groupId = 'group-1', active = true) => ({ name, groupId, active, strength: .8, clipStrength: 0, expanded: false });
 const flush = async () => { await Promise.resolve(); await Promise.resolve(); await new Promise(resolve => setTimeout(resolve, 0)); };
 const click = (root, text) => {
@@ -63,6 +68,7 @@ beforeEach(() => {
   getSettingValue.mockReturnValue('en');
   vi.stubGlobal('fetch', fetchApi);
   fetchApi.mockResolvedValue({ ok: true, json: async () => ({ loras: [] }) });
+  cycleQueue.mockImplementation(async () => ({ prompt_id: `widget-cycle-${++cyclePromptCounter}` }));
 });
 afterEach(() => {
   mounted.splice(0).forEach(node => node.widget.onRemove());
@@ -70,6 +76,69 @@ afterEach(() => {
 });
 
 describe('grouped LoRA Loader interactions', () => {
+  it('places the cycle toggle after the menu only in single mode and remembers it when paused', async () => {
+    const node = await mount([value('A', 'group-1', false), value('B', 'group-1', false)]);
+    expect(node.container.querySelector('.lm-group-cycle-button')).toBeNull();
+    click(panels(node)[0], 'Single');
+    let toggle = node.container.querySelector('.lm-group-cycle-button');
+    expect(toggle.getAttribute('aria-pressed')).toBe('false');
+    expect(toggle.previousElementSibling.textContent).toBe('⋯');
+    expect(toggle.nextElementSibling.classList.contains('lm-group-bulk-strength-input')).toBe(true);
+    toggle.click();
+    expect(node.widget.value.filter(entry => entry.active).map(entry => entry.name)).toEqual(['A']);
+    expect(node.properties.lmLoraGroups.groups[0].autoCycle).toBe(true);
+    click(panels(node)[0], 'Multi');
+    expect(node.container.querySelector('.lm-group-cycle-button')).toBeNull();
+    click(panels(node)[0], 'Single');
+    toggle = node.container.querySelector('.lm-group-cycle-button');
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
+    panels(node)[0].querySelector('.lm-group-power').click();
+    expect(node.properties.lmLoraGroups.groups[0]).toMatchObject({ enabled: false, autoCycle: true });
+    panels(node)[0].querySelector('.lm-group-power').click();
+    expect(node.properties.lmLoraGroups.groups[0]).toMatchObject({ enabled: true, autoCycle: true });
+  });
+
+  it('advances only on success, sweeps the new row for three seconds and keeps keyboard focus', async () => {
+    const { api } = await import(API);
+    const { getLoraCycleCoordinator } = await import('../../../web/comfyui/lora_groups_cycle.js');
+    const coordinator = getLoraCycleCoordinator(api);
+    coordinator.defineNode({ name: 'Save', output_node: true });
+    const node = await mount([value('A'), value('B', 'group-1', false), value('C', 'group-1', false)],
+      normalizeGroupConfig({ groups: [{ mode: 'single', autoCycle: true }] }));
+    node.id = 7;
+    const submit = async () => api.queuePrompt(0, {
+      output: { 7: { class_type: 'Lora Loader (LoraManager)', inputs: { loras: { __value__: node.widget.serializeValue({ id: 7 }) } } },
+        9: { class_type: 'Save', inputs: { model: ['7', 0] } } },
+      workflow: { nodes: [{ id: 7, widgets_values: [node.widget.value] }] },
+    });
+    const emit = (type, detail) => apiListeners[type]?.forEach(fn => fn({ detail }));
+    const finish = id => {
+      emit('execution_start', { prompt_id: id }); emit('executing', '7'); emit('execution_success', { prompt_id: id });
+    };
+    const first = await submit(); const second = await submit();
+    const input = row(node, 'A').querySelector('.lm-lora-strength-input'); input.focus();
+    const body = panels(node)[0].querySelector('.lm-group-body');
+    body.getBoundingClientRect = () => ({ top: 0, bottom: 100 });
+    row(node, 'B').getBoundingClientRect = () => ({ top: 120, bottom: 140 });
+    vi.useFakeTimers();
+    try {
+      finish(first.prompt_id);
+      expect(node.widget.value.filter(entry => entry.active).map(entry => entry.name)).toEqual(['B']);
+      expect(row(node, 'B').classList.contains('lm-lora-cycle-sweep')).toBe(true);
+      expect(row(node, 'A').classList.contains('lm-lora-cycle-sweep')).toBe(false);
+      expect(body.scrollTop).toBe(40); expect(document.activeElement).toBe(input);
+      vi.advanceTimersByTime(1000);
+      finish(second.prompt_id);
+      expect(row(node, 'B').classList.contains('lm-lora-cycle-sweep')).toBe(false);
+      expect(row(node, 'C').classList.contains('lm-lora-cycle-sweep')).toBe(true);
+      vi.advanceTimersByTime(2999);
+      expect(row(node, 'C').classList.contains('lm-lora-cycle-sweep')).toBe(true);
+      vi.advanceTimersByTime(1);
+      expect(node.container.querySelector('.lm-lora-cycle-sweep')).toBeNull();
+      expect(node.widget.callback).toHaveBeenCalled();
+    } finally { vi.useRealTimers(); }
+  });
+
   it('keeps selected rows and toggles mounted across repeated activation changes', async () => {
     const node = await mount([value('A'), value('B', 'group-2', false), value('C', 'group-2')], normalizeGroupConfig({ columns: 2, groups: [{ id: 'group-1' }, { id: 'group-2', mode: 'single' }] }));
     const a = row(node, 'A'); a.querySelector('.lm-lora-name').click();

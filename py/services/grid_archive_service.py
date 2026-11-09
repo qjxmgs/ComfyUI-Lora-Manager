@@ -80,8 +80,10 @@ def validate_snapshot(value: Any) -> dict[str, Any]:
         color = group.get("titleColor")
         _require(color is None or isinstance(color, str) and color in GROUP_COLORS)
         _require(type(group.get("enabled", True)) is bool)
+        _require(type(group.get("autoCycle", False)) is bool)
         normalized_groups.append({"id": gid, "title": _name(group.get("title")), "mode": group["mode"],
                                   "enabled": group.get("enabled", True), "pausedActive": list(dict.fromkeys(paused)),
+                                  "autoCycle": group.get("autoCycle", False),
                                   "sortRules": rules, "titleColor": color})
     entries = value.get("entries")
     _require(isinstance(entries, list) and len(entries) <= 10000)

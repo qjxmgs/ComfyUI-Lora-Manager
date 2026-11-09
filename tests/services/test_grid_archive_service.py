@@ -49,6 +49,26 @@ def test_full_snapshot_survives_restart_and_no_read_side_effects(store):
     assert reopened["archives"][0]["snapshot"]["entries"][0]["strength"] == 1
 
 
+def test_cycle_preference_defaults_off_and_survives_archive_reload(store):
+    legacy = validate_snapshot(snapshot())
+    assert all(group["autoCycle"] is False for group in legacy["groupConfig"]["groups"])
+    value = snapshot()
+    value["groupConfig"]["groups"][0]["autoCycle"] = True
+    mutate(store, "archives", name="Cycle", categoryId="default", snapshot=value)
+    restored = GridArchiveService(store.directory).list_library()["archives"][0]["snapshot"]
+    assert restored["groupConfig"]["version"] == 2
+    assert restored["groupConfig"]["groups"][0]["autoCycle"] is True
+    assert restored["groupConfig"]["groups"][1]["autoCycle"] is False
+
+
+@pytest.mark.parametrize("invalid", ["true", 1, None, []])
+def test_cycle_preference_rejects_non_boolean_values(invalid):
+    value = snapshot()
+    value["groupConfig"]["groups"][0]["autoCycle"] = invalid
+    with pytest.raises(GridArchiveError):
+        validate_snapshot(value)
+
+
 def test_categories_move_archive_reorder_and_delete_with_migration(store):
     primary = mutate(store, "categories", name="Styles", parentId=None)["resultId"]
     secondary = mutate(store, "categories", name="Portrait", parentId=primary)["resultId"]

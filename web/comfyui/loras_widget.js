@@ -1,4 +1,5 @@
 import { app } from "../../scripts/app.js";
+import { api } from "../../scripts/api.js";
 import { createToggle, createArrowButton, createDragHandle, updateEntrySelection, createExpandButton, updateExpandButtonState, createLockButton, updateLockButtonState } from "./loras_widget_components.js";
 import { 
   parseLoraValue, 
@@ -21,6 +22,7 @@ import { PreviewTooltip } from "./preview_tooltip.js";
 import { ensureLmStyles } from "./lm_styles_loader.js";
 import { getStrengthStepPreference, getNodeLoraNameDisplayPreference, onNodeLoraNameDisplayChanged } from "./settings.js";
 import { createLoraGroupsController } from "./lora_groups.js";
+import { getLoraCycleCoordinator } from "./lora_groups_cycle.js";
 
 export function addLorasWidget(node, name, opts, callback) {
   ensureLmStyles();
@@ -1100,6 +1102,9 @@ const LORAS_WIDGET_HIGHLIGHT_NODE_CLASSES = new Set([
 ]);
 
 app.registerExtension({
+  beforeRegisterNodeDef(nodeType, nodeData) {
+    getLoraCycleCoordinator(api).defineNode(nodeData);
+  },
   name: "LoraManager.LorasWidget",
 
   getCustomWidgets() {

@@ -130,6 +130,7 @@
         "loadFailed": "无法加载 LoRA，请重试。",
         "selectResults": "选择所有匹配结果",
         "refreshList": "[TODO: Translate] Refresh LoRA files",
+        "autoCycle": "[TODO: Translate] Cycle LoRAs after each successful task (including batch queues)",
         "clearSelection": "清空选择",
         "more": "当前显示 {shown} 个匹配结果，共 {total} 个。请缩小搜索范围。",
         "selected": "已选择 {count} 项",
