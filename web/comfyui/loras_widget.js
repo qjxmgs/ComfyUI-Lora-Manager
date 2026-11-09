@@ -1033,7 +1033,16 @@ export function addLorasWidget(node, name, opts, callback) {
     groupsController = createLoraGroupsController({ node, container, widget, getSelected: () => selectedLora, getSelection: () => [...selectedNames], select: selectLora });
     const oldConfigure = node.onConfigure;
     node.onConfigure = function (data) {
+      // Text-widget callbacks can normalize a temporary, ungrouped list before
+      // ComfyUI restores LORAS. Restore saved group metadata with the final list
+      // so that transient normalization cannot erase or add paused selections.
+      const savedGroups = data?.properties?.lmLoraGroups;
+      const restoredGroups = savedGroups ? structuredClone(savedGroups) : null;
       const result = oldConfigure?.apply(this, arguments);
+      if (restoredGroups) {
+        node.properties ||= {};
+        node.properties.lmLoraGroups = restoredGroups;
+      }
       groupsController.restore();
       selectedLora = null;
       selectedNames.clear();

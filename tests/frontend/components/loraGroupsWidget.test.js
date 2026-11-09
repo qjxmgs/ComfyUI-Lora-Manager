@@ -304,6 +304,30 @@ describe('grouped LoRA Loader interactions', () => {
     expect(panels(restored)[0].querySelector('.lm-group-body').inert).toBe(false);
   });
 
+  it.each(['single', 'multi'])('restores paused %s selections after text callbacks run before grouped widget restoration', async mode => {
+    const state = normalizeGroupConfig({ rows: 1, columns: 2, groups: [{ mode }, { mode }] });
+    const original = await mount([value('A'), value('B', 'group-1', false), value('C', 'group-2'), value('D', 'group-2', mode === 'multi')], state);
+    panels(original)[0].querySelector('.lm-group-power').click();
+    panels(original)[1].querySelector('.lm-group-power').click();
+    const saved = snapshot(original), untouched = structuredClone(saved);
+    const restored = await mount();
+    // ComfyUI hydrates properties, then text before the LORAS widget. The text
+    // callback initially has no saved group memberships to merge into.
+    restored.properties = structuredClone(saved.properties);
+    restored.widget.value = mergeLoras('<lora:A:0.8> <lora:B:0.8> <lora:C:0.8> <lora:D:0.8>', []);
+    restored.widget.value = structuredClone(saved.widgets_values[0]);
+    restored.onConfigure(saved);
+    expect(restored.properties.lmLoraGroups.groups.map(group => group.pausedActive)).toEqual([['A'], mode === 'multi' ? ['C', 'D'] : ['C']]);
+    expect(restored.widget.value.every(entry => !entry.active)).toBe(true);
+    expect(row(restored, 'A').querySelector('.lm-lora-toggle').getAttribute('aria-checked')).toBe('true');
+    expect(row(restored, 'B').querySelector('.lm-lora-toggle').getAttribute('aria-checked')).toBe('false');
+    expect(row(restored, 'C').querySelector('.lm-lora-toggle').getAttribute('aria-checked')).toBe('true');
+    panels(restored)[0].querySelector('.lm-group-power').click();
+    panels(restored)[1].querySelector('.lm-group-power').click();
+    expect(restored.widget.value.filter(entry => entry.active).map(entry => entry.name)).toEqual(mode === 'multi' ? ['A', 'C', 'D'] : ['A', 'C']);
+    expect(saved).toEqual(untouched);
+  });
+
   it('sets, persists and resets title colors without changing LoRAs, and dismisses the palette', async () => {
     const node = await mount([value('A')]);
     const open = () => panels(node)[0].querySelector('.lm-group-title-slot').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 20, clientY: 20 }));
