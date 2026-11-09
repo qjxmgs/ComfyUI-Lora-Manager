@@ -212,6 +212,10 @@ describe('three-level archive manager', () => {
     const status = header.querySelector('.lm-archive-header-status');
     expect(header.firstElementChild.textContent).toBe('LoRA grid archive manager');
     expect(header.firstElementChild.nextElementSibling).toBe(status);
+    const actions = header.querySelector('.lm-archive-header-actions');
+    expect(status.nextElementSibling).toBe(actions);
+    expect(header.lastElementChild).toBe(actions);
+    expect([...actions.querySelectorAll('button')].map(button => button.textContent)).toEqual([t('archiveSaveAs'), t('archiveRetry'), '×']);
     expect(status.textContent).toBe(t('archiveLoading'));
     expect(status.getAttribute('role')).toBe('status');
     expect(manager.querySelector(':scope > .lm-archive-error')).toBeNull();

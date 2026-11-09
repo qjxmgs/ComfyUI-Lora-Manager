@@ -73,7 +73,7 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
   const root = el('section', 'lm-popover lm-archive-manager');
   root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', t('archiveManage')); root.tabIndex = -1;
   const header = el('header', 'lm-archive-manager-header');
-  const status = el('div', 'lm-archive-error lm-archive-header-status');
+  const status = el('div', 'lm-archive-header-status');
   status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite'); status.setAttribute('aria-atomic', 'true');
   const panels = el('div', 'lm-archive-panels');
   const preview = el('aside', 'lm-archive-preview');
@@ -109,10 +109,12 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
       if (message && status.textContent === message && status.dataset.tone === 'info') setMessage('');
     }
   };
-  header.append(el('strong', '', t('archiveManage')), status,
+  const headerActions = el('div', 'lm-archive-header-actions');
+  headerActions.append(
     action(t('archiveSaveAs'), () => run(() => saveAs(secondaryId, setMessage))),
     action(t('archiveRetry'), () => run(() => client.refresh(), t('archiveLoading'))),
     action('×', close, t('archiveClose')));
+  header.append(el('strong', '', t('archiveManage')), status, headerActions);
   root.append(header, panels, resize); document.body.append(root);
 
   function remember() {
