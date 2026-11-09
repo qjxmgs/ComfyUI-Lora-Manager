@@ -80,6 +80,7 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
   resize.setAttribute('role', 'separator'); resize.setAttribute('aria-label', t('archiveResize'));
   let primaryId = DEFAULT_PRIMARY, secondaryId = DEFAULT_SECONDARY, previewId = null, level = 0;
   let closed = false, busy = false, dragging = null, pointerCleanup = null, available = null;
+  const nameObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(updateNameMarquees) : null;
   const selected = client.data.archives.find(item => item.id === currentId());
   if (selected) {
     secondaryId = selected.categoryId;
@@ -89,7 +90,7 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
   const localAbort = new AbortController();
   const close = () => {
     if (closed) return;
-    closed = true; pointerCleanup?.(); observer?.disconnect(); unsubscribe(); localAbort.abort();
+    closed = true; pointerCleanup?.(); observer?.disconnect(); nameObserver?.disconnect(); unsubscribe(); localAbort.abort();
     signal?.removeEventListener('abort', close); window.removeEventListener('resize', constrain);
     root.remove(); if (previous?.isConnected) previous.focus({ preventScroll: true }); onClose?.();
   };
@@ -231,7 +232,17 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
     panel.append(heading, list); return panel;
   }
 
+  function updateNameMarquees() {
+    for (const name of preview.querySelectorAll('.lm-archive-weight-name')) {
+      const distance = Math.max(0, name.firstElementChild.scrollWidth - name.clientWidth);
+      name.style.setProperty('--lm-name-travel', `${-distance}px`);
+      name.style.setProperty('--lm-name-duration', `${Math.max(6, distance / 28 + 2)}s`);
+      name.classList.toggle('lm-archive-name-overflow', distance > 1);
+    }
+  }
+
   function renderPreview() {
+    nameObserver?.disconnect();
     const archive = client.data.archives.find(item => item.id === previewId);
     preview.ondrop = preview.ondragover = preview.onpaste = null;
     preview.replaceChildren(el('strong', 'lm-archive-preview-title', archive?.name || t('archivePreview')));
@@ -248,9 +259,10 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
     for (const entry of entries) {
       const row = el('div', 'lm-archive-weight-row');
       const missing = available && !isLoraNameAvailable(entry.name, available);
-      const name = el('span', '', `${entry.name.split(/[\\/]/).pop()}${missing ? ` · ${t('archiveMissing')}` : ''}`);
+      const name = el('span', 'lm-archive-weight-name');
+      name.append(el('span', 'lm-archive-weight-name-text', `${entry.name.split(/[\\/]/).pop()}${missing ? ` · ${t('archiveMissing')}` : ''}`));
       name.title = entry.name; row.classList.toggle('lm-archive-missing', !!missing);
-      row.append(name, el('span', '', `Model ${Number(entry.strength)} · CLIP ${Number(entry.clipStrength ?? entry.strength)}`)); weights.append(row);
+      row.append(name, el('span', 'lm-archive-weight-strength', String(Number(entry.strength)))); weights.append(row);
     }
     const input = el('input'); input.type = 'file'; input.accept = 'image/png,image/jpeg,image/webp'; input.hidden = true;
     const upload = file => run(async () => {
@@ -265,6 +277,11 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
     const footer = el('div', 'lm-archive-preview-footer');
     footer.append(weights, controls);
     preview.append(frame, footer, input);
+    for (const name of preview.querySelectorAll('.lm-archive-weight-name')) {
+      nameObserver?.observe(name);
+      nameObserver?.observe(name.firstElementChild);
+    }
+    updateNameMarquees();
     preview.tabIndex = 0;
     preview.ondragover = event => { if (event.dataTransfer?.types.includes('Files')) event.preventDefault(); };
     preview.ondrop = event => {

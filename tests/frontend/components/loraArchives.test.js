@@ -207,12 +207,34 @@ describe('three-level archive manager', () => {
     m.change(snapshot => { snapshot.entries[0].strength = 9; }); await flush();
     m.toolbar.querySelector('[data-action="manage"]').click(); await flush();
     let preview = document.querySelector('.lm-archive-preview');
-    expect(preview.textContent).toContain('Model 1 · CLIP 0.5');
+    expect(preview.querySelector('.lm-archive-weight-name').textContent).toBe('A');
+    expect(preview.querySelector('.lm-archive-weight-strength').textContent).toBe('1');
+    expect(preview.textContent).not.toContain('CLIP');
     const second = [...document.querySelectorAll('.lm-archive-panel[data-level="2"] .lm-archive-row')][1];
     second.dispatchEvent(new Event('pointerenter')); second.dispatchEvent(new Event('pointerleave')); await flush();
     expect(preview.textContent).toContain('Second'); expect(preview.textContent).toContain('Missing locally');
     expect(m.node.properties[ARCHIVE_PROPERTY]).toBe('one');
     expect(document.querySelectorAll('.lm-archive-panel')).toHaveLength(3);
+  });
+  it('animates only overflowing preview names and updates after resizing', async () => {
+    const observers = [];
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(callback) { this.callback = callback; this.observe = vi.fn(); this.disconnect = vi.fn(); observers.push(this); }
+    });
+    const m = mount(); await flush();
+    m.toolbar.querySelector('[data-action="manage"]').click(); await flush();
+    const name = document.querySelector('.lm-archive-weight-name');
+    const observer = observers.find(item => item.observe.mock.calls.some(([target]) => target === name));
+    Object.defineProperty(name, 'clientWidth', { configurable: true, value: 100 });
+    Object.defineProperty(name.firstElementChild, 'scrollWidth', { value: 250 });
+    observer.callback();
+    expect(name.classList.contains('lm-archive-name-overflow')).toBe(true);
+    expect(name.style.getPropertyValue('--lm-name-travel')).toBe('-150px');
+    Object.defineProperty(name, 'clientWidth', { value: 300 }); observer.callback();
+    expect(name.classList.contains('lm-archive-name-overflow')).toBe(false);
+    const calls = observer.disconnect.mock.calls.length;
+    m.controller.dispose();
+    expect(observer.disconnect.mock.calls.length).toBeGreaterThan(calls);
   });
   it('edits names without applying a grid and rejects stale form revisions', async () => {
     const m = mount(); await flush(); m.toolbar.querySelector('[data-action="manage"]').click(); await flush();
