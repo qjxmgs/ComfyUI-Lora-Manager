@@ -269,7 +269,8 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       palette.append(swatch);
     }
     menu.append(palette);
-    const remove = button(t('deleteGroup'), () => {
+    menu.append(element('div', 'lm-group-menu-separator'));
+    const remove = button(t('archiveDelete'), () => {
       close();
       const view = modal(t('deleteGroup'));
       const count = getEntries().filter(entry => entry.groupId === group.id).length;

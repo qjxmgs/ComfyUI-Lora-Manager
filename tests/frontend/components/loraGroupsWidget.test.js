@@ -100,11 +100,11 @@ describe('grouped LoRA Loader interactions', () => {
     const node = await mount([value('A'), value('B', 'group-2'), value('C', 'group-3')], normalizeGroupConfig({ rows: 2, columns: 2 }));
     const saved = snapshot(node);
     const open = () => panels(node)[1].querySelector('.lm-group-title-slot').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
-    open(); click(document.querySelector('.lm-group-colors'), 'Delete grid');
+    open(); click(document.querySelector('.lm-group-colors'), 'Delete');
     expect(document.querySelector('.lm-groups-dialog').textContent).toContain('1 LoRA entries');
     click(document.querySelector('.lm-groups-dialog'), 'Cancel');
     expect(snapshot(node)).toEqual(saved); expect(node.history).toHaveLength(0);
-    open(); click(document.querySelector('.lm-group-colors'), 'Delete grid');
+    open(); click(document.querySelector('.lm-group-colors'), 'Delete');
     click(document.querySelector('.lm-groups-dialog'), 'Delete grid');
     expect(panels(node)).toHaveLength(3);
     expect(node.widget.value.map(entry => entry.name)).toEqual(['A', 'C']);
