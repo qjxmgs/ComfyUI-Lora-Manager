@@ -222,12 +222,13 @@ describe('archive category context menus', () => {
   const menuButton = name => [...document.querySelectorAll('.lm-archive-category-menu button')].find(button => button.textContent.replace('›', '') === name);
   async function chooseMenu(name) { menuButton(name).click(); await flush(); }
 
-  it.each(['p1', 's1'])('renames category %s without modifying its parent or workflow', async id => {
+  it.each(['p1', 's1', 'uncategorized', 'default'])('renames category %s without modifying its parent or workflow', async id => {
     const m = await setup(); const saved = m.live(); open(id);
     await chooseMenu('Rename');
     document.querySelector('.lm-archive-dialog input').value = 'Renamed'; await click('Confirm');
     expect(m.client.write).toHaveBeenCalledWith(`/categories/${id}`, 'PATCH', { name: 'Renamed' }, 1);
     expect(m.client.data.categories.find(item => item.id === id).name).toBe('Renamed');
+    expect(document.querySelector(`[data-category-id="${id}"] button`).textContent).toBe('Renamed');
     expect(m.live()).toEqual(saved); expect(m.history).toHaveLength(0);
   });
   it.each(['p', 's'].flatMap(prefix => ['Move to top', 'Move up', 'Move down', 'Move to bottom'].map(command => [prefix, command])))('reorders %s siblings using %s', async (prefix, command) => {
@@ -240,7 +241,7 @@ describe('archive category context menus', () => {
   });
   it('disables boundary actions and protects built-in categories', async () => {
     await setup(); open('uncategorized');
-    for (const label of ['Rename', 'Move to top', 'Move up', 'Delete']) expect(menuButton(label).disabled).toBe(true);
+    for (const label of ['Move to top', 'Move up', 'Delete']) expect(menuButton(label).disabled).toBe(true);
     expect(menuButton('Move to category')).toBeUndefined();
     open('default'); expect(menuButton('Move to category').disabled).toBe(true);
     open('p2'); expect(menuButton('Move down').disabled).toBe(true); expect(menuButton('Move to bottom').disabled).toBe(true);

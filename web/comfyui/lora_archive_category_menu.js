@@ -38,8 +38,7 @@ export function openArchiveCategoryMenu({ anchor, x, y, item, siblings, primarie
     button.addEventListener('pointerenter', hideSubmenu);
     menu.append(button); return button;
   };
-  const rename = add('archiveRename', onRename, protectedItem);
-  if (protectedItem) rename.title = t('archiveProtected');
+  add('archiveRename', onRename);
   add('archiveMoveTop', () => onReorder(0), index <= 0);
   add('archiveMoveUp', () => onReorder(index - 1), index <= 0);
   add('archiveMoveDown', () => onReorder(index + 1), index >= siblings.length - 1);

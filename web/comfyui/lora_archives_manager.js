@@ -4,8 +4,8 @@ import { getAvailableLoras, isLoraNameAvailable } from './loras_widget_utils.js'
 import { openArchiveCategoryMenu } from './lora_archive_category_menu.js';
 
 export function categoryLabel(category, t) {
-  return category.id === DEFAULT_PRIMARY ? t('archiveUncategorized')
-    : category.id === DEFAULT_SECONDARY ? t('archiveDefault') : category.name;
+  return category.id === DEFAULT_PRIMARY && category.name === 'Uncategorized' ? t('archiveUncategorized')
+    : category.id === DEFAULT_SECONDARY && category.name === 'Default' ? t('archiveDefault') : category.name;
 }
 
 export function categoryOptions(client, t) {
@@ -233,7 +233,7 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
       t, label: value => categoryLabel(value, t), onClose: () => { closeCategoryMenu = null; },
       onRename: () => run(() => archiveDialog({ title: t('archiveRename'), t, signal: localAbort.signal, onMessage: setMessage,
         build(body) {
-          const name = el('input'); name.value = item.name; name.maxLength = 100;
+          const name = el('input'); name.value = categoryLabel(item, t); name.maxLength = 100;
           body.append(field(t('archiveName'), name)); return { name };
         }, actions: [{ label: t('archiveConfirm'), primary: true, run: ({ name }) => {
           if (!name.value.trim()) throw new Error('invalid');

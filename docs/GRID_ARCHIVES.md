@@ -18,7 +18,7 @@ and are shared by nodes and workflows. Each node retains its own selected archiv
   it. Clicking its name loads it; Edit changes its name/category without loading it.
 - Drag rows to reorder siblings. Edit a secondary category to move it to another
   primary category. Deleting a nonempty category requires a destination at the same
-  level. Conflicting names must be resolved first. Default categories are protected.
+  level. Conflicting names must be resolved first. Default categories can be renamed, but cannot be deleted or moved to another parent.
 - The preview shows the saved image and enabled LoRAs, with Model and CLIP strengths
   overlaid at the bottom. Disabled groups are excluded. Missing local models are
   marked, not silently removed from the archive.

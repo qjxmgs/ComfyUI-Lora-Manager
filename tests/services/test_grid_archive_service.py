@@ -272,3 +272,23 @@ def test_default_service_resolves_current_settings_directory(tmp_path, monkeypat
     store = GridArchiveService(); create(store)
     directory[0] = tmp_path / "second"
     assert store.list_library()["archives"] == []
+
+
+@pytest.mark.parametrize("identifier,parent", [("uncategorized", None), ("default", "uncategorized")])
+def test_default_category_rename_persists_and_keeps_archive_references(store, identifier, parent):
+    original = create(store)["archives"]
+    mutate(store, "categories", "PATCH", identifier, name="Custom category", parentId=parent)
+    restored = GridArchiveService(store.directory).list_library()
+    category = next(item for item in restored["categories"] if item["id"] == identifier)
+    assert category["name"] == "Custom category"
+    assert category["parentId"] == parent
+    assert restored["archives"] == original
+    other = mutate(store, "categories", name="Other", parentId=None)["resultId"]
+    with pytest.raises(GridArchiveError, match="protected"):
+        mutate(store, "categories", "PATCH", identifier, parentId=other)
+    with pytest.raises(GridArchiveError, match="protected"):
+        mutate(store, "categories", "DELETE", identifier)
+    mutate(store, "categories", name="Sibling", parentId=parent)
+    with pytest.raises(GridArchiveError, match="duplicate"):
+        mutate(store, "categories", "PATCH", identifier, name="sibling")
+    assert next(item for item in store.list_library()["categories"] if item["id"] == identifier)["name"] == "Custom category"

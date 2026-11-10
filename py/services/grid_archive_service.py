@@ -246,7 +246,7 @@ class GridArchiveService:
                 if collection == "archives" and "archiveRevision" in payload and payload["archiveRevision"] != item["revision"]:
                     raise GridArchiveError("conflict", 409)
                 if collection == "categories" and item_id in (DEFAULT_PRIMARY, DEFAULT_SECONDARY):
-                    raise GridArchiveError("protected")
+                    _require(method == "PATCH" and payload.get("parentId", item["parentId"]) == item["parentId"], "protected")
                 if method == "DELETE":
                     if collection == "categories":
                         self._delete_category(data, item, payload.get("destinationId"))
