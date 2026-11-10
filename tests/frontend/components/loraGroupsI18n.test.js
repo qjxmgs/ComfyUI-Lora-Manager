@@ -24,6 +24,7 @@ describe('group static locale loading', () => {
     expect(fetchMock).toHaveBeenCalledWith('/comfyui/locales/zh-CN.json', { cache: 'no-cache' });
     expect(api.fetchApi).not.toHaveBeenCalled();
     expect(messages).toMatchObject({ rows: '行数', single: '单选', multi: '多选', sort: '排序' });
+    expect(messages).toMatchObject({ menuViewCivitai: '在 CivitAI 上查看', menuCopyNotes: '复制备注', menuCopyTriggerWords: '复制触发词', menuSaveRecipe: '保存配方', menuSaveWorkflow: '保存配方及工作流', markerAs: '标记为', markerExclude: '排除出发送目标' });
     expect(messages.bulkTriggerWordsMenu).toBe('为所选模型设置触发词');
     expect(messages.bulkTriggerWordsTitle).toBe('批量设置 LoRA 触发词');
     expect(messages.bulkTriggerWordsSuccess).toBe('已更新 {count} 个 LoRA 的触发词');

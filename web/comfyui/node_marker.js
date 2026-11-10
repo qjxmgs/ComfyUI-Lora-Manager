@@ -1,3 +1,6 @@
+import { GROUP_MESSAGES, loadGroupMessages } from './lora_groups_i18n.js';
+let markerMessages = GROUP_MESSAGES;
+loadGroupMessages().then(messages => { markerMessages = messages; });
 import { app } from "../../scripts/app.js";
 
 // =============================================================================
@@ -22,30 +25,30 @@ import { app } from "../../scripts/app.js";
 
 const SEND_ROLES = {
   send_prompt_target: {
-    label: "Send Prompt Target",
+    label: "Send Prompt Target", messageKey: "markerPrompt",
     emoji: "\uD83D\uDCDD",
   },
   send_gen_params: {
-    label: "Send Gen Params Target",
+    label: "Send Gen Params Target", messageKey: "markerParams",
     emoji: "\uD83D\uDD27",
   },
 };
 
 const META_ROLES = {
   meta_primary_model: {
-    label: "Meta hints: Primary Model",
+    label: "Meta hints: Primary Model", messageKey: "markerModel",
     emoji: "\uD83D\uDCA1",
   },
   meta_primary_sampler: {
-    label: "Meta hints: Primary Sampler",
+    label: "Meta hints: Primary Sampler", messageKey: "markerSampler",
     emoji: "\uD83D\uDCA1",
   },
   meta_positive_prompt: {
-    label: "Meta hints: Positive Prompt",
+    label: "Meta hints: Positive Prompt", messageKey: "markerPositive",
     emoji: "\uD83D\uDCA1",
   },
   meta_negative_prompt: {
-    label: "Meta hints: Negative Prompt",
+    label: "Meta hints: Negative Prompt", messageKey: "markerNegative",
     emoji: "\uD83D\uDCA1",
   },
 };
@@ -139,7 +142,7 @@ function buildSubmenuOptions(node) {
     for (const [key, def] of Object.entries(roles)) {
       const isActive = currentRole === key;
       options.push({
-        content: `${isActive ? "\u2713 " : ""}${def.label}`,
+        content: `${isActive ? "\u2713 " : ""}${markerMessages[def.messageKey] ?? def.label}`,
         disabled: isActive,
         callback: () => setMarker(node, key),
       });
@@ -153,7 +156,7 @@ function buildSubmenuOptions(node) {
   if (currentRole) {
     options.push(null);  // separator
     options.push({
-      content: "Clear marker",
+      content: markerMessages.markerClear,
       callback: () => clearMarker(node),
     });
   }
@@ -166,14 +169,14 @@ function buildMenuItems(node) {
   return [
     null,
     {
-      content: "\uD83C\uDFAF Mark as",
+      content: `\uD83C\uDFAF ${markerMessages.markerAs}`,
       has_submenu: true,
       submenu: {
         options: buildSubmenuOptions(node),
       },
     },
     {
-      content: `${excluded ? "\u2713 " : ""}\uD83D\uDEAB Exclude from Send Targets`,
+      content: `${excluded ? "\u2713 " : ""}\uD83D\uDEAB ${markerMessages.markerExclude}`,
       callback: () => toggleExcludeFromSend(node),
     },
   ];

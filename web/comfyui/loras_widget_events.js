@@ -1,3 +1,6 @@
+import { GROUP_MESSAGES, loadGroupMessages } from './lora_groups_i18n.js';
+let menuMessages = GROUP_MESSAGES;
+loadGroupMessages().then(messages => { menuMessages = messages; });
 import { api } from "../../scripts/api.js";
 import { app } from "../../scripts/app.js";
 import { createMenuItem, createDropIndicator } from "./loras_widget_components.js";
@@ -713,6 +716,8 @@ export function handleKeyboardNavigation(event, selectedLora, widget, renderFunc
 
 // Function to create context menu
 export function createContextMenu(x, y, loraName, widget, previewTooltip, renderFunction, groups = null) {
+  const t = key => groups?.t(key) ?? menuMessages[key];
+  loadGroupMessages().then(messages => { menuMessages = messages; });
   if (groups) {
     const originalWidget = widget;
     widget = {
@@ -742,7 +747,7 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
 
   // View on Civitai option with globe icon
   const viewOnCivitaiOption = createMenuItem(
-    'View on Civitai',
+    t('menuViewCivitai'),
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>',
     async () => {
       menu.remove();
@@ -780,7 +785,7 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
     ? entriesAtOpen.filter(entry => entry.selected).map(entry => entry.name)
     : [loraName]);
   const deleteOption = createMenuItem(
-    deleteNames.size > 1 ? `Delete (${deleteNames.size})` : 'Delete',
+    deleteNames.size > 1 ? `${t('archiveDelete')} (${deleteNames.size})` : t('archiveDelete'),
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>',
     () => {
       menu.remove();
@@ -802,7 +807,7 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
 
   // New option: Copy Notes with note icon
   const copyNotesOption = createMenuItem(
-    'Copy Notes',
+    t('menuCopyNotes'),
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>',
     async () => {
       menu.remove();
@@ -839,7 +844,7 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
 
   // New option: Copy Trigger Words with tag icon
   const copyTriggerWordsOption = createMenuItem(
-    'Copy Trigger Words',
+    t('menuCopyTriggerWords'),
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>',
     async () => {
       menu.remove();
@@ -878,7 +883,7 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
 
   // Save recipe option with bookmark icon
   const saveOption = createMenuItem(
-    'Save Recipe',
+    t('menuSaveRecipe'),
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>',
     () => {
       menu.remove();
@@ -891,7 +896,7 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
   // folded into "Save Recipe": the workflow dwarfs every other metadata field
   // and can carry sensitive widget values, so it stays an explicit choice.
   const saveWithWorkflowOption = createMenuItem(
-    'Save Recipe with Workflow',
+    t('menuSaveWorkflow'),
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>',
     () => {
       menu.remove();
@@ -902,7 +907,7 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
 
   // Move Up option with arrow up icon
   const moveUpOption = createMenuItem(
-    'Move Up',
+    t('archiveMoveUp'),
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"></path></svg>',
     () => {
       menu.remove();
@@ -924,7 +929,7 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
 
   // Move Down option with arrow down icon
   const moveDownOption = createMenuItem(
-    'Move Down',
+    t('archiveMoveDown'),
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"></path></svg>',
     () => {
       menu.remove();
@@ -946,7 +951,7 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
 
   // Move to Top option with chevrons up icon
   const moveTopOption = createMenuItem(
-    'Move to Top',
+    t('archiveMoveTop'),
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 11l-5-5-5 5M17 18l-5-5-5 5"></path></svg>',
     () => {
       menu.remove();
@@ -968,7 +973,7 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
 
   // Move to Bottom option with chevrons down icon
   const moveBottomOption = createMenuItem(
-    'Move to Bottom',
+    t('archiveMoveBottom'),
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 13l5 5 5-5M7 6l5 5 5-5"></path></svg>',
     () => {
       menu.remove();

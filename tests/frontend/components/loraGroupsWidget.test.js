@@ -1057,7 +1057,7 @@ describe('grouped LoRA Loader interactions', () => {
   it('supports right-click moves and keeps the existing move-to-top action group-local', async () => {
     const node = await mount([value('A'), value('B', 'group-2'), value('C', 'group-2')], normalizeGroupConfig({ rows: 1, columns: 2 }));
     row(node, 'C').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
-    [...document.querySelectorAll('.lm-lora-menu-item')].find(el => el.textContent === 'Move to Top').click();
+    [...document.querySelectorAll('.lm-lora-menu-item')].find(el => el.textContent === 'Move to top').click();
     expect(node.widget.value.map(item => item.name)).toEqual(['A', 'C', 'B']);
     row(node, 'C').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
     [...document.querySelectorAll('.lm-lora-menu-item')].find(el => el.textContent.includes('Move to group')).click();
