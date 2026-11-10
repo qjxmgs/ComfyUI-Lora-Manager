@@ -53,6 +53,8 @@
     "archiveProtected": "The default categories cannot be changed or deleted.",
     "archiveResize": "Resize archive manager",
     "archiveReorder": "Drag to reorder",
+    "deleteGroup": "Delete grid",
+    "deleteGroupConfirm": "Delete grid {name} and its {count} LoRA entries? Model files are kept. This can be undone. If it is the last grid, an empty grid will remain.",
     "nodeSettings": "Node settings",
     "activeCount": "Active: {count}",
     "noActive": "No active LoRAs",

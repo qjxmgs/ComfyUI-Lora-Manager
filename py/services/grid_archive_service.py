@@ -61,7 +61,9 @@ def validate_snapshot(value: Any) -> dict[str, Any]:
     rows, columns = config.get("rows"), config.get("columns")
     _require(type(rows) is int and type(columns) is int and rows > 0 and columns > 0 and rows * columns <= 256)
     groups = config.get("groups")
-    _require(isinstance(groups, list) and len(groups) == rows * columns)
+    count = config.get("groupCount", rows * columns)
+    _require(type(count) is int and 0 < count <= rows * columns)
+    _require(isinstance(groups, list) and len(groups) == count)
     ids: set[str] = set()
     normalized_groups = []
     for group in groups:
@@ -116,6 +118,7 @@ def validate_snapshot(value: Any) -> dict[str, Any]:
     size = [_number(dimension) for dimension in size]
     _require(all(0 < dimension <= 100000 for dimension in size))
     return {"version": 1, "groupConfig": {"version": 2, "rows": rows, "columns": columns,
+            **({"groupCount": count} if count < rows * columns else {}),
             "groups": normalized_groups, "nextAddedOrder": counter}, "entries": normalized_entries, "nodeSize": size}
 
 

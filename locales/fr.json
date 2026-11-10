@@ -53,6 +53,8 @@
         "archiveProtected": "[TODO: Translate] The default categories cannot be changed or deleted.",
         "archiveResize": "[TODO: Translate] Resize archive manager",
         "archiveReorder": "[TODO: Translate] Drag to reorder",
+        "deleteGroup": "[TODO: Translate] Delete grid",
+        "deleteGroupConfirm": "[TODO: Translate] Delete grid {name} and its {count} LoRA entries? Model files are kept. This can be undone. If it is the last grid, an empty grid will remain.",
         "nodeSettings": "[TODO: Translate] Node settings",
         "activeCount": "[TODO: Translate] Active: {count}",
         "noActive": "[TODO: Translate] No active LoRAs",

@@ -303,6 +303,7 @@
 .lm-group-title-input { width: 100%; min-width: 0; }
 .lm-group-title-slot > .lm-group-title-input { height: 24px; min-height: 0; font-size: 13px; font-weight: 600; }
 .lm-lora-group.lm-group--dragging { opacity: .55; }
+.lm-group-colors > .lm-group-delete-button { width: 100%; margin-top: 8px; padding: 6px 8px; color: #ef7777; text-align: left; border-top: 1px solid var(--lm-border); border-radius: 0; }
 .lm-group-actions { display: flex; gap: 3px; align-items: center; flex-wrap: wrap; }
 .lm-group-header > .lm-group-actions { padding: 4px; flex-wrap: nowrap; }
 .lm-group-sort-button { display: inline-flex; align-items: center; gap: 3px; }

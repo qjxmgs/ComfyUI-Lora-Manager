@@ -6,6 +6,8 @@ import { ARCHIVE_MESSAGES } from './lora_archives_i18n.js';
 // Keep the synchronous widget factory usable before locale requests finish.
 export const GROUP_MESSAGES = {
   ...ARCHIVE_MESSAGES,
+  "deleteGroup": "Delete grid",
+  "deleteGroupConfirm": "Delete grid {name} and its {count} LoRA entries? Model files are kept. This can be undone. If it is the last grid, an empty grid will remain.",
   "nodeSettings": "Node settings",
   "activeCount": "Active: {count}",
   "noActive": "No active LoRAs",

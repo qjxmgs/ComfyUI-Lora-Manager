@@ -49,6 +49,24 @@ def test_full_snapshot_survives_restart_and_no_read_side_effects(store):
     assert reopened["archives"][0]["snapshot"]["entries"][0]["strength"] == 1
 
 
+def test_partial_grid_count_survives_archive_reload(store):
+    value = snapshot()
+    value["groupConfig"].update(rows=2, columns=2, groupCount=2)
+    mutate(store, "archives", name="Partial grid", categoryId="default", snapshot=value)
+    restored = GridArchiveService(store.directory).list_library()["archives"][0]["snapshot"]
+    assert restored["groupConfig"]["groupCount"] == 2
+    assert len(restored["groupConfig"]["groups"]) == 2
+    assert restored["entries"] == validate_snapshot(snapshot())["entries"]
+
+
+@pytest.mark.parametrize("count", [0, -1, True, "2", 3])
+def test_invalid_group_count_rejected(count):
+    value = snapshot()
+    value["groupConfig"]["groupCount"] = count
+    with pytest.raises(GridArchiveError):
+        validate_snapshot(value)
+
+
 def test_cycle_preference_defaults_off_and_survives_archive_reload(store):
     legacy = validate_snapshot(snapshot())
     assert all(group["autoCycle"] is False for group in legacy["groupConfig"]["groups"])

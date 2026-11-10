@@ -72,8 +72,10 @@ export function normalizeGroupConfig(value, defaultTitle = 'Default group') {
   let columns = dimension(value?.columns);
   // Bound untrusted workflow data before allocating DOM or arrays.
   if (rows * columns > 256) rows = columns = 1;
+  const count = Number.isSafeInteger(value?.groupCount) && value.groupCount > 0 && value.groupCount <= rows * columns
+    ? value.groupCount : rows * columns;
   const used = new Set();
-  const groups = Array.from({ length: rows * columns }, (_, index) => {
+  const groups = Array.from({ length: count }, (_, index) => {
     const source = value?.groups?.[index];
     let id = typeof source?.id === 'string' && source.id ? source.id : `group-${index + 1}`;
     while (used.has(id)) id += '-new';
@@ -90,7 +92,16 @@ export function normalizeGroupConfig(value, defaultTitle = 'Default group') {
       pausedActive: Array.isArray(source?.pausedActive) ? [...new Set(source.pausedActive.filter(name => typeof name === 'string'))] : [],
     };
   });
-  return { version: 2, rows, columns, groups, nextAddedOrder: Number.isSafeInteger(value?.nextAddedOrder) && value.nextAddedOrder >= 0 ? value.nextAddedOrder : 0 };
+  return { version: 2, rows, columns, ...(count < rows * columns ? { groupCount: count } : {}), groups, nextAddedOrder: Number.isSafeInteger(value?.nextAddedOrder) && value.nextAddedOrder >= 0 ? value.nextAddedOrder : 0 };
+}
+
+export function deleteLoraGroup(config, entries, groupId) {
+  if (!config.groups.some(group => group.id === groupId)) return { config, entries };
+  const groups = config.groups.filter(group => group.id !== groupId);
+  const columns = Math.min(config.columns, Math.max(1, groups.length));
+  const rows = Math.max(1, Math.ceil(groups.length / columns));
+  const next = normalizeGroupConfig({ ...config, groups, columns, rows, groupCount: Math.max(1, groups.length) });
+  return { config: next, entries: entries.filter(entry => entry.groupId !== groupId) };
 }
 
 export function normalizeGroupedEntries(entries, config, previous = [], targetId = config.groups[0].id) {
@@ -175,7 +186,7 @@ export function previewGroupResize(config, entries, rows, columns, targets = {})
   if (!Number.isSafeInteger(rows) || !Number.isSafeInteger(columns) || rows < 1 || columns < 1 || rows * columns > 256) {
     throw new Error('Invalid grid dimensions');
   }
-  const next = normalizeGroupConfig({ ...config, rows, columns });
+  const next = normalizeGroupConfig({ ...config, rows, columns, groupCount: rows * columns });
   const ids = new Set(next.groups.map(group => group.id));
   const removed = config.groups.filter(group => !ids.has(group.id));
   const pending = removed.filter(group => entries.some(entry => entry.groupId === group.id) && !ids.has(targets[group.id]));

@@ -96,6 +96,26 @@ describe('grouped LoRA Loader interactions', () => {
     expect(fetchApi.mock.calls.some(([path]) => path.includes('save-metadata'))).toBe(false);
   });
 
+  it('deletes a whole grid from its title menu, persists the remaining grids and supports undo', async () => {
+    const node = await mount([value('A'), value('B', 'group-2'), value('C', 'group-3')], normalizeGroupConfig({ rows: 2, columns: 2 }));
+    const saved = snapshot(node);
+    const open = () => panels(node)[1].querySelector('.lm-group-title-slot').dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+    open(); click(document.querySelector('.lm-group-colors'), 'Delete grid');
+    expect(document.querySelector('.lm-groups-dialog').textContent).toContain('1 LoRA entries');
+    click(document.querySelector('.lm-groups-dialog'), 'Cancel');
+    expect(snapshot(node)).toEqual(saved); expect(node.history).toHaveLength(0);
+    open(); click(document.querySelector('.lm-group-colors'), 'Delete grid');
+    click(document.querySelector('.lm-groups-dialog'), 'Delete grid');
+    expect(panels(node)).toHaveLength(3);
+    expect(node.widget.value.map(entry => entry.name)).toEqual(['A', 'C']);
+    expect(node.history).toHaveLength(1);
+    const after = snapshot(node);
+    node.properties = structuredClone(after.properties); node.onConfigure(after);
+    expect(panels(node)).toHaveLength(3);
+    node.properties = structuredClone(saved.properties); node.onConfigure(saved);
+    expect(snapshot(node)).toEqual(saved);
+  });
+
   it('places the cycle toggle after the menu only in single mode and remembers it when paused', async () => {
     const node = await mount([value('A', 'group-1', false), value('B', 'group-1', false)]);
     expect(node.container.querySelector('.lm-group-cycle-button')).toBeNull();

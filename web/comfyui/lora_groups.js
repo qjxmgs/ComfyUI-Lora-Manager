@@ -13,7 +13,7 @@ import {
   GROUP_COLORS, GROUPS_PROPERTY, GROUP_MIN_WIDTH, GROUP_MIN_HEIGHT, normalizeGroupConfig,
   normalizeGroupedEntries, changeGroupMode, setGroupedActive, moveGroupedEntry, moveGroupedEntries,
   previewGroupResize, resolveGroupResize,
-  assignAddedOrders, sortGroupEntries, setGroupEnabled,
+  assignAddedOrders, sortGroupEntries, setGroupEnabled, deleteLoraGroup,
 } from './lora_groups_state.js';
 
 function element(tag, className, text) {
@@ -269,6 +269,21 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       palette.append(swatch);
     }
     menu.append(palette);
+    const remove = button(t('deleteGroup'), () => {
+      close();
+      const view = modal(t('deleteGroup'));
+      const count = getEntries().filter(entry => entry.groupId === group.id).length;
+      view.content.append(element('p', '', t('deleteGroupConfirm', { name: group.title, count })));
+      view.footer.append(button(t('deleteGroup'), () => {
+        const result = deleteLoraGroup(config(), getEntries(), group.id);
+        view.close();
+        if (activeGroupId === group.id) activeGroupId = null;
+        pendingDefaultTitles.delete(group.id);
+        commit(result.entries, result.config);
+      }));
+    });
+    remove.classList.add('lm-group-delete-button');
+    menu.append(remove);
     menu.addEventListener('pointerdown', e => e.stopPropagation());
     menu.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); });
     document.body.append(menu);

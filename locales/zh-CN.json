@@ -53,6 +53,8 @@
         "archiveProtected": "默认分类不能修改或删除。",
         "archiveResize": "调整存档管理窗口大小",
         "archiveReorder": "拖动调整顺序",
+        "deleteGroup": "删除网格",
+        "deleteGroupConfirm": "删除网格“{name}”及其中的 {count} 个 LoRA 条目？不会删除模型文件，支持撤销。若这是最后一个网格，将保留一个空网格。",
         "nodeSettings": "节点设置",
         "activeCount": "已激活：{count} 个",
         "noActive": "暂无已激活的 LoRA",

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   normalizeGroupConfig, normalizeGroupedEntries, changeGroupMode, setGroupedActive,
-  moveGroupedEntry, moveGroupedEntries, previewGroupResize, resolveGroupResize,
+  moveGroupedEntry, moveGroupedEntries, previewGroupResize, resolveGroupResize, deleteLoraGroup,
 } from '../../../web/comfyui/lora_groups_state.js';
 
 const config = () => normalizeGroupConfig({ rows: 2, columns: 2, groups: [
@@ -13,6 +13,26 @@ const config = () => normalizeGroupConfig({ rows: 2, columns: 2, groups: [
 const entry = (name, groupId, active = true) => ({ name, groupId, active, strength: 0.8, clipStrength: 0, expanded: true });
 
 describe('LoRA group state', () => {
+  it('deletes a group without recreating a placeholder on normalization or archive restore', () => {
+    const state = config();
+    const values = [entry('A', 'training'), entry('B', 'style'), entry('C', 'character')];
+    const result = deleteLoraGroup(state, values, 'style');
+    expect(result.config).toMatchObject({ rows: 2, columns: 2, groupCount: 3 });
+    expect(result.config.groups.map(group => group.id)).toEqual(['training', 'character', 'detail']);
+    expect(normalizeGroupConfig(JSON.parse(JSON.stringify(result.config)))).toEqual(result.config);
+    expect(result.entries).toEqual([values[0], values[2]]);
+    expect(state.groups).toHaveLength(4); expect(values).toHaveLength(3);
+    const resized = previewGroupResize(result.config, result.entries, 2, 2);
+    expect(resized.config.groups).toHaveLength(4);
+    expect(resized.config.groupCount).toBeUndefined();
+  });
+  it('leaves a fresh empty grid when deleting the last group', () => {
+    const state = normalizeGroupConfig({ groups: [{ title: 'Old', enabled: false, pausedActive: ['A'], autoCycle: true }] });
+    const result = deleteLoraGroup(state, [entry('A', 'group-1', false)], 'group-1');
+    expect(result.entries).toEqual([]);
+    expect(result.config.groups).toHaveLength(1);
+    expect(result.config.groups[0]).toMatchObject({ title: 'Default group', enabled: true, pausedActive: [], autoCycle: false });
+  });
   it('moves a batch in display order and preserves the destination single winner and metadata', () => {
     const old = [entry('A', 'training'), { ...entry('B', 'style'), addedOrder: 4 }, entry('C', 'style'), entry('D', 'detail', false)];
     const result = moveGroupedEntries(old, config(), ['D', 'C', 'B'], 'training', 'A');
