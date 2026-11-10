@@ -24,6 +24,9 @@ describe('group static locale loading', () => {
     expect(fetchMock).toHaveBeenCalledWith('/comfyui/locales/zh-CN.json', { cache: 'no-cache' });
     expect(api.fetchApi).not.toHaveBeenCalled();
     expect(messages).toMatchObject({ rows: '行数', single: '单选', multi: '多选', sort: '排序' });
+    expect(messages.bulkTriggerWordsMenu).toBe('为所选模型设置触发词');
+    expect(messages.bulkTriggerWordsTitle).toBe('批量设置 LoRA 触发词');
+    expect(messages.bulkTriggerWordsSuccess).toBe('已更新 {count} 个 LoRA 的触发词');
     await loadGroupMessages(); expect(fetchMock).toHaveBeenCalledTimes(1);
   });
   it('supports legacy settings and the existing base-path helper without fileURL', async () => {

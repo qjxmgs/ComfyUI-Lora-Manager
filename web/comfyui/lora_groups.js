@@ -6,6 +6,8 @@ import { createArchiveController } from './lora_archives.js';
 import { ARCHIVE_PROPERTY, gridSnapshot } from './lora_archives_state.js';
 import { getStrengthStepPreference } from './settings.js';
 import { getLoraCycleCoordinator } from './lora_groups_cycle.js';
+import { editLoraTriggerWords } from './lora_trigger_words_editor.js';
+import { refreshConnectedTriggerWords } from './utils.js';
 import { applyStrengthRangeCue, getLoraStrengthRange } from './loras_widget_utils.js';
 import {
   GROUP_COLORS, GROUPS_PROPERTY, GROUP_MIN_WIDTH, GROUP_MIN_HEIGHT, normalizeGroupConfig,
@@ -67,6 +69,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
   const getEntries = () => widget.value || [];
   const notice = detail => app.extensionManager?.toast?.add?.({ severity: 'info', summary: 'LoRA Manager', detail, life: 5000 });
   let automaticCycle = false;
+  let triggerWordsAbort = null;
   const sweeps = new Map();
   const cycle = getLoraCycleCoordinator(api).register({
     node, widget, getRoot: () => app.rootGraph || app.graph || node.graph,
@@ -1157,6 +1160,16 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
 
   return {
     commit, config, render, bindDrag, keydown, moveDialog, selectItem, t,
+    bulkTriggerWords(names) {
+      triggerWordsAbort?.abort();
+      triggerWordsAbort = new AbortController();
+      return editLoraTriggerWords({ names, t, signal: triggerWordsAbort.signal, onSaved: saved => {
+        if (removed) return;
+        node.__lmTriggerWordRequestSignature = null;
+        refreshConnectedTriggerWords(node);
+        notice(t('bulkTriggerWordsSuccess', { count: saved.length }));
+      } });
+    },
     handledNameDoubleClick(name) { return handledDoubleClick?.name === name && performance.now() - handledDoubleClick.time < 750; },
     beginStrengthEdit() {
       if (strengthHistoryOpen) return;
@@ -1187,7 +1200,7 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       archives?.schedule();
       return normalized;
     },
-    restore() { cycle.invalidate(); clearSweeps(); previousEntries = []; activeGroupId = null; selectionAnchor = null; pendingDefaultTitles.clear(); scrollPositions.clear(); bodies.clear(); closeOverlay?.(); archives?.schedule(); },
+    restore() { triggerWordsAbort?.abort(); cycle.invalidate(); clearSweeps(); previousEntries = []; activeGroupId = null; selectionAnchor = null; pendingDefaultTitles.clear(); scrollPositions.clear(); bodies.clear(); closeOverlay?.(); archives?.schedule(); },
     setActive(name, active) { commit(setGroupedActive(getEntries(), config(), name, active)); },
     isSingle(id) { return config().groups.find(group => group.id === id)?.mode === 'single'; },
     body(id) { return bodies.get(id); },
@@ -1199,6 +1212,6 @@ export function createLoraGroupsController({ node, container, widget, getSelecte
       });
       sweeps.forEach((sweep, id) => renderSweep(id, sweep));
     },
-    dispose() { cycle.dispose(); clearSweeps(); archives?.dispose(); closeStats?.(); removed = true; cancelDrag?.(); clearTimeout(clickTimer); container.removeEventListener('click', blockDragClick, true); closeOverlay?.(); window.removeEventListener('wheel', wheel, true); },
+    dispose() { triggerWordsAbort?.abort(); cycle.dispose(); clearSweeps(); archives?.dispose(); closeStats?.(); removed = true; cancelDrag?.(); clearTimeout(clickTimer); container.removeEventListener('click', blockDragClick, true); closeOverlay?.(); window.removeEventListener('wheel', wheel, true); },
   };
 }

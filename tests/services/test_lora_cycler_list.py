@@ -14,6 +14,7 @@ def lora_service():
     cache_mock.raw_data = [
         {
             "file_name": "with_tips.safetensors",
+            "file_path": "E:/models/sub/with_tips.safetensors",
             "folder": "sub",
             "model_name": "With Tips",
             "usage_tips": '{"strength": 0.6, "strength_min": 0.4, "strength_max": 0.8}',
@@ -62,6 +63,7 @@ async def test_cycler_list_keeps_existing_fields(lora_service):
     assert with_tips["file_name"] == "sub/with_tips.safetensors"
     assert with_tips["folder"] == "sub"
     assert with_tips["model_name"] == "With Tips"
+    assert with_tips["file_path"] == "E:/models/sub/with_tips.safetensors"
 
 
 @pytest.fixture

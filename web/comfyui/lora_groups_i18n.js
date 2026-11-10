@@ -83,6 +83,20 @@ export const GROUP_MESSAGES = {
 };
 
 const localeRequests = new Map();
+const TRIGGER_WORD_MESSAGES = {
+  bulkTriggerWordsMenu: ['loras.bulkOperations.setTriggerWords', 'Set Trigger Words for Selected'],
+  bulkTriggerWordsTitle: ['modals.bulkTriggerWords.title', 'Set Trigger Words for Multiple LoRAs'],
+  bulkTriggerWordsDescription: ['modals.bulkTriggerWords.description', 'Replace trigger words for {count} selected LoRA(s).'],
+  bulkTriggerWordsPlaceholder: ['modals.bulkTriggerWords.placeholder', 'Enter one trigger word or phrase per line...'],
+  bulkTriggerWordsHelp: ['modals.bulkTriggerWords.help', 'One entry per line. Commas within a phrase are preserved. These entries replace all existing trigger words on each selected LoRA.'],
+  bulkTriggerWordsSave: ['modals.bulkTriggerWords.save', 'Replace Trigger Words'],
+  bulkTriggerWordsEmpty: ['toast.models.bulkTriggerWordsEmpty', 'Enter at least one trigger word or phrase'],
+  bulkTriggerWordsSuccess: ['toast.models.bulkTriggerWordsSuccess', 'Updated trigger words for {count} LoRA(s)'],
+  bulkTriggerWordsFailed: ['toast.models.bulkTriggerWordsFailed', 'Failed to update trigger words for {count} LoRA(s)'],
+  triggerWordsTooMany: ['toast.triggerWords.tooMany', 'Maximum 100 trigger words allowed'],
+  triggerWordsTooLong: ['toast.triggerWords.tooLong', 'Trigger word or phrase is too long'],
+};
+Object.assign(GROUP_MESSAGES, Object.fromEntries(Object.entries(TRIGGER_WORD_MESSAGES).map(([key, [, fallback]]) => [key, fallback])));
 export async function loadGroupMessages() {
   let locale = app.extensionManager?.setting?.get?.('Comfy.Locale')
     || app.ui?.settings?.getSettingValue?.('Comfy.Locale') || 'en';
@@ -98,6 +112,10 @@ export async function loadGroupMessages() {
         const data = await response.json();
         const translations = Object.fromEntries(Object.entries(data?.loraGroups || {})
           .filter(([, value]) => typeof value === 'string' && !value.startsWith('[TODO: Translate]')));
+        for (const [key, [path]] of Object.entries(TRIGGER_WORD_MESSAGES)) {
+          const value = path.split('.').reduce((current, part) => current?.[part], data);
+          if (typeof value === 'string' && !value.startsWith('[TODO: Translate]')) translations[key] = value;
+        }
         return { ...GROUP_MESSAGES, ...translations };
       } catch (error) {
         localeRequests.delete(locale);

@@ -737,6 +737,7 @@ class LoraService(BaseModelService):
             entry = {
                 "file_name": f"{lora['folder']}/{lora['file_name']}" if lora.get("folder") else lora["file_name"],
                 "model_name": lora.get("model_name", lora["file_name"]),
+                "file_path": lora.get("file_path", ""),
                 "folder": lora.get("folder", ""),
             }
             # Civitai version name ("Example_v2 (variant)"). Node widgets use it

@@ -1014,6 +1014,13 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
   menu.appendChild(orderSeparator);
   menu.appendChild(copyNotesOption);
   menu.appendChild(copyTriggerWordsOption);
+  if (groups) {
+    menu.appendChild(createMenuItem(groups.t('bulkTriggerWordsMenu'),
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3H3v18h18v-9M15 3l6 6-9 9H6v-6z"/></svg>', () => {
+        menu.remove(); document.removeEventListener('click', closeMenu);
+        groups.bulkTriggerWords([...deleteNames]);
+      }));
+  }
   menu.appendChild(separator2);
   menu.appendChild(saveOption);
   menu.appendChild(saveWithWorkflowOption);

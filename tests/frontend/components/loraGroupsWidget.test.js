@@ -76,6 +76,26 @@ afterEach(() => {
 });
 
 describe('grouped LoRA Loader interactions', () => {
+  it('opens trigger-word editing for the selected rows and only the clicked row outside that selection', async () => {
+    const node = await mount([{ ...value('A'), selected: true }, { ...value('B'), selected: true }, value('C')]);
+    const saved = snapshot(node);
+    const open = async name => {
+      row(node, name).dispatchEvent(new MouseEvent('contextmenu', { bubbles: true }));
+      const items = [...document.querySelectorAll('.lm-lora-menu-item')];
+      const index = items.findIndex(item => item.textContent === 'Set Trigger Words for Selected');
+      expect(items[index - 1].textContent).toBe('Copy Trigger Words');
+      items[index].click(); await flush();
+    };
+    await open('A');
+    expect(document.querySelector('.lm-archive-dialog').textContent).toContain('2 selected');
+    click(document.querySelector('.lm-archive-dialog'), 'Cancel'); await flush();
+    await open('C');
+    expect(document.querySelector('.lm-archive-dialog').textContent).toContain('1 selected');
+    click(document.querySelector('.lm-archive-dialog'), 'Cancel'); await flush();
+    expect(snapshot(node)).toEqual(saved);
+    expect(fetchApi.mock.calls.some(([path]) => path.includes('save-metadata'))).toBe(false);
+  });
+
   it('places the cycle toggle after the menu only in single mode and remembers it when paused', async () => {
     const node = await mount([value('A', 'group-1', false), value('B', 'group-1', false)]);
     expect(node.container.querySelector('.lm-group-cycle-button')).toBeNull();

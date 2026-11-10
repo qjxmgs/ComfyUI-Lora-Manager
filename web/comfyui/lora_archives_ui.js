@@ -35,7 +35,7 @@ export function trapKeys(event, root, close) {
   event.stopPropagation();
   if (event.key === 'Escape') { event.preventDefault(); close(); }
   if (event.key !== 'Tab') return;
-  const controls = [...root.querySelectorAll('button,input,select,[tabindex="0"]')]
+  const controls = [...root.querySelectorAll('button,input,textarea,select,[tabindex="0"]')]
     .filter(control => !control.disabled && !control.closest('[hidden]'));
   const index = controls.indexOf(document.activeElement);
   if (controls.length && (index < 0 || (event.shiftKey ? index === 0 : index === controls.length - 1))) {
@@ -43,7 +43,7 @@ export function trapKeys(event, root, close) {
   }
 }
 
-export function archiveDialog({ title, t, build, actions, signal, onMessage }) {
+export function archiveDialog({ title, t, build, actions, signal, onMessage, formatError = error => errorText(t, error) }) {
   if (signal?.aborted) return Promise.resolve(null);
   return new Promise(resolve => {
     const previous = document.activeElement;
@@ -69,7 +69,7 @@ export function archiveDialog({ title, t, build, actions, signal, onMessage }) {
         footer.querySelectorAll('button').forEach(item => { item.disabled = true; });
         try { const result = await option.run(context); close(result); }
         catch (error) {
-          const detail = errorText(t, error);
+          const detail = formatError(error);
           if (onMessage) onMessage(detail); else message.textContent = detail;
         }
         finally { busy = false; footer.querySelectorAll('button').forEach(item => { item.disabled = false; }); }
@@ -84,6 +84,6 @@ export function archiveDialog({ title, t, build, actions, signal, onMessage }) {
     overlay.addEventListener('pointerdown', event => { event.stopPropagation(); });
     overlay.addEventListener('wheel', event => event.stopPropagation(), { passive: true });
     overlay.addEventListener('keydown', event => trapKeys(event, dialog, () => { if (!busy) close(null); }));
-    queueMicrotask(() => { if (!closed) dialog.querySelector('input,select,button')?.focus(); });
+    queueMicrotask(() => { if (!closed) dialog.querySelector('input,textarea,select,button')?.focus(); });
   });
 }

@@ -230,6 +230,7 @@
 .lm-archive-dialog-body { display: flex; flex-direction: column; gap: 10px; }
 .lm-archive-field { display: flex; flex-direction: column; gap: 4px; }
 .lm-archive-field input, .lm-archive-field select { width: 100%; padding: 6px; }
+.lm-bulk-trigger-words-input { width: 100%; min-height: 130px; padding: 8px; resize: vertical; color: var(--lm-fg, #e8e8ea); background: var(--lm-surface, #202124); border: 1px solid var(--lm-border, #4b4d52); }
 .lm-archive-dialog-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; margin-top: 14px; }
 .lm-archive-compact .lm-archive-panels { display: flex; flex-direction: column; overflow: auto; }
 .lm-archive-compact .lm-archive-panel { display: none; flex: 1 0 160px; max-height: 50%; border-right: none; }
