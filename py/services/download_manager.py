@@ -48,7 +48,7 @@ from ..utils.preview_selection import resolve_mature_threshold, select_preview_m
 from ..utils.utils import calculate_filename_for_model, decode_percent_encoded_filename, fit_stem_to_path_budget, sanitize_folder_name
 from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
-from ..utils.sidecar_paths import get_metadata_path, get_preview_dir
+from ..utils.sidecar_paths import get_metadata_path, get_preview_dir, get_preview_path
 from .service_registry import ServiceRegistry
 from .download_routing import (
     is_diffusion_model_download,
@@ -2200,7 +2200,9 @@ class DownloadManager:
                 return {"success": False, "error": "No save directory specified"}
             if relative_path:
                 base_save_dir = save_dir
-                save_dir = os.path.join(save_dir, relative_path)
+                # relative_path is posix-normalized ("SDXL 1.0/utility"), so
+                # normalize the joined directory back to native separators.
+                save_dir = os.path.normpath(os.path.join(save_dir, relative_path))
                 # Security: validate path containment after joining
                 resolved_dir = os.path.abspath(os.path.normpath(save_dir))
                 base_dir = os.path.abspath(os.path.normpath(base_save_dir))
@@ -2920,10 +2922,7 @@ class DownloadManager:
 
                     if media_type == "video":
                         preview_ext = _extension_from_url(preview_url, ".mp4")
-                        preview_path = os.path.join(
-                            get_preview_dir(save_path),
-                            os.path.splitext(os.path.basename(save_path))[0] + preview_ext,
-                        )
+                        preview_path = get_preview_path(save_path, preview_ext)
                         rewritten_url, rewritten = rewrite_preview_url(
                             preview_url, media_type="video"
                         )
@@ -2966,10 +2965,7 @@ class DownloadManager:
                                     content, headers, fallback_url=preview_url
                                 )
                                 if preview_ext in SUPPORTED_MEDIA_EXTENSIONS["images"]:
-                                    preview_path = os.path.join(
-                                        get_preview_dir(save_path),
-                                        os.path.splitext(os.path.basename(save_path))[0] + preview_ext,
-                                    )
+                                    preview_path = get_preview_path(save_path, preview_ext)
                                     with open(preview_path, "wb") as preview_file:
                                         preview_file.write(content)
                                     preview_downloaded = True
@@ -2994,10 +2990,7 @@ class DownloadManager:
                                         temp_file_handle.write(
                                             content if isinstance(content, bytes) else content.encode("utf-8")
                                         )
-                                    preview_path = os.path.join(
-                                        get_preview_dir(save_path),
-                                        os.path.splitext(os.path.basename(save_path))[0] + ".webp",
-                                    )
+                                    preview_path = get_preview_path(save_path, ".webp")
 
                                     optimized_data, _ = ExifUtils.optimize_image(
                                         image_data=temp_path,
@@ -3516,11 +3509,7 @@ class DownloadManager:
         extension = os.path.splitext(preview_path)[1] or ".webp"
 
         targets = [
-            os.path.join(
-                get_preview_dir(entry.file_path),
-                os.path.splitext(os.path.basename(entry.file_path))[0] + extension,
-            )
-            for entry in entries
+            get_preview_path(entry.file_path, extension) for entry in entries
         ]
 
         if not targets:

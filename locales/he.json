@@ -435,7 +435,7 @@
                 "loraName": "שם קובץ LoRA",
                 "loraModel": "שם מודל LoRA",
                 "prompt": "פרומפט",
-                "triggerWords": "[TODO: Translate] Trigger Words"
+                "triggerWords": "מילות טריגר"
             }
         },
         "filter": {
@@ -557,10 +557,19 @@
             "copied": "נתיב ההגדרות הועתק ללוח העריכה: {{path}}",
             "clipboardFallback": "נתיב ההגדרות: {{path}}"
         },
+        "comfyuiNodes": {
+            "title": "הגדרות צמתים של ComfyUI",
+            "description": "הגדרות הקשורות לצמתים זמינות בהגדרות ComfyUI.",
+            "openButton": "פתח את הגדרות ComfyUI",
+            "modelNameDisplayLink": "תוויות הצמתים מוגדרות בנפרד בהגדרות צמתים של ComfyUI",
+            "openSucceeded": "הגדרות ComfyUI נפתחו.",
+            "openFailed": "לא ניתן היה לפתוח את הגדרות ComfyUI. קודם פתח את ComfyUI."
+        },
         "sections": {
             "contentFiltering": "סינון תוכן",
             "downloads": "הורדות",
             "videoSettings": "הגדרות וידאו",
+            "cardPreview": "תצוגה מקדימה של כרטיסים",
             "layoutSettings": "הגדרות פריסה",
             "licenseIcons": "סמלי רישיון",
             "misc": "שונות",
@@ -582,9 +591,33 @@
         "nav": {
             "general": "כללי",
             "interface": "ממשק",
+            "comfyuiNodes": "צמתי ComfyUI",
             "library": "ספרייה",
             "organization": "ארגון",
+            "about": "אודות",
             "modelPaths": "נתיבי מודלים"
+        },
+        "about": {
+            "environmentTitle": "סביבה",
+            "environmentDescription": "הגרסאות שבהן משתמשים LoRA Manager ו-ComfyUI.",
+            "copy": "העתק",
+            "appVersion": "LoRA Manager",
+            "comfyuiVersion": "ComfyUI",
+            "frontendVersion": "ComfyUI Frontend",
+            "pythonVersion": "Python",
+            "os": "מערכת הפעלה",
+            "browser": "דפדפן",
+            "hint": "כלול את המידע הזה בעת דיווח על בעיה.",
+            "unavailable": "לא זמין",
+            "copySuccess": "פרטי הסביבה הועתקו",
+            "copyFailed": "העתקת פרטי הסביבה נכשלה",
+            "linksTitle": "תמיכה וקישורים",
+            "links": {
+                "reportIssue": "דווח על בעיה",
+                "wiki": "ויקי התיעוד",
+                "github": "מאגר GitHub",
+                "discord": "הצטרף לדיסקורד"
+            }
         },
         "search": {
             "placeholder": "חיפוש בהגדרות...",
@@ -612,6 +645,17 @@
         "videoSettings": {
             "autoplayOnHover": "נגן וידאו אוטומטית בריחוף",
             "autoplayOnHoverHelp": "נגן תצוגות מקדימות של וידאו רק בעת ריחוף מעליהן"
+        },
+        "cardPreview": {
+            "cycleOnHover": "עבור בין תמונות דוגמה בריחוף",
+            "cycleOnHoverHelp": "בריחוף מעל תמונת התצוגה המקדימה של כרטיס, תמונות הדוגמה שלו מוצגות בזו אחר זו. ריחוף מעל הכותרת העליונה או התחתונה של הכרטיס אינו מתחיל את המעבר, כך שכפתורי הפעולה וההסברים הקופצים נשארים שמישים. תמונת התצוגה המקדימה שנבחרה נשארת ללא שינוי. תצוגות מקדימות של וידאו אינן מושפעות.",
+            "cycleInterval": "מרווח החלפה",
+            "cycleIntervalHelp": "הזמן בין החלפת תמונות דוגמה בעת ריחוף מעל כרטיס.",
+            "cycleIntervalOptions": {
+                "fast": "מהיר (1.5 שניות)",
+                "normal": "רגיל (2 שניות)",
+                "relaxed": "נינוח (3 שניות)"
+            }
         },
         "autoOrganizeExclusions": {
             "label": "יוצא דופן של ארגון אוטומטי",
@@ -785,10 +829,6 @@
             "cardBlurAmountHelp": "כוונן את עוצמת הטשטוש של שכבת-העל בכותרת ובכותרות תחתונה בכרטיסי מודל ומתכונים (0 = ללא טשטוש, 20 = טשטוש מקסימלי)."
         },
         "folderSettings": {
-            "activeLibrary": "ספרייה פעילה (מיושן)",
-            "activeLibraryHelp": "החלפה בין הספריות המוגדרות לעדכן את תיקיות ברירת המחדל. שינוי הבחירה ירענן את הדף. מיושן: התמיכה בריבוי ספריות תוסר בגרסה קרובה. מספר תיקיות שורש בתוך ספרייה אחת עדיין נתמך במלואו.",
-            "loadingLibraries": "טוען ספריות...",
-            "noLibraries": "לא הוגדרו ספריות",
             "defaultLoraRoot": "תיקיית שורש LoRA",
             "defaultLoraRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של LoRA להורדות, ייבוא והעברות",
             "defaultCheckpointRoot": "תיקיית שורש Checkpoint",
@@ -898,6 +938,13 @@
         "priorityTags": {
             "title": "תגיות עדיפות",
             "description": "התאם את סדר העדיפות של התגיות עבור כל סוג מודל (לדוגמה: character, concept, style(toon|toon_style))",
+            "unsortedFallback": {
+                "label": "שליחת מודלים ללא התאמה לתגית עדיפות לתיקייה אחת",
+                "help": "מודלים שאין להם התאמה לתגית עדיפות מועברים לתיקייה אחת במקום לתיקייה שנבנית מ-{first_tag}. מודלים ללא תגיות אינם מושפעים. כבוי כברירת מחדל; תיקיות קיימות אינן משתנות עד שהמודל יאורגן מחדש.",
+                "folderLabel": "שם התיקייה",
+                "folderHelp": "משמש במקום {first_tag} כשאין התאמה לתגית עדיפות. עם התבנית המוגדרת כברירת מחדל {base_model}/{first_tag} התוצאה היא {base_model} ואחריו שם התיקייה. השאר ריק כדי לשמור על ההתנהגות הנוכחית.",
+                "folderPlaceholder": "unsorted"
+            },
             "placeholder": "character, concept, style(toon|toon_style)",
             "helpLinkLabel": "פתח עזרה בנושא תגיות עדיפות",
             "modelTypes": {
@@ -931,12 +978,12 @@
                 "customTemplate": "תבנית מותאמת אישית"
             },
             "customTemplatePlaceholder": "הזן תבנית מותאמת אישית (למשל, {base_model}/{author}/{first_tag})",
-            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
+            "workflowHint": "חל על הורדות workflow ועל ארגון אוטומטי בדף Workflows.",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
                 "embedding": "Embedding",
-                "workflow": "[TODO: Translate] Workflow"
+                "workflow": "Workflow"
             },
             "baseModelPathMappings": "מיפוי נתיבי מודל בסיס",
             "baseModelPathMappingsHelp": "התאם אישית שמות תיקיות עבור מודלי בסיס ספציפיים (למשל, \"Flux.1 D\" → \"flux\")",
@@ -2914,6 +2961,7 @@
             "downloadSkippedByBaseModel": "ההורדה דולגה כי מודל הבסיס {baseModel} מוחרג",
             "autoOrganizeSuccess": "הארגון האוטומטי הושלם בהצלחה עבור {count} {type}",
             "autoOrganizePartialSuccess": "הארגון האוטומטי הושלם עם {success} שהועברו, {failures} שנכשלו מתוך {total} מודלים",
+            "autoOrganizeProgressUnavailable": "הארגון האוטומטי הושלם עם {success} שהועברו, {failures} שנכשלו מתוך {total} מודלים; התקדמות בזמן אמת לא הייתה זמינה",
             "autoOrganizeFailed": "הארגון האוטומטי נכשל: {error}",
             "filenameTemplateSuccess": "תבנית שם הקובץ הוחלה בהצלחה עבור {count} {type}",
             "filenameTemplatePartialSuccess": "החלת תבנית שם הקובץ הושלמה עם {success} ששונה שמם, {failures} שנכשלו מתוך {total} מודלים",
@@ -3095,8 +3143,6 @@
             "compactModeToggled": "מצב קומפקטי {state}",
             "settingSaveFailed": "שמירת ההגדרה נכשלה: {message}",
             "displayDensitySet": "צפיפות התצוגה הוגדרה ל-{density}",
-            "libraryLoadFailed": "לא ניתן היה לטעון את הספריות: {message}",
-            "libraryActivateFailed": "לא ניתן היה להפעיל את הספרייה: {message}",
             "languageChangeFailed": "שינוי השפה נכשל: {message}",
             "cacheCleared": "קבצי המטמון נוקו בהצלחה. המטמון ייבנה מחדש בפעולה הבאה.",
             "cacheClearFailed": "ניקוי המטמון נכשל: {error}",

@@ -2123,14 +2123,14 @@ to { transform: rotate(360deg);
   padding: 20px 0;
 }\r
 
-.autocomplete-text-widget[data-v-a18d9944] {\r
+.autocomplete-text-widget[data-v-9629537c] {\r
   background: transparent;\r
   height: 100%;\r
   display: flex;\r
   flex-direction: column;\r
   box-sizing: border-box;
 }
-.input-wrapper[data-v-a18d9944] {\r
+.input-wrapper[data-v-9629537c] {\r
   position: relative;\r
   flex: 1;\r
   display: flex;\r
@@ -2140,7 +2140,7 @@ to { transform: rotate(360deg);
 /* Theme tokens (--lm-*) come from the widget container, which ComfyUI's\r
    renderer switches between the canvas widget palette and the Vue node\r
    widget palette. Text size matches ComfyUI's own textarea in both modes. */
-.text-input[data-v-a18d9944] {\r
+.text-input[data-v-9629537c] {\r
   flex: 1;\r
   width: 100%;\r
   background-color: var(--lm-surface);\r
@@ -2160,18 +2160,18 @@ to { transform: rotate(360deg);
 \r
 /* Vue DOM mode: same surface/foreground as the built-in WidgetTextarea,\r
    only the box metrics differ. */
-.text-input.vue-dom-mode[data-v-a18d9944] {\r
+.text-input.vue-dom-mode[data-v-9629537c] {\r
   padding: 8px 12px 30px 12px;  /* Reserve bottom space for clear button */\r
   margin: 0 0 4px;\r
   border-radius: 6px;  /* matches ComfyUI's rounded-md textarea */\r
   font-family: inherit;
 }
-.text-input[data-v-a18d9944]:focus {\r
+.text-input[data-v-9629537c]:focus {\r
   outline: none;
 }\r
 \r
 /* Clear button styles */
-.clear-button[data-v-a18d9944] {\r
+.clear-button[data-v-9629537c] {\r
   position: absolute;\r
   right: calc(6px + var(--lm-vscrollbar-width, 0px));\r
   bottom: 6px;  /* Changed from top to bottom */\r
@@ -2194,28 +2194,28 @@ to { transform: rotate(360deg);
 }\r
 \r
 /* Show clear button when hovering over input wrapper */
-.input-wrapper:hover .clear-button[data-v-a18d9944] {\r
+.input-wrapper:hover .clear-button[data-v-9629537c] {\r
   opacity: 0.7;\r
   pointer-events: auto;
 }
-.clear-button[data-v-a18d9944]:hover {\r
+.clear-button[data-v-9629537c]:hover {\r
   opacity: 1;\r
   background: var(--lm-danger-soft);\r
   color: var(--lm-danger-text);
 }
-.clear-button svg[data-v-a18d9944] {\r
+.clear-button svg[data-v-9629537c] {\r
   width: 12px;\r
   height: 12px;
 }\r
 \r
 /* Vue DOM mode adjustments for clear button */
-.text-input.vue-dom-mode ~ .clear-button[data-v-a18d9944] {\r
+.text-input.vue-dom-mode ~ .clear-button[data-v-9629537c] {\r
   right: calc(8px + var(--lm-vscrollbar-width, 0px));\r
   bottom: 10px;  /* Changed from top to bottom, adjusted for Vue DOM padding */\r
   width: 20px;\r
   height: 20px;
 }
-.text-input.vue-dom-mode ~ .clear-button svg[data-v-a18d9944] {\r
+.text-input.vue-dom-mode ~ .clear-button svg[data-v-9629537c] {\r
   width: 14px;\r
   height: 14px;
 }\r
@@ -15233,7 +15233,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     useAutocomplete(
       textareaRef,
       props.modelType ?? "loras",
-      { showPreview: props.showPreview ?? true }
+      { showPreview: props.showPreview ?? true, node: props.node }
     );
     const updateHasTextState = () => {
       hasText.value = textareaRef.value ? textareaRef.value.value.length > 0 : false;
@@ -15410,7 +15410,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-a18d9944"]]);
+const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-9629537c"]]);
 const _hoisted_1 = { class: "lora-info-tabs" };
 const _hoisted_2 = { class: "tab-content notes-tab" };
 const _hoisted_3 = { class: "info-field" };
@@ -15751,6 +15751,13 @@ function createVueWidgetCleanup(vueApp, onCleanup) {
     onCleanup == null ? void 0 : onCleanup();
   };
 }
+function getComfyUIBasePath() {
+  const { pathname } = window.location;
+  return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+}
+function lmUrl(path) {
+  return `${getComfyUIBasePath()}${path}`;
+}
 let _loraSyntaxFormatCache = null;
 let _loraSyntaxFormatRefreshPromise = null;
 async function _fetchLoraSyntaxFormat() {
@@ -15864,13 +15871,6 @@ function stripAutocompleteMetadataFromPromptResult(result) {
     }
   }
   return result;
-}
-function getComfyUIBasePath() {
-  const { pathname } = window.location;
-  return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
-}
-function lmUrl(path) {
-  return `${getComfyUIBasePath()}${path}`;
 }
 const ROOT_GRAPH_ID = "root";
 const LORA_PROVIDER_NODE_TYPES$1 = [
@@ -16382,6 +16382,7 @@ const LORA_INFO_WIDGET_MIN_WIDTH = 300;
 const LORA_INFO_WIDGET_MIN_HEIGHT = 200;
 const AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT = 60;
 const AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT = 100;
+const AUTOCOMPLETE_TEXT_WIDGET_CANVAS_GAP = 8;
 const AUTOCOMPLETE_TEXT_MIN_WIDTH_DEFAULT = 400;
 const AUTOCOMPLETE_TEXT_MIN_HEIGHT_DEFAULT = 300;
 const AUTOCOMPLETE_METADATA_VERSION = 1;
@@ -16817,8 +16818,9 @@ function applyAutocompleteTextLayoutFix(widget, _container, isVueMode) {
     widget.computeLayoutSize = void 0;
     widget.computeSize = (width) => [width ?? 200, AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT - 4];
   } else {
-    delete widget.computeLayoutSize;
-    delete widget.computeSize;
+    const layoutHeight = AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT + AUTOCOMPLETE_TEXT_WIDGET_CANVAS_GAP;
+    widget.computeLayoutSize = void 0;
+    widget.computeSize = (width) => [width ?? 200, layoutHeight - 4];
   }
 }
 const initVueDomModeListener = () => {

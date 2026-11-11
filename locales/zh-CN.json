@@ -557,10 +557,19 @@
             "copied": "设置路径已复制到剪贴板：{{path}}",
             "clipboardFallback": "设置路径：{{path}}"
         },
+        "comfyuiNodes": {
+            "title": "ComfyUI 节点设置",
+            "description": "与节点相关的设置位于 ComfyUI 设置中。",
+            "openButton": "打开 ComfyUI 设置",
+            "modelNameDisplayLink": "节点标签请在 ComfyUI 节点设置中单独配置",
+            "openSucceeded": "已打开 ComfyUI 设置。",
+            "openFailed": "无法打开 ComfyUI 设置，请先打开 ComfyUI。"
+        },
         "sections": {
             "contentFiltering": "内容过滤",
             "downloads": "下载",
             "videoSettings": "视频设置",
+            "cardPreview": "卡片预览",
             "layoutSettings": "布局设置",
             "licenseIcons": "许可协议图标",
             "misc": "其他",
@@ -582,9 +591,33 @@
         "nav": {
             "general": "通用",
             "interface": "界面",
+            "comfyuiNodes": "ComfyUI 节点",
             "library": "库",
             "organization": "整理",
+            "about": "关于",
             "modelPaths": "模型路径"
+        },
+        "about": {
+            "environmentTitle": "环境",
+            "environmentDescription": "LoRA Manager 与 ComfyUI 使用的版本。",
+            "copy": "复制",
+            "appVersion": "LoRA Manager",
+            "comfyuiVersion": "ComfyUI",
+            "frontendVersion": "ComfyUI 前端",
+            "pythonVersion": "Python",
+            "os": "操作系统",
+            "browser": "浏览器",
+            "hint": "报告问题时请附上这些信息。",
+            "unavailable": "不可用",
+            "copySuccess": "环境信息已复制",
+            "copyFailed": "复制环境信息失败",
+            "linksTitle": "支持与链接",
+            "links": {
+                "reportIssue": "报告问题",
+                "wiki": "文档 Wiki",
+                "github": "GitHub 仓库",
+                "discord": "加入 Discord"
+            }
         },
         "search": {
             "placeholder": "搜索设置...",
@@ -612,6 +645,17 @@
         "videoSettings": {
             "autoplayOnHover": "悬停时自动播放视频",
             "autoplayOnHoverHelp": "仅在悬停时播放视频预览"
+        },
+        "cardPreview": {
+            "cycleOnHover": "悬停时轮播示例图片",
+            "cycleOnHoverHelp": "悬停在卡片的预览图片上时，会轮播其示例图片。悬停在卡片的头部或底部区域不会触发轮播，因此操作按钮和悬浮提示仍可正常使用。所选预览图片本身不会改变。视频预览不受影响。",
+            "cycleInterval": "轮播间隔",
+            "cycleIntervalHelp": "悬停卡片时，示例图片切换的时间间隔。",
+            "cycleIntervalOptions": {
+                "fast": "快（1.5 秒）",
+                "normal": "正常（2 秒）",
+                "relaxed": "舒缓（3 秒）"
+            }
         },
         "autoOrganizeExclusions": {
             "label": "自动整理排除项",
@@ -785,10 +829,6 @@
             "cardBlurAmountHelp": "调整模型和配方卡片上页眉和页脚叠加层的模糊强度（0 = 无模糊，20 = 最大模糊）。"
         },
         "folderSettings": {
-            "activeLibrary": "活动库（已弃用）",
-            "activeLibraryHelp": "在已配置的库之间切换以更新默认文件夹。更改选择将重新加载页面。已弃用：多库支持将在即将发布的版本中移除。单个库内的多个文件夹根目录仍完全受支持。",
-            "loadingLibraries": "正在加载库...",
-            "noLibraries": "尚未配置库",
             "defaultLoraRoot": "LoRA 根目录",
             "defaultLoraRootHelp": "设置下载、导入和移动时的默认 LoRA 根目录",
             "defaultCheckpointRoot": "Checkpoint 根目录",
@@ -898,6 +938,13 @@
         "priorityTags": {
             "title": "优先标签",
             "description": "为每种模型类型自定义标签优先级顺序 (例如: character, concept, style(toon|toon_style))",
+            "unsortedFallback": {
+                "label": "将没有匹配到优先标签的模型放入同一个文件夹",
+                "help": "没有匹配到优先标签的模型会放入同一个文件夹，而不是按 {first_tag} 创建文件夹。完全没有标签的模型不受影响。默认关闭；在重新整理模型之前，现有文件夹保持不变。",
+                "folderLabel": "文件夹名称",
+                "folderHelp": "没有匹配到优先标签时，用它替代 {first_tag}。在默认模板 {base_model}/{first_tag} 下，结果为 {base_model}/<文件夹名称>。留空则保持当前行为。",
+                "folderPlaceholder": "unsorted"
+            },
             "placeholder": "character, concept, style(toon|toon_style)",
             "helpLinkLabel": "打开优先标签帮助",
             "modelTypes": {
@@ -2914,6 +2961,7 @@
             "downloadSkippedByBaseModel": "由于基础模型 {baseModel} 已被排除，已跳过下载",
             "autoOrganizeSuccess": "自动整理已成功完成，共 {count} 个 {type}",
             "autoOrganizePartialSuccess": "自动整理完成：已移动 {success} 个，{failures} 个失败，共 {total} 个模型",
+            "autoOrganizeProgressUnavailable": "自动整理完成：已移动 {success} 个，{failures} 个失败，共 {total} 个模型；实时进度不可用",
             "autoOrganizeFailed": "自动整理失败：{error}",
             "filenameTemplateSuccess": "文件名模板已成功应用，共 {count} 个 {type}",
             "filenameTemplatePartialSuccess": "文件名模板应用完成：已重命名 {success} 个，{failures} 个失败，共 {total} 个模型",
@@ -3095,8 +3143,6 @@
             "compactModeToggled": "紧凑模式 {state}",
             "settingSaveFailed": "保存设置失败：{message}",
             "displayDensitySet": "显示密度已设置为 {density}",
-            "libraryLoadFailed": "加载模型库失败：{message}",
-            "libraryActivateFailed": "激活模型库失败：{message}",
             "languageChangeFailed": "切换语言失败：{message}",
             "cacheCleared": "缓存文件已成功清除。下次操作将重建缓存。",
             "cacheClearFailed": "清除缓存失败：{error}",

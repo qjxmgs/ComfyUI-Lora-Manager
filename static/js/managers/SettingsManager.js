@@ -19,6 +19,8 @@ import { validatePriorityTagString, getPriorityTagSuggestionsMap, invalidatePrio
 import { bannerService } from './BannerService.js';
 import { directoryPickerModal } from '../components/DirectoryPickerModal.js';
 import { showSidecarMigrationSummary } from '../components/SidecarMigrationSummaryModal.js';
+import { environmentPanel } from '../components/EnvironmentPanel.js';
+import { openComfyUISettings as requestComfyUISettings } from '../utils/comfySettingsNavigation.js';
 
 const VALID_MATURE_BLUR_LEVELS = new Set(['PG13', 'R', 'X', 'XXX']);
 
@@ -78,8 +80,6 @@ export class SettingsManager {
         this.initialized = false;
         this.isOpen = false;
         this.initializationPromise = null;
-        this.availableLibraries = {};
-        this.activeLibrary = '';
         this.registeredStartupBannerIds = new Set();
         this.modelPathsSectionInitialized = false;
         this.modelPathsDirty = false;
@@ -532,6 +532,10 @@ export class SettingsManager {
             });
         }
 
+        document.querySelectorAll('[data-open-comfyui-settings]').forEach(button => {
+            button.addEventListener('click', () => this.openComfyUISettings());
+        });
+
         ['lora', 'checkpoint', 'embedding'].forEach(modelType => {
             const customInput = document.getElementById(`${modelType}CustomTemplate`);
             if (customInput) {
@@ -580,37 +584,7 @@ export class SettingsManager {
             }
         });
 
-        const autoOrganizeInput = document.getElementById('autoOrganizeExclusions');
-        if (autoOrganizeInput) {
-            autoOrganizeInput.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                    event.preventDefault();
-                    this.saveAutoOrganizeExclusions();
-                }
-            });
-        }
-
-        const metadataRefreshSkipPathsInput = document.getElementById('metadataRefreshSkipPaths');
-        if (metadataRefreshSkipPathsInput) {
-            metadataRefreshSkipPathsInput.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                    event.preventDefault();
-                    this.saveMetadataRefreshSkipPaths();
-                }
-            });
-        }
-
-        for (const inputId of ['sendToWorkflowExcludedClasses', 'sendToWorkflowExcludedTitles']) {
-            const input = document.getElementById(inputId);
-            if (input) {
-                input.addEventListener('keydown', (event) => {
-                    if (event.key === 'Enter' && !event.shiftKey) {
-                        event.preventDefault();
-                        this.saveSendToWorkflowExclusions();
-                    }
-                });
-            }
-        }
+        this.setupExclusionTextareaHandlers();
 
         const downloadSkipBaseModelsContainer = document.getElementById('downloadSkipBaseModelsContainer');
         if (downloadSkipBaseModelsContainer) {
@@ -645,6 +619,7 @@ export class SettingsManager {
         this.setupPriorityTagInputs();
         this.initializeNavigation();
         this.initializeSearch();
+        environmentPanel.initialize();
 
         this.initialized = true;
     }
@@ -678,6 +653,10 @@ export class SettingsManager {
                 // Update active nav state
                 document.querySelectorAll('.settings-nav-item').forEach(nav => nav.classList.remove('active'));
                 item.classList.add('active');
+
+                if (sectionId === 'about') {
+                    environmentPanel.ensureLoaded();
+                }
             });
         });
 
@@ -762,6 +741,11 @@ export class SettingsManager {
         let matchCount = 0;
 
         sections.forEach(section => {
+            if (section.style.display === 'none') {
+                this.removeSearchHighlights(section);
+                return;
+            }
+
             const sectionText = this.getSectionSearchableText(section);
             const hasMatch = sectionText.includes(lowerQuery);
 
@@ -788,6 +772,10 @@ export class SettingsManager {
             
             // Show matching section
             firstMatchSection.classList.add('active');
+
+            if (sectionId === 'about') {
+                environmentPanel.ensureLoaded();
+            }
             
             // Update nav active state
             navItems.forEach(item => {
@@ -1219,6 +1207,7 @@ export class SettingsManager {
             sendToWorkflowExcludedTitlesError.textContent = '';
         }
         this.updateSendToWorkflowSectionVisibility();
+        this.updateComfyUISettingsVisibility();
 
         this.renderDownloadSkipBaseModels();
         const downloadSkipBaseModelsError = document.getElementById('downloadSkipBaseModelsError');
@@ -1231,6 +1220,16 @@ export class SettingsManager {
         const autoplayOnHoverCheckbox = document.getElementById('autoplayOnHover');
         if (autoplayOnHoverCheckbox) {
             autoplayOnHoverCheckbox.checked = state.global.settings.autoplay_on_hover || false;
+        }
+
+        // Set card preview cycling settings
+        const cardPreviewCycleCheckbox = document.getElementById('cardPreviewCycle');
+        if (cardPreviewCycleCheckbox) {
+            cardPreviewCycleCheckbox.checked = state.global.settings.card_preview_cycle ?? true;
+        }
+        const cardPreviewCycleIntervalSelect = document.getElementById('cardPreviewCycleInterval');
+        if (cardPreviewCycleIntervalSelect) {
+            cardPreviewCycleIntervalSelect.value = String(state.global.settings.card_preview_cycle_interval ?? 2);
         }
 
         // Set display density setting
@@ -1393,9 +1392,6 @@ export class SettingsManager {
             downloadRootRulesError.textContent = '';
         }
 
-        // Load library options
-        await this.loadLibraries();
-
         // Load default lora root
         await this.loadLoraRoots();
 
@@ -1513,6 +1509,29 @@ export class SettingsManager {
             textarea.value = storedValue;
             this.displayPriorityTagValidation(modelType, true, []);
         });
+
+        this.loadUnsortedFallbackSettings();
+    }
+
+    /**
+     * Restore the unsorted-fallback toggle and folder name, and reveal the folder
+     * row only when the toggle is on. The field keeps whatever was saved while the
+     * toggle is off, so turning it back on does not lose the configured name.
+     */
+    loadUnsortedFallbackSettings() {
+        const enabled = document.getElementById('unsortedFallbackEnabled');
+        const folder = document.getElementById('unsortedFallbackFolder');
+        const row = document.getElementById('unsortedFallbackFolderRow');
+
+        if (enabled) {
+            enabled.checked = !!state.global.settings.unsorted_fallback_enabled;
+        }
+        if (folder) {
+            folder.value = state.global.settings.unsorted_fallback_folder ?? 'unsorted';
+        }
+        if (row) {
+            row.style.display = enabled?.checked ? '' : 'none';
+        }
     }
 
     handlePriorityTagInput(modelType) {
@@ -1677,151 +1696,6 @@ export class SettingsManager {
         if (proxyPasswordInput) {
             proxyPasswordInput.value = state.global.settings.proxy_password || '';
         }
-    }
-
-    async loadLibraries() {
-        const librarySelect = document.getElementById('librarySelect');
-        if (!librarySelect) {
-            return;
-        }
-
-        const setPlaceholderOption = (textKey, fallback) => {
-            librarySelect.innerHTML = '';
-            const option = document.createElement('option');
-            option.value = '';
-            option.textContent = translate(textKey, {}, fallback);
-            librarySelect.appendChild(option);
-        };
-
-        setPlaceholderOption('settings.folderSettings.loadingLibraries', 'Loading libraries...');
-        librarySelect.disabled = true;
-
-        try {
-            const response = await fetch('/api/lm/settings/libraries');
-            if (!response.ok) {
-                throw new Error('Failed to fetch library registry');
-            }
-
-            const data = await response.json();
-            if (data.success === false) {
-                throw new Error(data.error || 'Failed to fetch library registry');
-            }
-
-            const libraries = data.libraries && typeof data.libraries === 'object'
-                ? data.libraries
-                : {};
-
-            this.availableLibraries = libraries;
-
-            const entries = Object.entries(libraries);
-            if (entries.length === 0) {
-                this.activeLibrary = '';
-                setPlaceholderOption('settings.folderSettings.noLibraries', 'No libraries configured');
-                return;
-            }
-
-            const activeName = data.active_library && libraries[data.active_library]
-                ? data.active_library
-                : entries[0][0];
-
-            this.activeLibrary = activeName;
-
-            librarySelect.innerHTML = '';
-            const fragment = document.createDocumentFragment();
-            entries
-                .sort((a, b) => {
-                    const nameA = this.getLibraryDisplayName(a[0], a[1]).toLowerCase();
-                    const nameB = this.getLibraryDisplayName(b[0], b[1]).toLowerCase();
-                    return nameA.localeCompare(nameB);
-                })
-                .forEach(([name, info]) => {
-                    const option = document.createElement('option');
-                    option.value = name;
-                    option.textContent = this.getLibraryDisplayName(name, info);
-                    fragment.appendChild(option);
-                });
-
-            librarySelect.appendChild(fragment);
-            librarySelect.value = activeName;
-            librarySelect.disabled = entries.length <= 1;
-        } catch (error) {
-            console.error('Error loading libraries:', error);
-            setPlaceholderOption('settings.folderSettings.noLibraries', 'No libraries configured');
-            this.availableLibraries = {};
-            this.activeLibrary = '';
-            librarySelect.disabled = true;
-            showToast('toast.settings.libraryLoadFailed', { message: error.message }, 'error');
-        }
-    }
-
-    getLibraryDisplayName(libraryName, libraryData = {}) {
-        if (libraryData && typeof libraryData === 'object') {
-            const metadata = libraryData.metadata;
-            if (metadata && typeof metadata === 'object' && metadata.display_name) {
-                return metadata.display_name;
-            }
-
-            if (libraryData.display_name) {
-                return libraryData.display_name;
-            }
-        }
-
-        return libraryName;
-    }
-
-    async handleLibraryChange() {
-        const librarySelect = document.getElementById('librarySelect');
-        if (!librarySelect) {
-            return;
-        }
-
-        const selectedLibrary = librarySelect.value;
-        if (!selectedLibrary || selectedLibrary === this.activeLibrary) {
-            librarySelect.value = this.activeLibrary;
-            return;
-        }
-
-        librarySelect.disabled = true;
-
-        try {
-            state.loadingManager.showSimpleLoading('Activating library...');
-            await this.activateLibrary(selectedLibrary);
-            // Add a short delay before reloading the page
-            await new Promise(resolve => setTimeout(resolve, 300));
-            window.location.reload();
-        } catch (error) {
-            console.error('Failed to activate library:', error);
-            showToast('toast.settings.libraryActivateFailed', { message: error.message }, 'error');
-            await this.loadLibraries();
-        } finally {
-            state.loadingManager.hide();
-            if (!document.hidden) {
-                librarySelect.disabled = librarySelect.options.length <= 1;
-            }
-        }
-    }
-
-    async activateLibrary(libraryName) {
-        const response = await fetch('/api/lm/settings/libraries/activate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ library: libraryName }),
-        });
-
-        if (!response.ok) {
-            throw new Error(`Request failed with status ${response.status}`);
-        }
-
-        const data = await response.json();
-        if (data.success === false) {
-            throw new Error(data.error || 'Failed to activate library');
-        }
-
-        const activeName = data.active_library || libraryName;
-        this.activeLibrary = activeName;
-        return data;
     }
 
     showNoRootsPlaceholder(select) {
@@ -2328,8 +2202,21 @@ export class SettingsManager {
             navButton.classList.add('active');
         });
 
-        navGroup.appendChild(navButton);
-        settingsForm.appendChild(section);
+        // Keep About as the last section: Model Paths is inserted before it
+        // instead of simply being appended to the end of the nav.
+        const aboutNavButton = navGroup.querySelector('.settings-nav-item[data-section="about"]');
+        if (aboutNavButton) {
+            navGroup.insertBefore(navButton, aboutNavButton);
+        } else {
+            navGroup.appendChild(navButton);
+        }
+
+        const aboutSection = document.getElementById('section-about');
+        if (aboutSection) {
+            settingsForm.insertBefore(section, aboutSection);
+        } else {
+            settingsForm.appendChild(section);
+        }
         this.modelPathsSectionInitialized = true;
     }
 
@@ -3275,6 +3162,13 @@ export class SettingsManager {
                 const proxySettingsGroup = document.getElementById('proxySettingsGroup');
                 if (proxySettingsGroup) {
                     proxySettingsGroup.style.display = value ? 'block' : 'none';
+                }
+            }
+
+            if (settingKey === 'unsorted_fallback_enabled') {
+                const unsortedRow = document.getElementById('unsortedFallbackFolderRow');
+                if (unsortedRow) {
+                    unsortedRow.style.display = value ? '' : 'none';
                 }
             }
 
@@ -4397,6 +4291,72 @@ export class SettingsManager {
         }
     }
 
+    updateComfyUISettingsVisibility() {
+        const isStandalone = state.global.settings.standalone_mode;
+        document.querySelectorAll('[data-comfyui-only]').forEach(element => {
+            element.style.display = isStandalone ? 'none' : '';
+        });
+    }
+
+    async openComfyUISettings() {
+        if (state.global.settings.standalone_mode) return;
+
+        const result = await requestComfyUISettings();
+        if (result) {
+            showToast('settings.comfyuiNodes.openSucceeded', {}, 'success');
+        } else {
+            showToast('settings.comfyuiNodes.openFailed', {}, 'warning');
+        }
+    }
+
+    /**
+     * Wire the free-text exclusion / skip-list textareas. They are autosaved
+     * like every other control in this modal, so a change must not depend on
+     * the user pressing Enter: commit on blur (click-away, section switch,
+     * modal close) and keep Enter as an explicit commit.
+     */
+    setupExclusionTextareaHandlers() {
+        this.bindTextareaCommit('autoOrganizeExclusions', () => this.saveAutoOrganizeExclusions());
+        this.bindTextareaCommit('metadataRefreshSkipPaths', () => this.saveMetadataRefreshSkipPaths());
+
+        // Both send-to-workflow textareas persist one setting, so either one
+        // commits the pair.
+        const saveSendToWorkflowExclusions = () => this.saveSendToWorkflowExclusions();
+        this.bindTextareaCommit('sendToWorkflowExcludedClasses', saveSendToWorkflowExclusions);
+        this.bindTextareaCommit('sendToWorkflowExcludedTitles', saveSendToWorkflowExclusions);
+    }
+
+    /**
+     * Commit a textarea setting on blur, on Enter and before the modal closes.
+     * Enter never saves directly: it blurs the field so every commit path is
+     * the same one (same pattern as the filename template inputs).
+     */
+    bindTextareaCommit(inputId, commit) {
+        const input = document.getElementById(inputId);
+        if (!input || input.dataset.commitBound === '1') return;
+        input.dataset.commitBound = '1';
+
+        input.addEventListener('blur', () => {
+            commit();
+        });
+
+        input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                input.blur();
+                return;
+            }
+
+            // Escape closes the modal without moving focus. Hiding the modal
+            // is not guaranteed to fire blur, so flush explicitly; a duplicate
+            // commit is a no-op because the save methods bail out when the
+            // normalized value matches the stored one.
+            if (event.key === 'Escape') {
+                commit();
+            }
+        });
+    }
+
     async saveSendToWorkflowExclusions() {
         const classesInput = document.getElementById('sendToWorkflowExcludedClasses');
         const titlesInput = document.getElementById('sendToWorkflowExcludedTitles');
@@ -4419,10 +4379,12 @@ export class SettingsManager {
 
         try {
             await this.saveSetting('send_to_workflow_exclusions', normalized);
-            if (classesInput) {
+            // Do not overwrite a field the user already re-entered while the
+            // request was in flight.
+            if (classesInput && document.activeElement !== classesInput) {
                 classesInput.value = normalized.node_classes.join(', ');
             }
-            if (titlesInput) {
+            if (titlesInput && document.activeElement !== titlesInput) {
                 titlesInput.value = normalized.title_patterns.join(', ');
             }
 
@@ -4469,7 +4431,11 @@ export class SettingsManager {
             }
 
             await this.saveSetting('auto_organize_exclusions', normalized);
-            input.value = normalized.join(', ');
+            // Do not overwrite the field if the user re-entered it while the
+            // request was in flight.
+            if (document.activeElement !== input) {
+                input.value = normalized.join(', ');
+            }
 
             showToast(
                 'toast.settings.settingsUpdated',
@@ -5267,7 +5233,11 @@ export class SettingsManager {
             }
 
             await this.saveSetting('metadata_refresh_skip_paths', normalized);
-            input.value = normalized.join(', ');
+            // Do not overwrite the field if the user re-entered it while the
+            // request was in flight.
+            if (document.activeElement !== input) {
+                input.value = normalized.join(', ');
+            }
 
             showToast(
                 'toast.settings.settingsUpdated',

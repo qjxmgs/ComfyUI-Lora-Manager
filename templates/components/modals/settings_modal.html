@@ -37,6 +37,8 @@
                         <button type="button" class="settings-nav-item" data-section="interface">{{ t('settings.nav.interface') }}</button>
                         <button type="button" class="settings-nav-item" data-section="library">{{ t('settings.nav.library') }}</button>
                         <button type="button" class="settings-nav-item" data-section="organization">{{ t('settings.nav.organization') }}</button>
+                        <button type="button" class="settings-nav-item" data-section="comfyuiNodes" data-comfyui-only>{{ t('settings.nav.comfyuiNodes') }}</button>
+                        <button type="button" class="settings-nav-item" data-section="about">{{ t('settings.nav.about') }}</button>
                     </li>
                 </ul>
             </nav>
@@ -46,8 +48,10 @@
                 <div class="settings-form">
                     {% include 'components/modals/settings/general.html' %}
                     {% include 'components/modals/settings/interface.html' %}
+                    {% include 'components/modals/settings/comfyui_nodes.html' %}
                     {% include 'components/modals/settings/library.html' %}
                     {% include 'components/modals/settings/organization.html' %}
+                    {% include 'components/modals/settings/about.html' %}
                 </div>
             </div>
         </div>

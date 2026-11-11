@@ -435,7 +435,7 @@
                 "loraName": "Nom de fichier LoRA",
                 "loraModel": "Nom du modèle LoRA",
                 "prompt": "Prompt",
-                "triggerWords": "[TODO: Translate] Trigger Words"
+                "triggerWords": "Mots-clés"
             }
         },
         "filter": {
@@ -557,10 +557,19 @@
             "copied": "Chemin des paramètres copié dans le presse-papiers: {{path}}",
             "clipboardFallback": "Chemin des paramètres: {{path}}"
         },
+        "comfyuiNodes": {
+            "title": "Paramètres des nœuds ComfyUI",
+            "description": "Les paramètres liés aux nœuds sont disponibles dans les paramètres ComfyUI.",
+            "openButton": "Ouvrir les paramètres ComfyUI",
+            "modelNameDisplayLink": "Les libellés des nœuds sont configurés séparément dans les paramètres des nœuds ComfyUI",
+            "openSucceeded": "Paramètres ComfyUI ouverts.",
+            "openFailed": "Impossible d’ouvrir les paramètres ComfyUI. Veuillez d’abord ouvrir ComfyUI."
+        },
         "sections": {
             "contentFiltering": "Filtrage du contenu",
             "downloads": "Téléchargements",
             "videoSettings": "Paramètres vidéo",
+            "cardPreview": "Aperçu des cartes",
             "layoutSettings": "Paramètres d'affichage",
             "licenseIcons": "Icônes de licence",
             "misc": "Divers",
@@ -582,9 +591,33 @@
         "nav": {
             "general": "Général",
             "interface": "Interface",
+            "comfyuiNodes": "Nœuds ComfyUI",
             "library": "Bibliothèque",
             "organization": "Organisation",
+            "about": "À propos",
             "modelPaths": "Chemins de modèles"
+        },
+        "about": {
+            "environmentTitle": "Environnement",
+            "environmentDescription": "Versions utilisées par LoRA Manager et ComfyUI.",
+            "copy": "Copier",
+            "appVersion": "LoRA Manager",
+            "comfyuiVersion": "ComfyUI",
+            "frontendVersion": "Frontend ComfyUI",
+            "pythonVersion": "Python",
+            "os": "Système d'exploitation",
+            "browser": "Navigateur",
+            "hint": "Incluez ces informations lorsque vous signalez un problème.",
+            "unavailable": "Non disponible",
+            "copySuccess": "Informations d'environnement copiées",
+            "copyFailed": "Échec de la copie des informations d'environnement",
+            "linksTitle": "Support et liens",
+            "links": {
+                "reportIssue": "Signaler un problème",
+                "wiki": "Wiki de la documentation",
+                "github": "Dépôt GitHub",
+                "discord": "Rejoindre Discord"
+            }
         },
         "search": {
             "placeholder": "Rechercher dans les paramètres...",
@@ -612,6 +645,17 @@
         "videoSettings": {
             "autoplayOnHover": "Lecture automatique vidéo au survol",
             "autoplayOnHoverHelp": "Lire les aperçus vidéo uniquement lors du survol"
+        },
+        "cardPreview": {
+            "cycleOnHover": "Faire défiler les images d'exemple au survol",
+            "cycleOnHoverHelp": "Lors du survol de l'image d'aperçu d'une carte, ses images d'exemple défilent. Le survol de l'en-tête ou du pied de la carte ne lance pas le défilement, donc les boutons d'action et les infobulles restent utilisables. L'image d'aperçu sélectionnée reste inchangée. Les aperçus vidéo ne sont pas affectés.",
+            "cycleInterval": "Intervalle de défilement",
+            "cycleIntervalHelp": "Temps entre chaque changement d'image d'exemple lors du survol d'une carte.",
+            "cycleIntervalOptions": {
+                "fast": "Rapide (1,5 s)",
+                "normal": "Normal (2 s)",
+                "relaxed": "Posé (3 s)"
+            }
         },
         "autoOrganizeExclusions": {
             "label": "Exclusions de l'auto-organisation",
@@ -785,10 +829,6 @@
             "cardBlurAmountHelp": "Ajustez l'intensité du flou des superpositions d'en-tête et de pied de page sur les cartes de modèles et de Recipes (0 = aucun flou, 20 = flou maximal)."
         },
         "folderSettings": {
-            "activeLibrary": "Bibliothèque active (obsolète)",
-            "activeLibraryHelp": "Basculez entre les bibliothèques configurées pour mettre à jour les dossiers par défaut. Changer la sélection recharge la page. Obsolète : la prise en charge de plusieurs bibliothèques sera supprimée dans une prochaine version. Plusieurs racines de dossier au sein d’une même bibliothèque restent entièrement prises en charge.",
-            "loadingLibraries": "Chargement des bibliothèques...",
-            "noLibraries": "Aucune bibliothèque configurée",
             "defaultLoraRoot": "Racine LoRA",
             "defaultLoraRootHelp": "Définir le répertoire racine LoRA par défaut pour les téléchargements, imports et déplacements",
             "defaultCheckpointRoot": "Racine Checkpoint",
@@ -898,6 +938,13 @@
         "priorityTags": {
             "title": "Tags prioritaires",
             "description": "Personnalisez l'ordre de priorité des tags pour chaque type de modèle (par ex. : character, concept, style(toon|toon_style))",
+            "unsortedFallback": {
+                "label": "Regrouper les modèles sans tag prioritaire dans un seul dossier",
+                "help": "Les modèles dont les tags ne correspondent à aucun tag prioritaire sont placés dans un seul dossier au lieu d'un dossier créé à partir de {first_tag}. Les modèles sans tags ne sont pas concernés. Désactivé par défaut ; les dossiers existants restent inchangés tant qu'un modèle n'est pas réorganisé.",
+                "folderLabel": "Nom du dossier",
+                "folderHelp": "Utilisé à la place de {first_tag} quand aucun tag prioritaire ne correspond. Par exemple, avec {base_model}/{first_tag}, le résultat est {base_model}/<nom du dossier>. Laissez vide pour conserver le comportement actuel.",
+                "folderPlaceholder": "unsorted"
+            },
             "placeholder": "character, concept, style(toon|toon_style)",
             "helpLinkLabel": "Ouvrir l'aide sur les tags prioritaires",
             "modelTypes": {
@@ -931,12 +978,12 @@
                 "customTemplate": "Modèle personnalisé"
             },
             "customTemplatePlaceholder": "Entrez un modèle personnalisé (ex: {base_model}/{author}/{first_tag})",
-            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
+            "workflowHint": "S'applique aux téléchargements de workflows et à l'organisation automatique sur la page Workflows.",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
                 "embedding": "Embedding",
-                "workflow": "[TODO: Translate] Workflow"
+                "workflow": "Workflow"
             },
             "baseModelPathMappings": "Mappages de chemin de modèle de base",
             "baseModelPathMappingsHelp": "Personnaliser les noms de dossiers pour des modèles de base spécifiques (ex: \"Flux.1 D\" → \"flux\")",
@@ -2914,6 +2961,7 @@
             "downloadSkippedByBaseModel": "Téléchargement ignoré, car le modèle de base {baseModel} est exclu",
             "autoOrganizeSuccess": "Auto-organisation terminée avec succès pour {count} {type}",
             "autoOrganizePartialSuccess": "Auto-organisation terminée avec {success} déplacés, {failures} échecs sur {total} modèles",
+            "autoOrganizeProgressUnavailable": "Auto-organisation terminée avec {success} déplacés, {failures} échecs sur {total} modèles ; la progression en direct n'était pas disponible",
             "autoOrganizeFailed": "Échec de l'auto-organisation : {error}",
             "filenameTemplateSuccess": "Modèle de nom de fichier appliqué avec succès pour {count} {type}",
             "filenameTemplatePartialSuccess": "Modèle de nom de fichier appliqué avec {success} renommés, {failures} échecs sur {total} modèles",
@@ -3095,8 +3143,6 @@
             "compactModeToggled": "Mode compact {state}",
             "settingSaveFailed": "Échec de la sauvegarde du paramètre : {message}",
             "displayDensitySet": "Densité d'affichage définie sur {density}",
-            "libraryLoadFailed": "Échec du chargement des bibliothèques : {message}",
-            "libraryActivateFailed": "Échec de l'activation de la bibliothèque : {message}",
             "languageChangeFailed": "Échec du changement de langue : {message}",
             "cacheCleared": "Les fichiers de cache ont été vidés avec succès. Le cache sera reconstruit à la prochaine action.",
             "cacheClearFailed": "Échec du vidage du cache : {error}",

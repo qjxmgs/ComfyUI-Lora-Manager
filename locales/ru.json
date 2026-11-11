@@ -435,7 +435,7 @@
                 "loraName": "Имя файла LoRA",
                 "loraModel": "Название модели LoRA",
                 "prompt": "Промпт",
-                "triggerWords": "[TODO: Translate] Trigger Words"
+                "triggerWords": "Триггерные слова"
             }
         },
         "filter": {
@@ -557,10 +557,19 @@
             "copied": "Путь настроек скопирован в буфер обмена: {{path}}",
             "clipboardFallback": "Путь настроек: {{path}}"
         },
+        "comfyuiNodes": {
+            "title": "Настройки узлов ComfyUI",
+            "description": "Настройки узлов доступны в настройках ComfyUI.",
+            "openButton": "Открыть настройки ComfyUI",
+            "modelNameDisplayLink": "Подписи узлов настраиваются отдельно в настройках узлов ComfyUI",
+            "openSucceeded": "Настройки ComfyUI открыты.",
+            "openFailed": "Не удалось открыть настройки ComfyUI. Сначала откройте ComfyUI."
+        },
         "sections": {
             "contentFiltering": "Фильтрация контента",
             "downloads": "Загрузки",
             "videoSettings": "Настройки видео",
+            "cardPreview": "Превью карточек",
             "layoutSettings": "Настройки макета",
             "licenseIcons": "Значки лицензии",
             "misc": "Разное",
@@ -582,9 +591,33 @@
         "nav": {
             "general": "Общее",
             "interface": "Интерфейс",
+            "comfyuiNodes": "Узлы ComfyUI",
             "library": "Библиотека",
             "organization": "Организация",
+            "about": "О программе",
             "modelPaths": "Пути к моделям"
+        },
+        "about": {
+            "environmentTitle": "Окружение",
+            "environmentDescription": "Версии, используемые LoRA Manager и ComfyUI.",
+            "copy": "Скопировать",
+            "appVersion": "LoRA Manager",
+            "comfyuiVersion": "ComfyUI",
+            "frontendVersion": "Фронтенд ComfyUI",
+            "pythonVersion": "Python",
+            "os": "ОС",
+            "browser": "Браузер",
+            "hint": "Прикладывайте эти сведения при сообщении о проблеме.",
+            "unavailable": "Недоступно",
+            "copySuccess": "Сведения об окружении скопированы",
+            "copyFailed": "Не удалось скопировать сведения об окружении",
+            "linksTitle": "Поддержка и ссылки",
+            "links": {
+                "reportIssue": "Сообщить о проблеме",
+                "wiki": "Wiki документации",
+                "github": "Репозиторий GitHub",
+                "discord": "Присоединиться к Discord"
+            }
         },
         "search": {
             "placeholder": "Поиск в настройках...",
@@ -612,6 +645,17 @@
         "videoSettings": {
             "autoplayOnHover": "Автовоспроизведение видео при наведении",
             "autoplayOnHoverHelp": "Воспроизводить превью видео только при наведении курсора"
+        },
+        "cardPreview": {
+            "cycleOnHover": "Переключать примеры изображений при наведении",
+            "cycleOnHoverHelp": "При наведении на изображение превью карточки по очереди показываются её примеры изображений. Наведение на верхнюю или нижнюю панель карточки не запускает смену, поэтому кнопки действий и подсказки остаются доступными. Выбранное изображение превью остаётся неизменным. На превью видео это не влияет.",
+            "cycleInterval": "Интервал переключения",
+            "cycleIntervalHelp": "Время между сменой примеров изображений при наведении на карточку.",
+            "cycleIntervalOptions": {
+                "fast": "Быстрый (1,5 секунды)",
+                "normal": "Обычный (2 секунды)",
+                "relaxed": "Неспешный (3 секунды)"
+            }
         },
         "autoOrganizeExclusions": {
             "label": "Исключения автосортировки",
@@ -785,10 +829,6 @@
             "cardBlurAmountHelp": "Настройте интенсивность размытия наложений верхнего и нижнего колонтитулов на карточках моделей и рецептов (0 = без размытия, 20 = максимальное размытие)."
         },
         "folderSettings": {
-            "activeLibrary": "Активная библиотека (устарело)",
-            "activeLibraryHelp": "Переключайтесь между настроенными библиотеками, чтобы обновить папки по умолчанию. Изменение выбора перезагружает страницу. Устарело: поддержка нескольких библиотек будет удалена в одном из следующих выпусков. Несколько корневых папок в пределах одной библиотеки по-прежнему полностью поддерживаются.",
-            "loadingLibraries": "Загрузка библиотек...",
-            "noLibraries": "Библиотеки не настроены",
             "defaultLoraRoot": "Корневая папка LoRA",
             "defaultLoraRootHelp": "Установить корневую папку LoRA по умолчанию для загрузок, импорта и перемещений",
             "defaultCheckpointRoot": "Корневая папка Checkpoint",
@@ -898,6 +938,13 @@
         "priorityTags": {
             "title": "Приоритетные теги",
             "description": "Настройте порядок приоритетов тегов для каждого типа моделей (например, character, concept, style(toon|toon_style)).",
+            "unsortedFallback": {
+                "label": "Отправлять модели без совпадения с приоритетным тегом в одну папку",
+                "help": "Модели, теги которых не совпадают ни с одним приоритетным тегом, помещаются в одну папку вместо папки, созданной из {first_tag}. Модели без тегов не затрагиваются. По умолчанию выключено; существующие папки не меняются, пока модель не будет организована заново.",
+                "folderLabel": "Имя папки",
+                "folderHelp": "Используется вместо {first_tag}, если ни один приоритетный тег не совпал. С шаблоном по умолчанию {base_model}/{first_tag} получится {base_model}/<имя папки>. Оставьте пустым, чтобы сохранить текущее поведение.",
+                "folderPlaceholder": "unsorted"
+            },
             "placeholder": "character, concept, style(toon|toon_style)",
             "helpLinkLabel": "Открыть справку по приоритетным тегам",
             "modelTypes": {
@@ -931,12 +978,12 @@
                 "customTemplate": "Пользовательский шаблон"
             },
             "customTemplatePlaceholder": "Введите пользовательский шаблон (например, {base_model}/{author}/{first_tag})",
-            "workflowHint": "[TODO: Translate] Applies to workflow downloads and to Auto-Organize on the Workflows page.",
+            "workflowHint": "Применяется к загрузкам workflow и автоматической организации на странице Workflows.",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
                 "embedding": "Embedding",
-                "workflow": "[TODO: Translate] Workflow"
+                "workflow": "Workflow"
             },
             "baseModelPathMappings": "Сопоставления путей базовых моделей",
             "baseModelPathMappingsHelp": "Настройте имена папок для конкретных базовых моделей (например, \"Flux.1 D\" → \"flux\")",
@@ -2914,6 +2961,7 @@
             "downloadSkippedByBaseModel": "Загрузка пропущена, потому что базовая модель {baseModel} исключена",
             "autoOrganizeSuccess": "Автоматическая организация успешно завершена для {count} {type}",
             "autoOrganizePartialSuccess": "Автоматическая организация завершена: перемещено {success}, не удалось {failures} из {total} моделей",
+            "autoOrganizeProgressUnavailable": "Автоматическая организация завершена: перемещено {success}, не удалось {failures} из {total} моделей; прогресс в реальном времени был недоступен",
             "autoOrganizeFailed": "Ошибка автоматической организации: {error}",
             "filenameTemplateSuccess": "Шаблон имён файлов успешно применён для {count} {type}",
             "filenameTemplatePartialSuccess": "Шаблон имён файлов применён: переименовано {success}, не удалось {failures} из {total} моделей",
@@ -3095,8 +3143,6 @@
             "compactModeToggled": "Компактный режим {state}",
             "settingSaveFailed": "Не удалось сохранить настройку: {message}",
             "displayDensitySet": "Плотность отображения установлена на {density}",
-            "libraryLoadFailed": "Не удалось загрузить библиотеки: {message}",
-            "libraryActivateFailed": "Не удалось активировать библиотеку: {message}",
             "languageChangeFailed": "Не удалось изменить язык: {message}",
             "cacheCleared": "Файлы кэша успешно очищены. Кэш будет пересобран при следующем действии.",
             "cacheClearFailed": "Не удалось очистить кэш: {error}",

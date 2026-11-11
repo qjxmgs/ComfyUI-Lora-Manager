@@ -13,14 +13,23 @@ from ..utils.cache_paths import get_cache_base_dir
 
 logger = logging.getLogger(__name__)
 
-# SQL fragment extracting the CivitAI file id from the JSON ``file_params``
-# column (#1058). ``json_valid`` guards against NULL and legacy/unparseable
-# values, yielding NULL for rows without a file identity; NULL keys group
-# together so such rows keep the old version-level dedup behavior.
-_FILE_ID_SQL = (
-    "CASE WHEN json_valid(file_params) "
-    "THEN json_extract(file_params, '$.id') END"
-)
+
+def _file_id_expr(table_prefix: str = "") -> str:
+    """SQL expression extracting the CivitAI file id from ``file_params``.
+
+    ``json_valid`` guards against NULL and legacy/unparseable values,
+    yielding NULL for rows without a file identity; NULL keys group
+    together so such rows keep the old version-level dedup behavior.
+    ``table_prefix`` disambiguates the column in correlated subqueries.
+    """
+    return (
+        f"CASE WHEN json_valid({table_prefix}file_params) "
+        f"THEN json_extract({table_prefix}file_params, '$.id') END"
+    )
+
+
+# Shared single-table form used by the history/queue dedup queries (#1058).
+_FILE_ID_SQL = _file_id_expr()
 
 
 def _resolve_database_path() -> str:
@@ -265,15 +274,6 @@ class DownloadQueueService:
             ).fetchall()
         return [dict(row) for row in rows]
 
-    async def get_queued_count(self) -> int:
-        """Return the number of items with status ``'queued'``."""
-        async with self._lock:
-            conn = self._get_conn()
-            row = conn.execute(
-                "SELECT COUNT(*) AS cnt FROM download_queue WHERE status = 'queued'"
-            ).fetchone()
-        return row["cnt"] if row else 0
-
     async def update_status(
         self,
         download_id: str,
@@ -486,43 +486,6 @@ class DownloadQueueService:
             conn.commit()
         return dict(row)
 
-    async def pop_next_download(self) -> Optional[dict[str, Any]]:
-        """Atomically fetch and mark the next queued item as ``downloading``.
-
-        The item with the highest priority (and earliest ``added_at``
-        among ties) whose status is ``'queued'`` is selected, set to
-        ``'downloading'``, and returned as a dict.  Returns ``None`` if
-        the queue is empty.
-        """
-        async with self._lock:
-            conn = self._get_conn()
-            row = conn.execute(
-                """
-                SELECT * FROM download_queue
-                WHERE status = 'queued'
-                ORDER BY priority DESC, added_at ASC
-                LIMIT 1
-                """
-            ).fetchone()
-            if row is None:
-                return None
-
-            download_id = row["download_id"]
-            now = time.time()
-            conn.execute(
-                "UPDATE download_queue SET status = 'downloading', "
-                "started_at = COALESCE(started_at, ?) "
-                "WHERE download_id = ?",
-                (now, download_id),
-            )
-            conn.commit()
-            updated = conn.execute(
-                "SELECT * FROM download_queue WHERE download_id = ?",
-                (download_id,),
-            ).fetchone()
-
-        return dict(updated) if updated else None
-
     # ------------------------------------------------------------------
     # History methods
     # ------------------------------------------------------------------
@@ -680,21 +643,6 @@ class DownloadQueueService:
             )
             conn.commit()
         return cursor.rowcount
-
-    async def get_history_count(self, status_filter: Optional[str] = None) -> int:
-        """Return the number of history entries, optionally filtered by status."""
-        async with self._lock:
-            conn = self._get_conn()
-            if status_filter is not None:
-                row = conn.execute(
-                    "SELECT COUNT(*) AS cnt FROM download_history WHERE status = ?",
-                    (status_filter,),
-                ).fetchone()
-            else:
-                row = conn.execute(
-                    "SELECT COUNT(*) AS cnt FROM download_history"
-                ).fetchone()
-        return row["cnt"] if row else 0
 
     # ------------------------------------------------------------------
     # Retry
@@ -970,15 +918,24 @@ class DownloadQueueService:
             #    (source='retry') but whose model version already has a
             #    terminal history entry. These are artifacts of the buggy
             #    retry cycle that were never cleaned up.
-            conn.execute("""
+            #    The comparison is file-scoped (#1058): a retry for file A of
+            #    a version must survive when a *different* file B of the same
+            #    version has a failed/canceled history row. ``IS`` gives the
+            #    null-safe comparison legacy rows without a file identity
+            #    need to keep the old version-level behavior.
+            conn.execute(f"""
                 DELETE FROM download_queue
                 WHERE source = 'retry'
-                AND (model_id, model_version_id) IN (
-                    SELECT model_id, model_version_id
-                    FROM download_history
-                    WHERE status IN ('failed', 'canceled')
-                )
                 AND status IN ('queued', 'waiting')
+                AND EXISTS (
+                    SELECT 1
+                    FROM download_history dh
+                    WHERE dh.status IN ('failed', 'canceled')
+                    AND dh.model_id IS download_queue.model_id
+                    AND dh.model_version_id IS download_queue.model_version_id
+                    AND {_file_id_expr("dh.")}
+                        IS {_file_id_expr("download_queue.")}
+                )
             """)
             result["removed_orphan_queue"] = conn.execute(
                 "SELECT changes()"

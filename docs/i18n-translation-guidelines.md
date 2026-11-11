@@ -233,11 +233,10 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > state, the bulk-fetch rate-limit copy, the "fetch metadata" post-scan banner, two download
 > link errors and two duplicate-delete follow-ups — 36 keys left behind as
 > `[TODO: Translate]`. All 36 are now translated in all 9 locales (renderings in §2, "First-run
-> welcome page and fetch-status copy"). The same pass re-translated the three keys whose English
-> text had changed without being re-queued: `settings.folderSettings.activeLibrary` /
-> `.activeLibraryHelp` (multi-library deprecation, commit `1a6b0f78`) and
-> `toast.contextMenu.linkHfSuccess` (the toast now says "model source" instead of
-> "HuggingFace", commit `5ab0e88ab`). No `[TODO: Translate]` placeholder remains.
+> welcome page and fetch-status copy"). The same pass also re-translated
+> `toast.contextMenu.linkHfSuccess`, whose English text had changed without being re-queued
+> (the toast now says "model source" instead of "HuggingFace", commit `5ab0e88ab`). No
+> `[TODO: Translate]` placeholder remains.
 
 > **Status (2026-10, workflow management):** the Workflows page (`workflows.*`) manages the
 > ComfyUI workflow JSON files in their own library folders and shipped with the settings toggle
@@ -289,6 +288,46 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > All 9 locales are translated in the same pass, reusing the sidebar's folder vocabulary
 > (renderings in §2, "Settings directory picker (folder creation)"), so the
 > "no remaining placeholders" claim holds again.
+
+> **Status (2026-11, card preview cycling):** cards with a static preview now crossfade
+> through the model's example images after a hover dwell, adding the
+> `settings.sections.cardPreview` / `settings.cardPreview.*` keys (toggle, interval select and
+> four interval options) — 9 keys `[TODO: Translate]` in all 9 locales, now translated
+> (renderings in §2, "Card preview feature"). "Cycle" here is the automatic image rotation
+> (轮播 / 輪播 in zh), distinct from the manual media switch; the options keep each locale's
+> unit notation ("2 s" in the Latin locales, 2 секунды ru, 2 שניות he, 2秒 ja, 2초 ko,
+> 2 秒 zh). No `[TODO: Translate]` placeholder remains.
+>
+> **Status (2026-11, card preview cycling, interval revision):** the interval options were
+> revised to Fast (1.5s) / Normal (2s, new default) / Relaxed (3s) and the 8s Slow option
+> was dropped. The three `cycleIntervalOptions.*` keys were re-queued as
+> `[TODO: Translate]` in all 9 locales (their translations described the old values) and
+> are now translated, keeping each locale's pace words and unit notation; 1.5 uses the
+> locale's decimal separator (1,5 in de/es/fr/ru, 1.5 elsewhere).
+>
+> **Status (2026-11, card preview cycling, hover-zone revision):** cycling now arms only
+> from the bare preview area — hovering the card header or footer never starts it — and
+> the activation delay dropped from 1.5s to 0.8s. `settings.cardPreview.cycleOnHoverHelp`
+> was reworded accordingly, re-queued as `[TODO: Translate]` in all 9 locales and is now
+> translated. No `[TODO: Translate]` placeholder remains.
+>
+> **Status (2026-11, ComfyUI node settings navigation):** the settings modal gained a
+> ComfyUI-only nav tab linking into ComfyUI's own settings (commits `d81218f3`,
+> `79470bd8`), adding the 7 `settings.comfyuiNodes.*` / `settings.nav.comfyuiNodes` keys.
+> **ComfyUI** stays Latin everywhere (R3); "Settings" reuses each locale's
+> `common.actions.settings` noun (设置 / 設定 / 設定 / 설정 / Paramètres / Einstellungen /
+> Configuración / Настройки / הגדרות) and "Node" the established node-selector rendering
+> (节点 / 節點 / ノード / 노드 / nœud / Knoten / nodo / узел / צומת). All 9 locales are
+> translated, so no `[TODO: Translate]` placeholder remains.
+
+> **Status (2026-11, unsorted fallback folder):** the Priority Tags panel gained a
+> default-off toggle plus a folder-name field (`settings.priorityTags.unsortedFallback.*`,
+> 5 keys) that files models matching no priority tag under one folder instead of a folder
+> built from `{first_tag}`. The English copy was reworded in the same pass: the label no
+> longer hardcodes "Unsorted" (the folder name is configurable) and the
+> "canonical" / "usable tags" jargon was dropped. All 9 locales are translated
+> (terminology in §2, "Unsorted fallback folder feature"), so no
+> `[TODO: Translate]` placeholder remains.
 
 ---
 
@@ -695,6 +734,32 @@ the **noun for arranging files**, matching each locale's existing
 
 zh-CN/zh-TW use 整理 ("tidying/arranging"), not 组织/組織 (an organization as a group).
 
+### Unsorted fallback folder feature (priority tag fallback)
+
+The Priority Tags panel (settings Organization tab) gained a default-off toggle that files
+models whose tags match no priority tag into one folder instead of a folder built from
+`{first_tag}`; enabling it reveals a **folder name** field (default `unsorted`).
+
+| Term | Rendering |
+|---|---|
+| match no priority tag | zh-CN 没有匹配到优先标签 · zh-TW 沒有符合優先標籤 · ja 優先タグに一致しない · ko 우선순위 태그와 일치하지 않는 · fr sans tag prioritaire · de ohne passenden Prioritäts-Tag · es sin etiqueta prioritaria · ru без совпадения с приоритетным тегом · he ללא התאמה לתגית עדיפות |
+| folder (name) | zh-CN 文件夹 / 文件夹名称 · zh-TW 資料夾 / 資料夾名稱 · ja フォルダ / フォルダ名 · ko 폴더 / 폴더 이름 · fr dossier / nom du dossier · de Ordner / Ordnername · es carpeta / nombre de la carpeta · ru папка / имя папки · he תיקייה / שם התיקייה |
+| organized again | zh-CN 重新整理 · zh-TW 重新整理 · ja 再整理 · ko 다시 정리 · fr réorganisé · de erneut organisiert · es se vuelva a organizar · ru организована заново · he יאורגן מחדש |
+
+- **The label must not name the folder.** The folder is user-configurable, so the copy says
+  "one folder" and lets the field supply the name; the first cut hardcoded 'Unsorted' and
+  read wrong as soon as the user renamed it.
+- **The two groups stay distinct**: models that *match no priority tag* go to the fallback
+  folder, while models *with no tags* keep their current handling (`no tags`). Every locale
+  keeps that second sentence — dropping it implies untagged models are moved too.
+- `{first_tag}` and `{base_model}/{first_tag}` appear verbatim (R2). The folder-name part of
+  the example is prose and is translated (`<文件夹名称>`, `<nom du dossier>`, …). Hebrew
+  avoids angle brackets around the Hebrew phrase and spells the example out
+  (`{base_model} ואחריו שם התיקייה`) so bidi does not mirror the brackets.
+- The field's placeholder is the literal default `unsorted` — a path value, not prose, so it
+  is never translated.
+- Register follows each file's norm: 你 (zh-CN), 您 (zh-TW), Sie (de), tú (es), вы (ru).
+
 ### Sidecar storage feature (centralized `.metadata.json` / preview storage)
 
 The Library settings tab hosts an optional mode that stores `.metadata.json` sidecars and
@@ -887,6 +952,25 @@ that form fits a tooltip (ru shortens both toggle labels to bare «Галере�
 | gallery / vertical list (option labels) | zh-CN 画廊 / 纵向列表 · zh-TW 圖庫 / 垂直清單 · ja ギャラリー / 縦並びリスト · ko 갤러리 / 세로 목록 · fr Galerie / Liste verticale · de Galerie / Vertikale Liste · es Galería / Lista vertical · ru Галерея / Вертикальный список · he גלריה / רשימה אנכית |
 | gallery view / list view (toggle tooltips) | zh-CN 画廊视图 / 列表视图 · zh-TW 圖庫檢視 / 清單檢視 · ja ギャラリー表示 / リスト表示 · ko 갤러리 보기 / 목록 보기 · fr Vue galerie / Vue liste · de Galerieansicht / Listenansicht · es Vista de galería / Vista de lista · ru Галерея / Список · he תצוגת גלריה / תצוגת רשימה |
 
+### Card preview feature (hover cycling)
+
+Cards with a static preview crossfade through the model's example images after a hover dwell,
+configured by the Settings → Interface section `settings.sections.cardPreview` /
+`settings.cardPreview.*` (a toggle plus an interval select). The copy reuses each locale's fixed
+"card" noun and "example images" noun; "cycle" here is the automatic image rotation, so
+zh-CN/zh-TW use 轮播 / 輪播 rather than the manual `help.shortcuts.entries.cycleMedia` "switch".
+The interval options keep the locale's unit notation ("2 s" in the Latin locales, 2 секунды ru,
+2 שניות he, 2秒 ja, 2초 ko, 2 秒 zh; 1.5 uses the locale's decimal separator — 1,5 in de/es/fr/ru,
+1.5 elsewhere) and top out at "Relaxed" as a pace word
+(Gemächlich, Pausado, Posé, Неспешный, נינוח, のんびり, 느긋함, 舒缓/舒緩).
+
+| Term | Rendering |
+|---|---|
+| Card Preview (section title) | zh-CN 卡片预览 · zh-TW 卡片預覽 · ja カードプレビュー · ko 카드 미리보기 · fr Aperçu des cartes · de Kartenvorschau · es Vista previa de tarjeta · ru Превью карточек · he תצוגה מקדימה של כרטיסים |
+| Cycle Example Images on Hover | zh-CN 悬停时轮播示例图片 · zh-TW 滑鼠懸停時輪播範例圖片 · ja ホバー時に例画像を切り替え · ko 호버 시 예시 이미지 전환 · fr Faire défiler les images d'exemple au survol · de Beispielbilder bei Hover durchblättern · es Cambiar imágenes de ejemplo al pasar el ratón · ru Переключать примеры изображений при наведении · he עבור בין תמונות דוגמה בריחוף |
+| Cycle Interval | zh-CN 轮播间隔 · zh-TW 輪播間隔 · ja 切り替え間隔 · ko 전환 간격 · fr Intervalle de défilement · de Wechselintervall · es Intervalo de cambio · ru Интервал переключения · he מרווח החלפה |
+| interval options (fast / normal / relaxed) | zh-CN 快 / 正常 / 舒缓 · zh-TW 快 / 正常 / 舒緩 · ja 速い / 標準 / のんびり · ko 빠름 / 보통 / 느긋함 · fr Rapide / Normal / Posé · de Schnell / Normal / Gemächlich · es Rápido / Normal / Pausado · ru Быстрый / Обычный / Неспешный · he מהיר / רגיל / נינוח |
+
 ### Scoped scan and root availability
 
 A refresh can be restricted to one model root (the Refresh ▾ menu) or one folder (the sidebar
@@ -975,7 +1059,6 @@ Most of these strings are assembled from existing renderings rather than new ter
 | directory (of the centralized sidecar path) | zh-CN 目录 · zh-TW 目錄 · ja ディレクトリ · ko 디렉터리 · fr dossier · de Verzeichnis · es directorio · ru каталог · he תיקייה |
 | metadata storage | zh-CN 元数据存储 · zh-TW 中繼資料儲存 · ja メタデータの保存 · ko 메타데이터 저장 · fr Stockage des métadonnées · de Metadaten-Speicherung · es Almacenamiento de metadatos · ru Хранение метаданных · he אחסון מטא-נתונים |
 | rate limit (of the metadata provider) | zh-CN 速率限制 · zh-TW 速率限制 · ja レート制限 · ko 속도 제한 · fr limite de débit · de Ratenlimit · es límite de solicitudes · ru лимит запросов · he מגבלת קצב |
-| "(Deprecated)" (`settings.folderSettings.activeLibrary`) | zh-CN 已弃用 · zh-TW 已棄用 · ja 非推奨 · ko 사용 중단 예정 · fr obsolète · de veraltet · es obsoleto · ru устарело · he מיושן |
 | bulk-fetch banner title | zh-CN 让你的模型库焕发生机 · zh-TW 讓您的模型庫煥發生機 · ja ライブラリに命を吹き込もう · ko 라이브러리에 생기를 불어넣으세요 · fr Donnez vie à votre bibliothèque · de Erwecken Sie Ihre Bibliothek zum Leben · es Dale vida a tu biblioteca · ru Вдохните жизнь в свою библиотеку · he החייה את הספרייה שלך |
 | defer ("Later") / banner ("Maybe Later") | zh-CN 稍后 / 以后再说 · zh-TW 稍後 / 稍後再說 · ja 後で / また今度 · ko 나중에 / 나중에 하기 · fr Plus tard / Peut-être plus tard · de Später / Vielleicht später · es Más tarde / Quizás más tarde · ru Позже / Может быть, позже · he מאוחר יותר / אולי מאוחר יותר |
 
@@ -1141,8 +1224,7 @@ URL placeholders are the exception). As of the 2026-08 sweep, **all previously u
 blocks are translated** in every locale: `recipes.batchImport.*` + `toast.recipes.batchImport*`
 (fr/de/es/ru/he/ja/ko), `banners.communitySupport.*`, `modals.model.license.*`,
 `globalContextMenu.fetchMissingLicenses.*`, the `doctor.*` issue/action/label subset,
-`toast.settings.libraryLoadFailed` / `libraryActivateFailed`, `toast.api.moveFailed`,
-`settings.extraFolderPaths.restartRequired`, `toast.recipes.recipeSaved`,
+`toast.api.moveFailed`, `settings.extraFolderPaths.restartRequired`, `toast.recipes.recipeSaved`,
 `sidebar.dragDrop.moveUnsupported`, `checkpoints.modelTypes.diffusion_model`
 (ja/ko keep the English loanword), `initialization.recipes.title`.
 

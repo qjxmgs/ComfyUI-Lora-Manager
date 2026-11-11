@@ -130,6 +130,44 @@ def _get_app_version_string() -> str:
     return f"{version}-{short_hash}"
 
 
+def _get_comfyui_version_string() -> str | None:
+    """Return the running ComfyUI version when imported inside ComfyUI."""
+    try:
+        import comfyui_version  # pyright: ignore[reportMissingImports]
+
+        version = getattr(comfyui_version, "__version__", "")
+    except Exception:
+        return None
+    return str(version) if version else None
+
+
+def _get_frontend_version_string() -> str | None:
+    """Return the installed comfyui-frontend-package version, if present."""
+    try:
+        from importlib import metadata
+
+        return metadata.version("comfyui-frontend-package")
+    except Exception:
+        return None
+
+
+def _collect_environment_info(app_version: str) -> dict[str, Any]:
+    """Collect the version details shown in Settings -> About.
+
+    ComfyUI packages only exist in plugin mode, so they are skipped entirely in
+    standalone mode; Python and OS details are always available.
+    """
+    standalone = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1"
+    return {
+        "app_version": app_version,
+        "comfyui_version": None if standalone else _get_comfyui_version_string(),
+        "frontend_version": None if standalone else _get_frontend_version_string(),
+        "python_version": platform.python_version(),
+        "platform": platform.platform(),
+        "standalone": standalone,
+    }
+
+
 def _sanitize_sensitive_data(payload: Any) -> Any:
     sensitive_markers = (
         "api_key",
@@ -984,6 +1022,15 @@ class DoctorHandler:
             factories = tuple(entry for entry in factories if entry[0] != "workflow")
         return factories
 
+    async def get_environment(self, request: web.Request) -> web.Response:
+        """Return read-only environment details for the Settings About panel."""
+        return web.json_response(
+            {
+                "success": True,
+                "environment": _collect_environment_info(self._app_version_getter()),
+            }
+        )
+
     async def get_doctor_diagnostics(self, request: web.Request) -> web.Response:
         try:
             client_version = (request.query.get("clientVersion") or "").strip()
@@ -1807,24 +1854,6 @@ class SettingsHandler:
         self._metadata_provider_updater = metadata_provider_updater
         self._downloader_factory = downloader_factory
 
-    async def get_libraries(self, request: web.Request) -> web.Response:
-        """Return the registered libraries and the active selection."""
-
-        try:
-            snapshot = config.get_library_registry_snapshot()
-            libraries = snapshot.get("libraries", {})
-            active_library = snapshot.get("active_library", "")
-            return web.json_response(
-                {
-                    "success": True,
-                    "libraries": libraries,
-                    "active_library": active_library,
-                }
-            )
-        except Exception as exc:  # pragma: no cover - defensive logging
-            logger.error("Error getting library registry: %s", exc, exc_info=True)
-            return web.json_response({"success": False, "error": str(exc)}, status=500)
-
     async def get_settings(self, request: web.Request) -> web.Response:
         try:
             response_data = {}
@@ -1934,47 +1963,6 @@ class SettingsHandler:
             return web.json_response({"success": True, "tags": suggestions})
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Error getting priority tags: %s", exc, exc_info=True)
-            return web.json_response({"success": False, "error": str(exc)}, status=500)
-
-    async def activate_library(self, request: web.Request) -> web.Response:
-        """Activate the selected library."""
-
-        try:
-            data = await request.json()
-        except Exception as exc:  # pragma: no cover - defensive logging
-            logger.error(
-                "Error parsing activate library request: %s", exc, exc_info=True
-            )
-            return web.json_response(
-                {"success": False, "error": "Invalid JSON payload"}, status=400
-            )
-
-        library_name = data.get("library") or data.get("library_name")
-        if not isinstance(library_name, str) or not library_name.strip():
-            return web.json_response(
-                {"success": False, "error": "Library name is required"}, status=400
-            )
-
-        try:
-            normalized_name = library_name.strip()
-            self._settings.activate_library(normalized_name)
-            snapshot = config.get_library_registry_snapshot()
-            libraries = snapshot.get("libraries", {})
-            active_library = snapshot.get("active_library", "")
-            return web.json_response(
-                {
-                    "success": True,
-                    "active_library": active_library,
-                    "libraries": libraries,
-                }
-            )
-        except KeyError as exc:
-            logger.debug("Attempted to activate unknown library '%s'", library_name)
-            return web.json_response({"success": False, "error": str(exc)}, status=404)
-        except Exception as exc:  # pragma: no cover - defensive logging
-            logger.error(
-                "Error activating library '%s': %s", library_name, exc, exc_info=True
-            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def update_settings(self, request: web.Request) -> web.Response:
@@ -4722,12 +4710,11 @@ class MiscHandlerSet:
             "get_settings": self.settings.get_settings,
             "update_settings": self.settings.update_settings,
             "get_doctor_diagnostics": self.doctor.get_doctor_diagnostics,
+            "get_environment": self.doctor.get_environment,
             "repair_doctor_cache": self.doctor.repair_doctor_cache,
             "resolve_doctor_filename_conflicts": self.doctor.resolve_filename_conflicts,
             "export_doctor_bundle": self.doctor.export_doctor_bundle,
             "get_priority_tags": self.settings.get_priority_tags,
-            "get_settings_libraries": self.settings.get_libraries,
-            "activate_library": self.settings.activate_library,
             "get_llm_models": self.settings.get_llm_models,
             "get_provider_models": self.settings.get_provider_models,
             "update_usage_stats": self.usage_stats.update_usage_stats,
