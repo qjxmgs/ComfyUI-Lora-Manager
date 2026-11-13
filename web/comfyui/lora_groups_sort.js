@@ -1,7 +1,21 @@
 import { normalizeSortRules, SORT_FIELDS } from './lora_groups_state.js';
 
+const SORT_PREFERENCE_KEY = 'lm.loraGrid.lastSortRules';
+
+function restoreSortRules(fallback) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SORT_PREFERENCE_KEY));
+    if (Array.isArray(saved) && saved.some(rule => SORT_FIELDS.includes(rule?.field))) {
+      return normalizeSortRules(saved);
+    }
+  } catch {
+    // Keep workflow rules available when browser storage is unavailable or corrupt.
+  }
+  return normalizeSortRules(fallback);
+}
+
 export function openGroupSort({ anchor, rules, t, onApply }) {
-  let draft = normalizeSortRules(rules);
+  let draft = restoreSortRules(rules);
   let closed = false;
   let cancelDrag = null;
   const panel = document.createElement('section');
@@ -128,6 +142,11 @@ export function openGroupSort({ anchor, rules, t, onApply }) {
   const footer = document.createElement('div'); footer.className = 'lm-sort-footer';
   footer.append(makeButton(t('cancel'), t('cancel'), close), makeButton(t('sortApply'), t('sortApply'), () => {
     const result = normalizeSortRules(draft); close(); onApply(result);
+    try {
+      localStorage.setItem(SORT_PREFERENCE_KEY, JSON.stringify(result));
+    } catch {
+      // Sorting must still work when browser storage is unavailable.
+    }
   }));
   panel.append(heading, help, list, add, summary, footer);
   panel.addEventListener('pointerdown', event => event.stopPropagation());

@@ -64,6 +64,7 @@ async function mount(entries = [], state, comfyClass = 'Lora Loader (LoraManager
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.removeItem('lm.loraGrid.lastSortRules');
   document.elementFromPoint = vi.fn();
   getSettingValue.mockReturnValue('en');
   vi.stubGlobal('fetch', fetchApi);
@@ -611,6 +612,31 @@ describe('grouped LoRA Loader interactions', () => {
     expect(node.widget.value.map(item => item.name)).toEqual(['C', 'A', 'B', 'D']);
     node.properties = structuredClone(saved.properties); node.onConfigure(saved);
     expect(snapshot(node)).toEqual(saved);
+  });
+
+  it('remembers applied sorting across groups and new nodes without applying it automatically', async () => {
+    const node = await mount([value('A'), value('B')], normalizeGroupConfig({ rows: 1, columns: 2 }));
+    panels(node)[0].querySelector('.lm-group-sort-button').click();
+    let popup = document.querySelector('.lm-sort-popover');
+    const change = (select, value) => { select.value = value; select.dispatchEvent(new Event('change', { bubbles: true })); };
+    change(popup.querySelector('select'), 'name');
+    change(popup.querySelector('[aria-label="Sort direction"]') || popup.querySelectorAll('select')[1], 'desc');
+    click(popup, '＋ Add rule');
+    click(popup, 'Apply sort');
+    const expected = [{ field: 'name', direction: 'desc' }, { field: 'addedOrder', direction: 'asc' }];
+    expect(JSON.parse(localStorage.getItem('lm.loraGrid.lastSortRules'))).toEqual(expected);
+    panels(node)[1].querySelector('.lm-group-sort-button').click();
+    popup = document.querySelector('.lm-sort-popover');
+    expect([...popup.querySelectorAll('select')].map(select => select.value)).toEqual(['name', 'desc', 'addedOrder', 'asc']);
+    change(popup.querySelector('select'), 'strength');
+    click(popup, 'Cancel');
+    const clone = await mount([value('A'), value('B')]);
+    clone.container.querySelector('.lm-group-sort-button').click();
+    popup = document.querySelector('.lm-sort-popover');
+    expect([...popup.querySelectorAll('select')].map(select => select.value)).toEqual(['name', 'desc', 'addedOrder', 'asc']);
+    expect(clone.widget.value.map(item => item.name)).toEqual(['A', 'B']);
+    expect(clone.history).toHaveLength(0);
+    click(popup, 'Cancel');
   });
 
   it('edits rule priority with buttons and dragging, prevents duplicate fields, and discards cancelled drafts', async () => {
