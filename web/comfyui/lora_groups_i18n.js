@@ -7,6 +7,7 @@ import { ARCHIVE_MESSAGES } from './lora_archives_i18n.js';
 export const GROUP_MESSAGES = {
   ...ARCHIVE_MESSAGES,
   menuViewCivitai: "View on Civitai",
+  menuOnlySelected: "Only select these",
   menuCopyNotes: "Copy Notes",
   menuCopyTriggerWords: "Copy Trigger Words",
   menuSaveRecipe: "Save Recipe",

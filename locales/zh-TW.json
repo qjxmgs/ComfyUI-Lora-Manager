@@ -1,6 +1,7 @@
 {
     "loraGroups": {
         "menuViewCivitai": "[TODO: Translate] View on Civitai",
+        "menuOnlySelected": "[TODO: Translate] Only select these",
         "menuCopyNotes": "[TODO: Translate] Copy Notes",
         "menuCopyTriggerWords": "[TODO: Translate] Copy Trigger Words",
         "menuSaveRecipe": "[TODO: Translate] Save Recipe",

@@ -1,6 +1,7 @@
 {
   "loraGroups": {
     "menuViewCivitai": "View on Civitai",
+    "menuOnlySelected": "Only select these",
     "menuCopyNotes": "Copy Notes",
     "menuCopyTriggerWords": "Copy Trigger Words",
     "menuSaveRecipe": "Save Recipe",

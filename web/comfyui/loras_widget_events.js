@@ -1002,6 +1002,18 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
   // Add separator for order options
   const orderSeparator = document.createElement('hr');
 
+  const contextEntry = entriesAtOpen.find(entry => entry.name === loraName);
+  if (groups && contextEntry && !groups.isSingle(contextEntry.groupId)
+      && entriesAtOpen.some(entry => entry.groupId === contextEntry.groupId && entry.selected)) {
+    menu.appendChild(createMenuItem(t('menuOnlySelected'), '✓', () => {
+      menu.remove();
+      document.removeEventListener('click', closeMenu);
+      const entries = parseLoraValue(widget.value);
+      if (!entries.some(entry => entry.groupId === contextEntry.groupId && entry.selected)) return;
+      groups.commit(entries.map(entry => entry.groupId === contextEntry.groupId
+        ? { ...entry, active: !!entry.selected } : entry));
+    }));
+  }
   menu.appendChild(viewOnCivitaiOption);
   menu.appendChild(deleteOption);
   menu.appendChild(separator1);

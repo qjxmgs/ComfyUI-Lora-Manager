@@ -1,6 +1,7 @@
 {
     "loraGroups": {
         "menuViewCivitai": "在 CivitAI 上查看",
+        "menuOnlySelected": "只选这些",
         "menuCopyNotes": "复制备注",
         "menuCopyTriggerWords": "复制触发词",
         "menuSaveRecipe": "保存配方",
