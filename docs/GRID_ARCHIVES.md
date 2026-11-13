@@ -16,8 +16,9 @@ and are shared by nodes and workflows. Each node retains its own selected archiv
 - The manager has primary categories, secondary categories, archives and a fixed
   preview panel. Hovering or focusing an archive updates the preview without loading
   it. Clicking its name loads it; Edit changes its name/category without loading it.
-- Drag rows to reorder siblings. Edit a secondary category to move it to another
-  primary category. Deleting a nonempty category requires a destination at the same
+- Drag rows to reorder siblings. Drag a secondary category onto a primary category
+  to move it, or drag an archive onto a secondary category. Successful moves select
+  the destination without loading the archive into the workflow. Deleting a nonempty category requires a destination at the same
   level. Conflicting names must be resolved first. Default categories can be renamed, but cannot be deleted or moved to another parent.
 - The preview shows the saved image and enabled LoRAs, with Model and CLIP strengths
   overlaid at the bottom. Disabled groups are excluded. Missing local models are

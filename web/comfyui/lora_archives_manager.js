@@ -195,22 +195,66 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
     });
   }
 
+  function clearDrag() {
+    dragging = null;
+    root.querySelectorAll('.lm-archive-dragging, .lm-archive-drop-target').forEach(row => {
+      row.classList.remove('lm-archive-dragging', 'lm-archive-drop-target');
+    });
+  }
+
+  function bindCategoryDrop(row, category) {
+    const accepts = () => {
+      if (!dragging || busy) return false;
+      if (category.parentId === null) {
+        return dragging.collection === 'categories' && dragging.parent !== null
+          && dragging.id !== DEFAULT_SECONDARY && dragging.parent !== category.id;
+      }
+      return dragging.collection === 'archives' && dragging.parent !== category.id;
+    };
+    row.addEventListener('dragover', event => {
+      if (!accepts()) return;
+      event.preventDefault(); event.stopPropagation();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+      row.classList.add('lm-archive-drop-target');
+    });
+    row.addEventListener('dragleave', event => {
+      if (!row.contains(event.relatedTarget)) row.classList.remove('lm-archive-drop-target');
+    });
+    row.addEventListener('drop', event => {
+      if (!accepts()) return;
+      event.preventDefault(); event.stopPropagation();
+      const source = dragging, previousPreview = previewId;
+      clearDrag();
+      run(async () => {
+        const movingCategory = source.collection === 'categories';
+        await client.write(`/${source.collection}/${source.id}`, 'PATCH',
+          { [movingCategory ? 'parentId' : 'categoryId']: category.id }, source.revision);
+        primaryId = movingCategory ? category.id : category.parentId;
+        secondaryId = movingCategory ? source.id : category.id;
+        previewId = movingCategory ? previousPreview : source.id;
+        render();
+      });
+    });
+  }
+
   function bindReorder(row, collection, item, siblings, parentKey) {
     row.draggable = true; row.title = t('archiveReorder');
     row.addEventListener('dragstart', event => {
       if (busy) { event.preventDefault(); return; }
+      clearDrag(); closeCategoryMenu?.();
+      if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
       dragging = { collection, id: item.id, parent: item[parentKey], revision: client.data.revision };
       event.dataTransfer?.setData('text/plain', item.id);
       row.classList.add('lm-archive-dragging');
     });
-    row.addEventListener('dragend', () => { dragging = null; row.classList.remove('lm-archive-dragging'); });
+    row.addEventListener('dragend', clearDrag);
     row.addEventListener('dragover', event => {
       if (dragging?.collection === collection && dragging.parent === item[parentKey]) event.preventDefault();
     });
     row.addEventListener('drop', event => {
       if (dragging?.collection !== collection || dragging.parent !== item[parentKey]) return;
       event.preventDefault(); event.stopPropagation();
-      const source = dragging; dragging = null;
+      const source = dragging; clearDrag();
       if (source.id === item.id) return;
       const ids = siblings.map(value => value.id).filter(id => id !== source.id);
       const rect = row.getBoundingClientRect();
@@ -276,7 +320,8 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
         row.append(action('✎', () => run(() => editCategory(client, t, item, item.parentId, localAbort.signal, setMessage)), t('archiveEdit')),
           action('×', () => run(() => remove('categories', item)), t('archiveDelete')));
       }
-      bindReorder(row, 'categories', item, items, 'parentId'); list.append(row);
+      bindReorder(row, 'categories', item, items, 'parentId');
+      bindCategoryDrop(row, item); list.append(row);
     }
     if (!items.length) list.append(el('p', '', t('archiveEmpty')));
     panel.append(heading, list); return panel;
@@ -361,6 +406,7 @@ export function openArchiveManager({ client, t, currentId, load, saveAs, signal,
     const list = el('div', 'lm-archive-list');
     for (const archive of archives) {
       const row = el('div', 'lm-archive-row');
+      row.dataset.archiveId = archive.id;
       row.classList.toggle('lm-archive-selected', archive.id === currentId());
       const choose = action(archive.name, () => run(async () => { if (await load(archive, setMessage)) close(); }));
       choose.title = `${archivePath(client.data, archive, item => categoryLabel(item, t))} / ${archive.name}`;

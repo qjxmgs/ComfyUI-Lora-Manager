@@ -222,6 +222,73 @@ describe('archive category context menus', () => {
   const menuButton = name => [...document.querySelectorAll('.lm-archive-category-menu button')].find(button => button.textContent.replace('›', '') === name);
   async function chooseMenu(name) { menuButton(name).click(); await flush(); }
 
+  function drag(source, target, finish = true) {
+    const transfer = { setData: vi.fn(), effectAllowed: '', dropEffect: '' };
+    const fire = (element, type) => {
+      const event = new Event(type, { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'dataTransfer', { value: transfer });
+      element.dispatchEvent(event); return event;
+    };
+    fire(source, 'dragstart');
+    const over = fire(target, 'dragover');
+    if (finish) { fire(target, 'drop'); fire(source, 'dragend'); }
+    return { over, transfer };
+  }
+  const categoryRow = id => document.querySelector(`[data-category-id="${id}"]`);
+  const archiveRow = id => document.querySelector(`[data-archive-id="${id}"]`);
+
+  it('moves a secondary category onto a primary and follows its selection', async () => {
+    const m = await setup();
+    const original = clone(m.client.data.archives);
+    const { over, transfer } = drag(categoryRow('s1'), categoryRow('p1'));
+    await flush();
+    expect(over.defaultPrevented).toBe(true);
+    expect(transfer.dropEffect).toBe('move');
+    expect(m.client.write).toHaveBeenCalledWith('/categories/s1', 'PATCH', { parentId: 'p1' }, 1);
+    expect(categoryRow('p1').classList.contains('lm-archive-selected')).toBe(true);
+    expect(categoryRow('s1').classList.contains('lm-archive-selected')).toBe(true);
+    expect(m.client.data.archives).toEqual(original);
+    expect(m.history).toHaveLength(0);
+  });
+  it('moves an archive onto a secondary without loading its workflow', async () => {
+    const m = await setup(); const saved = clone(m.live());
+    drag(archiveRow('one'), categoryRow('s1')); await flush();
+    expect(m.client.write).toHaveBeenCalledWith('/archives/one', 'PATCH', { categoryId: 's1' }, 1);
+    expect(categoryRow('s1').classList.contains('lm-archive-selected')).toBe(true);
+    expect(archiveRow('one')).not.toBeNull();
+    expect(document.querySelector('.lm-archive-preview-title').textContent).toBe('First');
+    expect(m.live()).toEqual(saved); expect(m.history).toHaveLength(0);
+  });
+  it.each([
+    ['category', 'default', 'p1'], ['category', 's1', 'uncategorized'],
+    ['category', 'p1', 's1'], ['archive', 'one', 'p1'], ['archive', 'one', 'default'],
+  ])('rejects invalid or unchanged drag destinations: %s %s to %s', async (kind, id, destination) => {
+    const m = await setup();
+    const { over } = drag(kind === 'category' ? categoryRow(id) : archiveRow(id), categoryRow(destination));
+    await flush(); expect(over.defaultPrevented).toBe(false); expect(m.client.write).not.toHaveBeenCalled();
+  });
+  it.each(['duplicate', 'conflict'])('keeps the source and selection when a drag move fails: %s', async code => {
+    const m = await setup(); m.client.write.mockRejectedValueOnce(new Error(code));
+    drag(archiveRow('one'), categoryRow('s1')); await flush();
+    expect(m.client.data.archives[0].categoryId).toBe('default');
+    expect(categoryRow('default').classList.contains('lm-archive-selected')).toBe(true);
+    expect(document.querySelector('.lm-archive-header-status').textContent).toBe(t(code === 'duplicate' ? 'archiveDuplicate' : 'archiveConflict'));
+    expect(document.querySelector('.lm-archive-drop-target')).toBeNull();
+  });
+  it('clears drop feedback on cancellation and keeps the revision from drag start', async () => {
+    const m = await setup();
+    const source = archiveRow('one'), target = categoryRow('s1');
+    drag(source, target, false);
+    expect(target.classList.contains('lm-archive-drop-target')).toBe(true);
+    source.dispatchEvent(new Event('dragend'));
+    expect(target.classList.contains('lm-archive-drop-target')).toBe(false);
+    expect(m.client.write).not.toHaveBeenCalled();
+    drag(source, target, false); m.client.data.revision = 2;
+    target.dispatchEvent(new Event('drop', { bubbles: true, cancelable: true })); await flush();
+    expect(m.client.write).toHaveBeenCalledWith('/archives/one', 'PATCH', { categoryId: 's1' }, 1);
+    expect(m.client.data.archives[0].categoryId).toBe('default');
+  });
+
   it.each(['p1', 's1', 'uncategorized', 'default'])('renames category %s without modifying its parent or workflow', async id => {
     const m = await setup(); const saved = m.live(); open(id);
     await chooseMenu('Rename');
